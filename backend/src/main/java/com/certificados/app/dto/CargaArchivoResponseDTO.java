@@ -1,5 +1,6 @@
 package com.certificados.app.dto;
 
+import com.certificados.app.model.TipoDocumento;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 public class CargaArchivoResponseDTO {
     private String id;
     private String nombreOriginal;
-    private String tipoDocumento;
+    private TipoDocumento tipoDocumento;
     private long tamanoBytes;
     private String mensaje;
     private LocalDateTime fechaCarga;

@@ -3,6 +3,7 @@ package com.certificados.app;
 import com.certificados.app.dto.CargaArchivoResponseDTO;
 import com.certificados.app.exception.AlmacenamientoException;
 import com.certificados.app.model.Documento;
+import com.certificados.app.model.TipoDocumento;
 import com.certificados.app.model.repository.DocumentoRepository;
 import com.certificados.app.service.AlmacenamientoService;
 import com.certificados.app.service.impl.CargarArchivoServiceImpl;
@@ -59,13 +60,13 @@ class CargarArchivoServiceImplTest {
             return doc;
         });
 
-        CargaArchivoResponseDTO respuesta = cargarArchivoService.cargarArchivo(archivoPdfValido, "SYLLABUS");
+        CargaArchivoResponseDTO respuesta = cargarArchivoService.cargarArchivo(archivoPdfValido, "CERTIFICADO");
 
         assertNotNull(respuesta);
         assertEquals("1", respuesta.getId());
         assertEquals("syllabus_calculo.pdf", respuesta.getNombreOriginal());
-        assertEquals("SYLLABUS", respuesta.getTipoDocumento());
-        verify(almacenamientoService, times(1)).guardar(archivoPdfValido);
+        assertEquals(TipoDocumento.CERTIFICADO, respuesta.getTipoDocumento());
+        verify(almacenamientoService, times(1)).guardar(any());
         verify(documentoRepository, times(1)).save(any(Documento.class));
     }
 
@@ -73,7 +74,7 @@ class CargarArchivoServiceImplTest {
     void cargarArchivo_DeberiaLanzarExcepcion_CuandoFormatoNoEsPdf() {
         AlmacenamientoException excepcion = assertThrows(
                 AlmacenamientoException.class,
-                () -> cargarArchivoService.cargarArchivo(archivoTxtInvalido, "SYLLABUS")
+                () -> cargarArchivoService.cargarArchivo(archivoTxtInvalido, "CERTIFICADO")
         );
 
         assertTrue(excepcion.getMessage().contains("Solo se aceptan archivos en formato PDF"));

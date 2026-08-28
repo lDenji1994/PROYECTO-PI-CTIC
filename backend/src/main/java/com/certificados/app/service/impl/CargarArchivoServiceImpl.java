@@ -3,6 +3,7 @@ package com.certificados.app.service.impl;
 import com.certificados.app.dto.CargaArchivoResponseDTO;
 import com.certificados.app.exception.AlmacenamientoException;
 import com.certificados.app.model.Documento;
+import com.certificados.app.model.TipoDocumento; 
 import com.certificados.app.model.repository.DocumentoRepository;
 import com.certificados.app.service.AlmacenamientoService;
 import com.certificados.app.service.CargarArchivoService;
@@ -21,7 +22,7 @@ public class CargarArchivoServiceImpl implements CargarArchivoService {
     private final AlmacenamientoService almacenamientoService;
     private final DocumentoRepository documentoRepository;
 
-    private static final long LIMITE_TAMANO_BYTES = 10 * 1024 * 1024; // 10 MB
+    private static final long LIMITE_TAMANO_BYTES = 10 * 1024 * 1024; 
 
     @Override
     @Transactional
@@ -43,13 +44,21 @@ public class CargarArchivoServiceImpl implements CargarArchivoService {
             throw new AlmacenamientoException("El archivo excede el tamaño máximo permitido de 10 MB.");
         }
 
+
+        TipoDocumento tipoEnum;
+        try {
+            tipoEnum = TipoDocumento.valueOf(tipoDocumento.toUpperCase().trim());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new AlmacenamientoException("Tipo de documento inválido o no soportado: " + tipoDocumento);
+        }
+
         String nombreGuardado = almacenamientoService.guardar(archivo);
 
         Documento documento = Documento.builder()
                 .id(UUID.randomUUID().toString())
                 .nombreOriginal(nombreOriginal)
-                .rutaAlmacenamiento("uploads/" + nombreGuardado)
-                .tipoDocumento(tipoDocumento.toUpperCase())
+                .rutaArchivo("uploads/" + nombreGuardado)
+                .tipoDocumento(tipoEnum) 
                 .tamanoBytes(archivo.getSize())
                 .fechaCarga(LocalDateTime.now())
                 .build();
