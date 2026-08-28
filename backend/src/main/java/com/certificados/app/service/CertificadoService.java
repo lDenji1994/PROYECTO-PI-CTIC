@@ -1,13 +1,16 @@
 package com.certificados.app.service;
 
 import com.certificados.app.dto.CertificadoDTO;
+import com.certificados.app.dto.HistorialEstadoCertificadoDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Certificado;
 import com.certificados.app.model.EstadoCertificado;
 import com.certificados.app.model.Estudiante;
+import com.certificados.app.model.HistorialEstadoCertificado;
 import com.certificados.app.repository.CertificadoRepository;
 import com.certificados.app.repository.EstudianteRepository;
+import com.certificados.app.repository.HistorialEstadoCertificadoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +27,18 @@ public class CertificadoService {
 
     private final CertificadoRepository certificadoRepository;
     private final EstudianteRepository estudianteRepository;
+    private final HistorialEstadoCertificadoRepository historialRepository;
 
     public List<CertificadoDTO> listarTodos() {
         return certificadoRepository.findAll().stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<CertificadoDTO> listarPorEstado(EstadoCertificado estado) {
+    return certificadoRepository.findByEstado(estado).stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
     }
 
     public List<CertificadoDTO> listarPorEstudiante(Long estudianteId) {
@@ -39,6 +49,14 @@ public class CertificadoService {
 
     public CertificadoDTO buscarPorId(Long id) {
         return toDTO(obtenerEntidad(id));
+    }
+
+    // US-21.03: Implementar consulta de historial
+    public List<HistorialEstadoCertificadoDTO> listarHistorial(Long id) {
+        obtenerEntidad(id); // valida que el certificado exista (404 si no)
+        return historialRepository.findByCertificadoIdOrderByFechaCambioAsc(id).stream()
+                .map(this::toHistorialDTO)
+                .collect(Collectors.toList());
     }
 
     public CertificadoDTO solicitar(CertificadoDTO dto) {
@@ -59,18 +77,38 @@ public class CertificadoService {
 
     public CertificadoDTO emitir(Long id) {
         Certificado certificado = obtenerEntidad(id);
-        if (certificado.getEstado() == EstadoCertificado.ANULADO) {
-            throw new BusinessException("No se puede emitir un certificado anulado");
-        }
+        validarTransicion(certificado.getEstado(), EstadoCertificado.EMITIDO);
+        EstadoCertificado estadoAnterior = certificado.getEstado();
         certificado.setEstado(EstadoCertificado.EMITIDO);
         certificado.setFechaEmision(LocalDate.now());
-        return toDTO(certificadoRepository.save(certificado));
+        Certificado actualizado = certificadoRepository.save(certificado);
+        registrarCambioEstado(actualizado, estadoAnterior, EstadoCertificado.EMITIDO);
+        return toDTO(actualizado);
     }
 
     public CertificadoDTO anular(Long id) {
         Certificado certificado = obtenerEntidad(id);
+        validarTransicion(certificado.getEstado(), EstadoCertificado.ANULADO);
+        EstadoCertificado estadoAnterior = certificado.getEstado();
         certificado.setEstado(EstadoCertificado.ANULADO);
-        return toDTO(certificadoRepository.save(certificado));
+        Certificado actualizado = certificadoRepository.save(certificado);
+        registrarCambioEstado(actualizado, estadoAnterior, EstadoCertificado.ANULADO);
+        return toDTO(actualizado);
+    }
+
+    /**
+     * US-20.05: Validar transiciones permitidas.
+     * Reglas: un certificado ANULADO no puede cambiar de estado nunca mas,
+     * y no tiene sentido "cambiar" a un estado en el que ya esta.
+     * PENDIENTE -> EMITIDO, PENDIENTE -> ANULADO y EMITIDO -> ANULADO si se permiten.
+     */
+    private void validarTransicion(EstadoCertificado actual, EstadoCertificado destino) {
+        if (actual == EstadoCertificado.ANULADO) {
+            throw new BusinessException("No se puede cambiar el estado de un certificado anulado");
+        }
+        if (actual == destino) {
+            throw new BusinessException("El certificado ya se encuentra en estado " + destino);
+        }
     }
 
     private Certificado obtenerEntidad(Long id) {
@@ -80,6 +118,30 @@ public class CertificadoService {
 
     private String generarCodigoVerificacion() {
         return "CERT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    private void registrarCambioEstado(Certificado certificado, EstadoCertificado anterior, EstadoCertificado nuevo) {
+        // Si por algun motivo el estado no cambio realmente (ej. anular un
+        // certificado que ya estaba ANULADO), no vale la pena dejar un
+        // registro de historial redundante.
+        if (anterior == nuevo) {
+            return;
+        }
+        HistorialEstadoCertificado registro = new HistorialEstadoCertificado();
+        registro.setCertificado(certificado);
+        registro.setEstadoAnterior(anterior);
+        registro.setEstadoNuevo(nuevo);
+        historialRepository.save(registro);
+    }
+
+    private HistorialEstadoCertificadoDTO toHistorialDTO(HistorialEstadoCertificado h) {
+        HistorialEstadoCertificadoDTO dto = new HistorialEstadoCertificadoDTO();
+        dto.setId(h.getId());
+        dto.setCertificadoId(h.getCertificado().getId());
+        dto.setEstadoAnterior(h.getEstadoAnterior());
+        dto.setEstadoNuevo(h.getEstadoNuevo());
+        dto.setFechaCambio(h.getFechaCambio());
+        return dto;
     }
 
     private CertificadoDTO toDTO(Certificado c) {

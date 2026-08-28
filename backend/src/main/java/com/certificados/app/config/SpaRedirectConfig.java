@@ -14,7 +14,7 @@ public class SpaRedirectConfig {
     @RequestMapping(value = {
             "/",
             "/{path:[^\\.]*}",
-            "/{path:^(?!api).*}/**"
+            "/{path:^(?!api)[^\\.]*}/**"
     })
     public String redirect() {
         return "forward:/index.html";

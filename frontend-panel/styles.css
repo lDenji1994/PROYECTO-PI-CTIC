@@ -1120,6 +1120,32 @@
         }
 
 
+        .filter-actions {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+
+        #filtro-estado-certificados {
+
+            border-radius: 7px;
+
+            padding: 9px 12px;
+
+            border: 1px solid var(--gris-claro);
+
+            background: white;
+
+            color: var(--gris-oscuro);
+
+        }
+
+
         .form-actions {
 
             display: flex;
@@ -1940,3 +1966,122 @@
 
         }
 
+
+        /* =========================================================
+           PANTALLA DE LOGIN (US-26.01)
+           ========================================================= */
+
+        .login-body {
+            margin: 0;
+        }
+
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gris-fondo);
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--blanco);
+            border-radius: 12px;
+            box-shadow: var(--sombra);
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .login-logo .logo-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+            background: var(--rojo-upb);
+            margin-bottom: 14px;
+        }
+
+        .login-logo .logo-upb {
+            color: var(--blanco);
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .login-logo h1 {
+            font-size: 17px;
+            margin: 0 0 4px;
+            color: var(--gris-oscuro);
+        }
+
+        .login-logo p {
+            font-size: 13px;
+            color: var(--gris-texto);
+            margin: 0;
+        }
+
+        .password-field {
+            position: relative;
+        }
+
+        .password-field input {
+            padding-right: 74px;
+            width: 100%;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: none;
+            color: var(--rojo-upb);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 6px;
+        }
+
+        /* Estado de error: el JS solo agrega/quita esta clase,
+           el color rojo vive aqui. */
+        .input-error {
+            border-color: #c0392b !important;
+        }
+
+        .input-error-message {
+            display: block;
+            min-height: 16px;
+            font-size: 12px;
+            color: #c0392b;
+            margin-top: 4px;
+        }
+
+        .login-actions {
+            margin-top: 8px;
+        }
+
+        .login-submit {
+            width: 100%;
+        }
+
+        .login-note {
+            margin-top: 16px;
+            font-size: 12px;
+            text-align: center;
+            color: var(--gris-texto);
+        }
+
+        .login-note-error {
+            color: #c0392b;
+        }
+
+        .login-note-success {
+            color: var(--verde);
+        }

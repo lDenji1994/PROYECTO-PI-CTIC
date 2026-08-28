@@ -1749,14 +1749,29 @@
 
                         </div>
 
-                        <button
-                            class="outline-button"
-                            type="button"
-                            onclick="cargarCertificados()">
+                        <div class="filter-actions">
 
-                            Actualizar
+                            <select
+                                id="filtro-estado-certificados"
+                                aria-label="Filtrar solicitudes por estado">
 
-                        </button>
+                                <option value="TODOS">Todos los estados</option>
+                                <option value="PENDIENTE">Pendientes</option>
+                                <option value="EMITIDO">Emitidas</option>
+                                <option value="ANULADO">Anuladas</option>
+
+                            </select>
+
+                            <button
+                                class="outline-button"
+                                type="button"
+                                onclick="cargarCertificados()">
+
+                                Actualizar
+
+                            </button>
+
+                        </div>
 
                     </div>
 

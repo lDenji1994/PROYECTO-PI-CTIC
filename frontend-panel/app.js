@@ -739,6 +739,8 @@ const ESTADO_TEXTO = {
     ANULADO: 'Anulado'
 };
 
+let certificadosCache = [];
+
 async function cargarCertificados() {
 
     const tabla = document.getElementById('tabla-certificados');
@@ -751,10 +753,10 @@ async function cargarCertificados() {
             throw new Error('No se pudo obtener la lista de certificados');
         }
 
-        const certificados = await respuesta.json();
+        certificadosCache = await respuesta.json();
 
-        renderCertificados(certificados);
-        actualizarStats(certificados);
+        actualizarStats(certificadosCache);
+        aplicarFiltroCertificados();
 
     } catch (error) {
 
@@ -768,7 +770,24 @@ async function cargarCertificados() {
     }
 }
 
-function renderCertificados(certificados) {
+function obtenerFiltroEstadoActivo() {
+
+    const select = document.getElementById('filtro-estado-certificados');
+    return select ? select.value : 'TODOS';
+}
+
+function aplicarFiltroCertificados() {
+
+    const filtro = obtenerFiltroEstadoActivo();
+
+    const filtrados = (filtro === 'TODOS')
+        ? certificadosCache
+        : certificadosCache.filter(function (c) { return c.estado === filtro; });
+
+    renderCertificados(filtrados, filtro !== 'TODOS');
+}
+
+function renderCertificados(certificados, filtroActivo) {
 
     const tabla = document.getElementById('tabla-certificados');
 
@@ -777,8 +796,12 @@ function renderCertificados(certificados) {
     }
 
     if (certificados.length === 0) {
-        tabla.innerHTML =
-            '<tr><td colspan="6">Aun no hay certificados solicitados.</td></tr>';
+
+        const mensaje = filtroActivo
+            ? 'No hay solicitudes con el estado seleccionado.'
+            : 'Aun no hay certificados solicitados.';
+
+        tabla.innerHTML = `<tr><td colspan="6">${mensaje}</td></tr>`;
         return;
     }
 
@@ -953,6 +976,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (formCertificado) {
         formCertificado.addEventListener('submit', solicitarCertificado);
+    }
+
+    const filtroEstado = document.getElementById('filtro-estado-certificados');
+
+    if (filtroEstado) {
+        filtroEstado.addEventListener('change', aplicarFiltroCertificados);
     }
 
     /* Precargar estudiantes en memoria para el select de certificados */
