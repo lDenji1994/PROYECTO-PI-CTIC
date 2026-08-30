@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>UPB | Iniciar sesión</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body class="login-body">
+
+
+    <div class="login-page">
+
+        <div class="login-card">
+
+            <div class="login-logo">
+
+                <div class="logo-box">
+                    <span class="logo-upb">UPB</span>
+                </div>
+
+                <h1>
+                    Gestión de Información Académica
+                </h1>
+
+                <p>
+                    Certificados de contenidos programáticos
+                </p>
+
+            </div>
+
+
+            <form id="form-login">
+
+                <div class="form-group">
+
+                    <label for="login-usuario">
+                        Usuario *
+                    </label>
+
+                    <input
+                        id="login-usuario"
+                        type="text"
+                        placeholder="correo institucional"
+                        autocomplete="username">
+
+                    <span class="input-error-message" id="error-usuario"></span>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="login-password">
+                        Contraseña *
+                    </label>
+
+                    <div class="password-field">
+
+                        <input
+                            id="login-password"
+                            type="password"
+                            placeholder="••••••••"
+                            autocomplete="current-password">
+
+                        <button
+                            class="toggle-password"
+                            type="button"
+                            id="btn-toggle-password">
+
+                            Mostrar
+
+                        </button>
+
+                    </div>
+
+                    <span class="input-error-message" id="error-password"></span>
+
+                </div>
+
+
+                <div class="login-actions">
+
+                    <button
+                        class="primary-button login-submit"
+                        type="submit">
+
+                        Iniciar sesión
+
+                    </button>
+
+                </div>
+
+
+                <p class="login-note" id="login-note">
+                    Vista de diseño (US-26.01) — la autenticación contra el backend todavía no está conectada.
+                </p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="login.js"></script>
+
+</body>
+
+</html>

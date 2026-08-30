@@ -3,7 +3,7 @@ package com.certificados.app.service.impl;
 import com.certificados.app.dto.CargaArchivoResponseDTO;
 import com.certificados.app.exception.AlmacenamientoException;
 import com.certificados.app.model.Documento;
-import com.certificados.app.model.repository.DocumentoRepository;
+import com.certificados.app.repository.DocumentoRepository;
 import com.certificados.app.service.AlmacenamientoService;
 import com.certificados.app.service.CargarArchivoService;
 import lombok.RequiredArgsConstructor;

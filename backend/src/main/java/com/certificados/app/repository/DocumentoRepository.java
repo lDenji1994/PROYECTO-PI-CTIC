@@ -1,10 +1,11 @@
-package com.certificados.app.model.repository;
+package com.certificados.app.repository;
 
-import com.certificados.app.model.Documento;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import com.certificados.app.model.Documento;
 
 @Repository
 public interface DocumentoRepository extends JpaRepository<Documento, Long>{

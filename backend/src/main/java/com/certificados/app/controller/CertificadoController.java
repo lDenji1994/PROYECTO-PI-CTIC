@@ -1,5 +1,6 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.ApiResponse;
 import com.certificados.app.dto.CertificadoDTO;
 import com.certificados.app.dto.HistorialEstadoCertificadoDTO;
 import com.certificados.app.model.EstadoCertificado;
@@ -7,6 +8,7 @@ import com.certificados.app.service.CertificadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,9 +46,14 @@ public class CertificadoController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public CertificadoDTO solicitar(@Valid @RequestBody CertificadoDTO dto) {
-        return certificadoService.solicitar(dto);
+    public ResponseEntity<ApiResponse<CertificadoDTO>> solicitar(@Valid @RequestBody CertificadoDTO dto) {
+        CertificadoDTO creado = certificadoService.solicitar(dto);
+        ApiResponse<CertificadoDTO> response = new ApiResponse<>(
+                true,
+                "Certificado solicitado exitosamente",
+            creado
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PatchMapping("/{id}/emitir")
