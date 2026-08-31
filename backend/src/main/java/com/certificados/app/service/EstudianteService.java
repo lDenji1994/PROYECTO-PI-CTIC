@@ -5,7 +5,6 @@ import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Estudiante;
 import com.certificados.app.repository.EstudianteRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,11 +12,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class EstudianteService {
 
     private final EstudianteRepository estudianteRepository;
+
+    public EstudianteService(EstudianteRepository estudianteRepository) {
+        this.estudianteRepository = estudianteRepository;
+    }
 
     public List<EstudianteDTO> listarTodos() {
         return estudianteRepository.findAll().stream()

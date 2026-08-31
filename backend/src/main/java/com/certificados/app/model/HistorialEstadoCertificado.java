@@ -1,9 +1,6 @@
 package com.certificados.app.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -15,9 +12,6 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "historial_estados_certificado")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class HistorialEstadoCertificado {
 
     @Id
@@ -38,4 +32,55 @@ public class HistorialEstadoCertificado {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaCambio = LocalDateTime.now();
+
+    public HistorialEstadoCertificado() {
+    }
+
+    public HistorialEstadoCertificado(Long id, Certificado certificado, EstadoCertificado estadoAnterior, EstadoCertificado estadoNuevo, LocalDateTime fechaCambio) {
+        this.id = id;
+        this.certificado = certificado;
+        this.estadoAnterior = estadoAnterior;
+        this.estadoNuevo = estadoNuevo;
+        this.fechaCambio = fechaCambio;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Certificado getCertificado() {
+        return certificado;
+    }
+
+    public void setCertificado(Certificado certificado) {
+        this.certificado = certificado;
+    }
+
+    public EstadoCertificado getEstadoAnterior() {
+        return estadoAnterior;
+    }
+
+    public void setEstadoAnterior(EstadoCertificado estadoAnterior) {
+        this.estadoAnterior = estadoAnterior;
+    }
+
+    public EstadoCertificado getEstadoNuevo() {
+        return estadoNuevo;
+    }
+
+    public void setEstadoNuevo(EstadoCertificado estadoNuevo) {
+        this.estadoNuevo = estadoNuevo;
+    }
+
+    public LocalDateTime getFechaCambio() {
+        return fechaCambio;
+    }
+
+    public void setFechaCambio(LocalDateTime fechaCambio) {
+        this.fechaCambio = fechaCambio;
+    }
 }

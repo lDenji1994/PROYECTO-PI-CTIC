@@ -3,10 +3,6 @@ package com.certificados.app.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,10 +10,6 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "estudiantes")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Estudiante {
 
     @Id
@@ -45,6 +37,75 @@ public class Estudiante {
 
     @OneToMany(mappedBy = "estudiante", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Certificado> certificados = new ArrayList<>();
+
+    public Estudiante() {
+    }
+
+    public Estudiante(Long id, String codigoEstudiantil, String nombres, String apellidos, String email, String programaAcademico, List<Certificado> certificados) {
+        this.id = id;
+        this.codigoEstudiantil = codigoEstudiantil;
+        this.nombres = nombres;
+        this.apellidos = apellidos;
+        this.email = email;
+        this.programaAcademico = programaAcademico;
+        this.certificados = certificados;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCodigoEstudiantil() {
+        return codigoEstudiantil;
+    }
+
+    public void setCodigoEstudiantil(String codigoEstudiantil) {
+        this.codigoEstudiantil = codigoEstudiantil;
+    }
+
+    public String getNombres() {
+        return nombres;
+    }
+
+    public void setNombres(String nombres) {
+        this.nombres = nombres;
+    }
+
+    public String getApellidos() {
+        return apellidos;
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellidos = apellidos;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getProgramaAcademico() {
+        return programaAcademico;
+    }
+
+    public void setProgramaAcademico(String programaAcademico) {
+        this.programaAcademico = programaAcademico;
+    }
+
+    public List<Certificado> getCertificados() {
+        return certificados;
+    }
+
+    public void setCertificados(List<Certificado> certificados) {
+        this.certificados = certificados;
+    }
 
     @Override
     public boolean equals(Object o) {

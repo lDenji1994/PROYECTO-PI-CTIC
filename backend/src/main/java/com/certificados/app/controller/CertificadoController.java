@@ -15,11 +15,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/certificados")
-@RequiredArgsConstructor
 public class CertificadoController {
 
     private final CertificadoService certificadoService;
 
+    public CertificadoController(CertificadoService certificadoService) {
+        this.certificadoService = certificadoService;
+    }
     @GetMapping
     public List<CertificadoDTO> listar() {
         return certificadoService.listarTodos();

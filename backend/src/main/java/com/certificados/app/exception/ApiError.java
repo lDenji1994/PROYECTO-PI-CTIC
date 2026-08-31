@@ -1,17 +1,53 @@
 package com.certificados.app.exception;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ApiError {
+
     private String timestamp;
     private int status;
     private String error;
-    private List<String> details;
+    private List<String> messages;
+
+    public ApiError() {
+    }
+
+    public ApiError(String timestamp, int status, String error, List<String> messages) {
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
+        this.messages = messages;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
+
+    public List<String> getMessages() {
+        return messages;
+    }
+
+    public void setMessages(List<String> messages) {
+        this.messages = messages;
+    }
 }

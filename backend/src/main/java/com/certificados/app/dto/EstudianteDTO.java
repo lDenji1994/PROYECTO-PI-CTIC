@@ -2,13 +2,7 @@ package com.certificados.app.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class EstudianteDTO {
     private Long id;
 
@@ -25,4 +19,64 @@ public class EstudianteDTO {
     private String email;
 
     private String programaAcademico;
+
+    public EstudianteDTO() {
+    }
+
+    public EstudianteDTO(Long id, String codigoEstudiantil, String nombres, String apellidos, String email, String programaAcademico) {
+        this.id = id;
+        this.codigoEstudiantil = codigoEstudiantil;
+        this.nombres = nombres;
+        this.apellidos = apellidos;
+        this.email = email;
+        this.programaAcademico = programaAcademico;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCodigoEstudiantil() {
+        return codigoEstudiantil;
+    }
+
+    public void setCodigoEstudiantil(String codigoEstudiantil) {
+        this.codigoEstudiantil = codigoEstudiantil;
+    }
+
+    public String getNombres() {
+        return nombres;
+    }
+
+    public void setNombres(String nombres) {
+        this.nombres = nombres;
+    }
+
+    public String getApellidos() {
+        return apellidos;
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellidos = apellidos;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getProgramaAcademico() {
+        return programaAcademico;
+    }
+
+    public void setProgramaAcademico(String programaAcademico) {
+        this.programaAcademico = programaAcademico;
+    }
 }

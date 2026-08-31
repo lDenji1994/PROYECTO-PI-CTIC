@@ -25,4 +25,52 @@ public class SolicitudSIGAADTO {
     private String estado;
 
     private String fechaRecepcion;
+
+    public String getSolicitudId() {
+        return solicitudId;
+    }
+
+    public void setSolicitudId(String solicitudId) {
+        this.solicitudId = solicitudId;
+    }
+
+    public String getCodigoEstudiantil() {
+        return codigoEstudiantil;
+    }
+
+    public void setCodigoEstudiantil(String codigoEstudiantil) {
+        this.codigoEstudiantil = codigoEstudiantil;
+    }
+
+    public String getTipoCertificado() {
+        return tipoCertificado;
+    }
+
+    public void setTipoCertificado(String tipoCertificado) {
+        this.tipoCertificado = tipoCertificado;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getFechaRecepcion() {
+        return fechaRecepcion;
+    }
+
+    public void setFechaRecepcion(String fechaRecepcion) {
+        this.fechaRecepcion = fechaRecepcion;
+    }
 }

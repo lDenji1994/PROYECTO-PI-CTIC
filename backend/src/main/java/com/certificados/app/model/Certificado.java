@@ -3,10 +3,6 @@ package com.certificados.app.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,10 +10,6 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "certificados")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class Certificado {
 
     @Id
@@ -51,6 +43,93 @@ public class Certificado {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime creadoEn = LocalDateTime.now();
+
+    public Certificado() {
+    }
+
+    public Certificado(Long id, String codigoVerificacion, TipoCertificado tipo, EstadoCertificado estado, LocalDate fechaSolicitud, LocalDate fechaEmision, String observaciones, Estudiante estudiante, LocalDateTime creadoEn) {
+        this.id = id;
+        this.codigoVerificacion = codigoVerificacion;
+        this.tipo = tipo;
+        this.estado = estado;
+        this.fechaSolicitud = fechaSolicitud;
+        this.fechaEmision = fechaEmision;
+        this.observaciones = observaciones;
+        this.estudiante = estudiante;
+        this.creadoEn = creadoEn;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCodigoVerificacion() {
+        return codigoVerificacion;
+    }
+
+    public void setCodigoVerificacion(String codigoVerificacion) {
+        this.codigoVerificacion = codigoVerificacion;
+    }
+
+    public TipoCertificado getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoCertificado tipo) {
+        this.tipo = tipo;
+    }
+
+    public EstadoCertificado getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoCertificado estado) {
+        this.estado = estado;
+    }
+
+    public LocalDate getFechaSolicitud() {
+        return fechaSolicitud;
+    }
+
+    public void setFechaSolicitud(LocalDate fechaSolicitud) {
+        this.fechaSolicitud = fechaSolicitud;
+    }
+
+    public LocalDate getFechaEmision() {
+        return fechaEmision;
+    }
+
+    public void setFechaEmision(LocalDate fechaEmision) {
+        this.fechaEmision = fechaEmision;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
+
+    public LocalDateTime getCreadoEn() {
+        return creadoEn;
+    }
+
+    public void setCreadoEn(LocalDateTime creadoEn) {
+        this.creadoEn = creadoEn;
+    }
 
     @Override
     public boolean equals(Object o) {

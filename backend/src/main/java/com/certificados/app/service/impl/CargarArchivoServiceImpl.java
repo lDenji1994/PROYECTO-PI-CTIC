@@ -6,7 +6,6 @@ import com.certificados.app.model.Documento;
 import com.certificados.app.repository.DocumentoRepository;
 import com.certificados.app.service.AlmacenamientoService;
 import com.certificados.app.service.CargarArchivoService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,18 +14,21 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class CargarArchivoServiceImpl implements CargarArchivoService {
 
     private final AlmacenamientoService almacenamientoService;
     private final DocumentoRepository documentoRepository;
 
-    private static final long LIMITE_TAMANO_BYTES = 10 * 1024 * 1024; // 10 MB
+    private static final long LIMITE_TAMANO_BYTES = 10 * 1024 * 1024;
+
+    public CargarArchivoServiceImpl(AlmacenamientoService almacenamientoService, DocumentoRepository documentoRepository) {
+        this.almacenamientoService = almacenamientoService;
+        this.documentoRepository = documentoRepository;
+    }
 
     @Override
     @Transactional
     public CargaArchivoResponseDTO cargarArchivo(MultipartFile archivo, String tipoDocumento) {
-
         if (archivo == null || archivo.isEmpty()) {
             throw new AlmacenamientoException("No se puede cargar un archivo vacío.");
         }
@@ -45,24 +47,25 @@ public class CargarArchivoServiceImpl implements CargarArchivoService {
 
         String nombreGuardado = almacenamientoService.guardar(archivo);
 
-        Documento documento = Documento.builder()
-                .id(UUID.randomUUID().toString())
-                .nombreOriginal(nombreOriginal)
-                .rutaAlmacenamiento("uploads/" + nombreGuardado)
-                .tipoDocumento(tipoDocumento.toUpperCase())
-                .tamanoBytes(archivo.getSize())
-                .fechaCarga(LocalDateTime.now())
-                .build();
+        Documento documento = new Documento(
+                UUID.randomUUID().toString(),
+                nombreOriginal,
+                "uploads/" + nombreGuardado,
+                tipoDocumento.toUpperCase(),
+                archivo.getSize(),
+                LocalDateTime.now()
+        );
 
         Documento documentoGuardado = documentoRepository.save(documento);
 
-        return CargaArchivoResponseDTO.builder()
-                .id(documentoGuardado.getId())
-                .nombreOriginal(documentoGuardado.getNombreOriginal())
-                .tipoDocumento(documentoGuardado.getTipoDocumento())
-                .tamanoBytes(documentoGuardado.getTamanoBytes())
-                .mensaje("Archivo PDF cargado y registrado exitosamente.")
-                .fechaCarga(documentoGuardado.getFechaCarga())
-                .build();
+        CargaArchivoResponseDTO response = new CargaArchivoResponseDTO();
+        response.setId(documentoGuardado.getId());
+        response.setNombreOriginal(documentoGuardado.getNombreOriginal());
+        response.setTipoDocumento(documentoGuardado.getTipoDocumento());
+        response.setTamanoBytes(documentoGuardado.getTamanoBytes());
+        response.setMensaje("Archivo PDF cargado y registrado exitosamente.");
+        response.setFechaCarga(documentoGuardado.getFechaCarga());
+
+        return response;
     }
 }

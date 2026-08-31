@@ -11,7 +11,6 @@ import com.certificados.app.model.HistorialEstadoCertificado;
 import com.certificados.app.repository.CertificadoRepository;
 import com.certificados.app.repository.EstudianteRepository;
 import com.certificados.app.repository.HistorialEstadoCertificadoRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +20,20 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class CertificadoService {
 
     private final CertificadoRepository certificadoRepository;
     private final EstudianteRepository estudianteRepository;
     private final HistorialEstadoCertificadoRepository historialRepository;
+
+    public CertificadoService(CertificadoRepository certificadoRepository,
+                              EstudianteRepository estudianteRepository,
+                              HistorialEstadoCertificadoRepository historialRepository) {
+        this.certificadoRepository = certificadoRepository;
+        this.estudianteRepository = estudianteRepository;
+        this.historialRepository = historialRepository;
+    }
 
     public List<CertificadoDTO> listarTodos() {
         return certificadoRepository.findAll().stream()
@@ -36,9 +42,9 @@ public class CertificadoService {
     }
 
     public List<CertificadoDTO> listarPorEstado(EstadoCertificado estado) {
-    return certificadoRepository.findByEstado(estado).stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+        return certificadoRepository.findByEstado(estado).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public List<CertificadoDTO> listarPorEstudiante(Long estudianteId) {
