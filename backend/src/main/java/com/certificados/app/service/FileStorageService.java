@@ -1,11 +1,14 @@
 package com.certificados.app.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,6 +78,21 @@ public class FileStorageService {
             throw new RuntimeException(
                     "No se pudo almacenar el archivo", e
             );
+        }
+    }
+
+    public Resource cargarComoRecurso(String nombreArchivo) {
+        try {
+            Path archivoPath = this.storageLocation.resolve(nombreArchivo).normalize();
+            Resource recurso = new UrlResource(archivoPath.toUri());
+
+            if (recurso.exists() || recurso.isReadable()) {
+                return recurso;
+            } else {
+                throw new RuntimeException("No se pudo leer el archivo: " + nombreArchivo);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error al resolver la ruta del archivo: " + nombreArchivo, e);
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.certificados.app.controller;
 
 import com.certificados.app.service.FileStorageService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,5 +35,15 @@ public class FileStorageController {
         respuesta.put("mensaje", "Archivo asociado correctamente al documento");
 
         return ResponseEntity.ok(respuesta);
+    }
+
+    @GetMapping("/descargar/{nombreArchivo}")
+    public ResponseEntity<Resource> consultarArchivoOriginal(@PathVariable String nombreArchivo) {
+        Resource recurso = fileStorageService.cargarComoRecurso(nombreArchivo);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + recurso.getFilename() + "\"")
+                .body(recurso);
     }
 }

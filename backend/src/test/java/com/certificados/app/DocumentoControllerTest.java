@@ -6,9 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,6 +36,22 @@ class DocumentoControllerTest {
         mockMvc.perform(multipart("/api/archivos/asociar")
                         .file(archivoModalidad)
                         .param("documentoId", "100"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deberiaConsultarArchivoOriginal() throws Exception {
+        String nombreArchivo = "documento_original.pdf";
+        ByteArrayResource recursoMock = new ByteArrayResource("Contenido del archivo".getBytes()) {
+            @Override
+            public String getFilename() {
+                return nombreArchivo;
+            }
+        };
+
+        given(fileStorageService.cargarComoRecurso(nombreArchivo)).willReturn(recursoMock);
+
+        mockMvc.perform(get("/api/archivos/descargar/" + nombreArchivo))
                 .andExpect(status().isOk());
     }
 }
