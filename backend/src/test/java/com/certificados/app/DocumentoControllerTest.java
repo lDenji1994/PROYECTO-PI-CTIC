@@ -22,27 +22,17 @@ class DocumentoControllerTest {
     private FileStorageService fileStorageService;
 
     @Test
-    void deberiaCargarSyllabusYCartaDescriptiva() throws Exception {
-        MockMultipartFile archivoSyllabus = new MockMultipartFile(
+    void deberiaAsociarArchivoADocumento() throws Exception {
+        MockMultipartFile archivoModalidad = new MockMultipartFile(
                 "archivo",
-                "syllabus_sistemas.pdf",
+                "documento_original.pdf",
                 "application/pdf",
-                "Contenido del syllabus".getBytes()
+                "Contenido del documento original".getBytes()
         );
 
-        MockMultipartFile archivoCarta = new MockMultipartFile(
-                "archivo",
-                "carta_descriptiva.pdf",
-                "application/pdf",
-                "Contenido de la carta".getBytes()
-        );
-
-        mockMvc.perform(multipart("/api/archivos/cargar")
-                        .file(archivoSyllabus))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(multipart("/api/archivos/cargar")
-                        .file(archivoCarta))
+        mockMvc.perform(multipart("/api/archivos/asociar")
+                        .file(archivoModalidad)
+                        .param("documentoId", "100"))
                 .andExpect(status().isOk());
     }
 }

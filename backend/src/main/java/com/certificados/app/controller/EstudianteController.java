@@ -12,11 +12,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/estudiantes")
-@RequiredArgsConstructor
+
 public class EstudianteController {
 
     private final EstudianteService estudianteService;
 
+    public EstudianteController(EstudianteService estudianteService) {
+        this.estudianteService = estudianteService;
+    }
+    
     @GetMapping
     public List<EstudianteDTO> listar() {
         return estudianteService.listarTodos();

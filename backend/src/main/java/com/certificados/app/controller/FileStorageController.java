@@ -11,21 +11,26 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/archivos")
-@RequiredArgsConstructor
 public class FileStorageController {
 
     private final FileStorageService fileStorageService;
 
-    @PostMapping("/cargar")
-    public ResponseEntity<Map<String, String>> cargarArchivo(
+    public FileStorageController(FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
+    }
+
+    @PostMapping("/asociar")
+    public ResponseEntity<Map<String, Object>> asociarArchivo(
+            @RequestParam("documentoId") Long documentoId,
             @RequestParam("archivo") MultipartFile archivo) {
 
         String ruta = fileStorageService.almacenarArchivo(archivo);
 
-        Map<String, String> respuesta = new HashMap<>();
-
-        respuesta.put("mensaje", "Archivo almacenado correctamente");
+        Map<String, Object> respuesta = new HashMap<>();
+        respuesta.put("documentoId", documentoId);
+        respuesta.put("nombreOriginal", archivo.getOriginalFilename());
         respuesta.put("ruta", ruta);
+        respuesta.put("mensaje", "Archivo asociado correctamente al documento");
 
         return ResponseEntity.ok(respuesta);
     }
