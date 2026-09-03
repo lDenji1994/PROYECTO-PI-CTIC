@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import com.certificados.app.model.Documento;
 
 @Repository
-public interface DocumentoRepository extends JpaRepository<Documento, Long>{
-   Optional<Documento> findByRutaAlmacenamiento(String rutaAlmacenamiento);
+public interface DocumentoRepository extends JpaRepository<Documento, String> {
+    Optional<Documento> findByRutaAlmacenamiento(String rutaAlmacenamiento);
 }
