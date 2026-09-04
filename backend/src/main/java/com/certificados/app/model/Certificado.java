@@ -1,8 +1,8 @@
 package com.certificados.app.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,7 +19,6 @@ public class Certificado {
     @Column(unique = true, nullable = false, length = 30)
     private String codigoVerificacion;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private TipoCertificado tipo;
@@ -28,9 +27,11 @@ public class Certificado {
     @Column(nullable = false, length = 20)
     private EstadoCertificado estado = EstadoCertificado.PENDIENTE;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @Column(nullable = false)
     private LocalDate fechaSolicitud = LocalDate.now();
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate fechaEmision;
 
     @Column(length = 500)
@@ -38,7 +39,7 @@ public class Certificado {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estudiante_id", nullable = false)
-    @JsonBackReference
+    @JsonIgnoreProperties({"certificados", "hibernateLazyInitializer", "handler"})
     private Estudiante estudiante;
 
     @Column(nullable = false, updatable = false)

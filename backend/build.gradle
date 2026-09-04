@@ -24,6 +24,8 @@ dependencies {
 
     runtimeOnly 'com.mysql:mysql-connector-j'
 
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
