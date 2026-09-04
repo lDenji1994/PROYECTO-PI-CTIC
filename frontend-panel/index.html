@@ -17,6 +17,129 @@
 
 
     <!-- =========================================================
+         PANTALLA DE INICIO DE SESIÓN (US-26.01)
+
+         Esta vista se muestra primero. Al enviar el formulario
+         con datos válidos, se oculta esta pantalla y aparece
+         el panel (app-container) que ya existía.
+
+         No hay backend de autenticación: la validación es
+         solamente visual, igual que el resto del prototipo.
+         ========================================================= -->
+
+    <div
+        id="pantalla-login"
+        class="login-page">
+
+        <div class="login-card">
+
+
+            <!-- LOGOTIPO -->
+
+            <div class="login-logo">
+
+                <div class="logo-box">
+                    <span class="logo-upb">UPB</span>
+                </div>
+
+                <h1>
+                    Gestión de Información Académica
+                </h1>
+
+                <p>
+                    Ingresa tus credenciales para continuar
+                </p>
+
+            </div>
+
+
+            <!-- FORMULARIO -->
+
+            <form id="form-login">
+
+                <div class="form-group">
+
+                    <label>
+                        Usuario *
+                    </label>
+
+                    <input
+                        id="login-usuario"
+                        type="text"
+                        placeholder="usuario@upb.edu.co"
+                        autocomplete="username"
+                        required>
+
+                    <span
+                        class="input-error-message"
+                        id="login-usuario-error">
+                    </span>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Contraseña *
+                    </label>
+
+                    <div class="password-field">
+
+                        <input
+                            id="login-password"
+                            type="password"
+                            placeholder="Contraseña"
+                            autocomplete="current-password"
+                            required>
+
+                        <button
+                            type="button"
+                            class="toggle-password"
+                            id="btn-toggle-password"
+                            onclick="alternarVisibilidadPassword()">
+
+                            Mostrar
+
+                        </button>
+
+                    </div>
+
+                    <span
+                        class="input-error-message"
+                        id="login-password-error">
+                    </span>
+
+                </div>
+
+
+                <div class="login-actions">
+
+                    <button
+                        class="primary-button login-submit"
+                        type="submit">
+
+                        Iniciar sesión
+
+                    </button>
+
+                </div>
+
+
+                <p
+                    class="login-note"
+                    id="login-note">
+                </p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================================================
          ESTRUCTURA GENERAL
          ========================================================= -->
 
