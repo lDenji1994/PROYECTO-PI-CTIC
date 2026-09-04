@@ -1,6 +1,4 @@
-
-
-        /* =========================================================
+/* =========================================================
            FUNCIÓN PRINCIPAL DE NAVEGACIÓN
            
            Esta función permite cambiar entre:
@@ -986,5 +984,205 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Precargar estudiantes en memoria para el select de certificados */
     cargarEstudiantes();
+
+});
+
+
+
+/* =========================================================
+   LOGIN (US-26.01)
+
+   Todo lo de aquí en adelante es nuevo: controla la
+   pantalla de inicio de sesión. Nada de lo anterior en
+   este archivo fue modificado.
+   ========================================================= */
+
+/* =====================================================
+   MOSTRAR / OCULTAR CONTRASEÑA
+   ===================================================== */
+
+function alternarVisibilidadPassword() {
+
+    const campoPassword =
+        document.getElementById("login-password");
+
+    const botonAlternar =
+        document.getElementById("btn-toggle-password");
+
+
+    if (campoPassword.type === "password") {
+
+        campoPassword.type = "text";
+        botonAlternar.textContent = "Ocultar";
+
+    }
+
+    else {
+
+        campoPassword.type = "password";
+        botonAlternar.textContent = "Mostrar";
+
+    }
+
+}
+
+
+
+/* =====================================================
+   VALIDAR Y ENVIAR EL FORMULARIO DE LOGIN
+   ===================================================== */
+
+function iniciarSesion(evento) {
+
+    evento.preventDefault();
+
+
+    const campoUsuario =
+        document.getElementById("login-usuario");
+
+    const campoPassword =
+        document.getElementById("login-password");
+
+    const errorUsuario =
+        document.getElementById("login-usuario-error");
+
+    const errorPassword =
+        document.getElementById("login-password-error");
+
+    const nota =
+        document.getElementById("login-note");
+
+
+    /* Limpiar estado previo */
+
+    campoUsuario.classList.remove("input-error");
+    campoPassword.classList.remove("input-error");
+
+    errorUsuario.textContent = "";
+    errorPassword.textContent = "";
+
+    nota.textContent = "";
+    nota.classList.remove(
+        "login-note-error",
+        "login-note-success"
+    );
+
+
+    const usuario = campoUsuario.value.trim();
+    const password = campoPassword.value;
+
+    let formularioValido = true;
+
+
+    /* Validar usuario */
+
+    if (usuario === "") {
+
+        campoUsuario.classList.add("input-error");
+        errorUsuario.textContent =
+            "Ingresa tu usuario o correo institucional";
+
+        formularioValido = false;
+
+    }
+
+
+    /* Validar contraseña */
+
+    if (password.length < 6) {
+
+        campoPassword.classList.add("input-error");
+        errorPassword.textContent =
+            "La contraseña debe tener al menos 6 caracteres";
+
+        formularioValido = false;
+
+    }
+
+
+    /* Si algo falló, avisar y detener aquí */
+
+    if (!formularioValido) {
+
+        nota.textContent =
+            "Revisa los campos marcados en rojo.";
+
+        nota.classList.add("login-note-error");
+
+        return false;
+
+    }
+
+
+    /* Todo válido: mostrar mensaje y pasar al panel */
+
+    nota.textContent = "Sesión iniciada correctamente.";
+    nota.classList.add("login-note-success");
+
+    mostrarPanelPrincipal();
+
+    return false;
+
+}
+
+
+
+/* =====================================================
+   OCULTAR EL LOGIN Y MOSTRAR EL PANEL PRINCIPAL
+
+   No modifica el HTML del app-container, solo cambia
+   su visibilidad por JavaScript.
+   ===================================================== */
+
+function mostrarPanelPrincipal() {
+
+    const pantallaLogin =
+        document.getElementById("pantalla-login");
+
+    const panelPrincipal =
+        document.querySelector(".app-container");
+
+
+    setTimeout(function() {
+
+        if (pantallaLogin) {
+            pantallaLogin.classList.add("login-oculto");
+        }
+
+        if (panelPrincipal) {
+            panelPrincipal.style.display = "flex";
+        }
+
+    }, 500);
+
+}
+
+
+
+/* =====================================================
+   INICIALIZACIÓN DEL LOGIN
+
+   - El panel principal empieza oculto.
+   - El formulario de login se conecta aquí, en un
+     "DOMContentLoaded" aparte para no tocar el que ya
+     existía arriba en este archivo.
+   ===================================================== */
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    const panelPrincipal =
+        document.querySelector(".app-container");
+
+    if (panelPrincipal) {
+        panelPrincipal.style.display = "none";
+    }
+
+
+    const formLogin =
+        document.getElementById("form-login");
+
+    if (formLogin) {
+        formLogin.addEventListener("submit", iniciarSesion);
+    }
 
 });
