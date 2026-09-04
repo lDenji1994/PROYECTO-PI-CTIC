@@ -1847,6 +1847,77 @@
 
 
         /* =========================================================
+           PESTAÑAS DEL MÓDULO "PROGRAMAS Y PLANES" (nuevo)
+           (US-07.01, US-08.01, US-09.01, US-10.02, US-11.01)
+           ========================================================= */
+
+        .tabs-bar {
+
+            display: flex;
+
+            gap: 8px;
+
+            margin-bottom: 22px;
+
+            border-bottom: 1px solid var(--gris-borde);
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .tab-button {
+
+            border: none;
+
+            background: transparent;
+
+            padding: 12px 18px;
+
+            font-weight: 600;
+
+            font-size: 13px;
+
+            color: var(--gris-texto);
+
+            border-bottom: 3px solid transparent;
+
+            transition: .2s;
+
+        }
+
+
+        .tab-button:hover {
+
+            color: var(--rojo-upb);
+
+        }
+
+
+        .tab-button.active {
+
+            color: var(--rojo-upb);
+
+            border-bottom-color: var(--rojo-upb);
+
+        }
+
+
+        .tab-content {
+
+            display: none;
+
+        }
+
+
+        .tab-content.active-tab {
+
+            display: block;
+
+        }
+
+
+        /* =========================================================
            RESPONSIVE
            ========================================================= */
 
