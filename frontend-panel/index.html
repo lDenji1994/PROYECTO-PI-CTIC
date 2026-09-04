@@ -13,7 +13,6 @@
 </head>
 
 <body>
-<body>
 
 
     <!-- =========================================================
@@ -277,6 +276,23 @@
                     </span>
 
                     Estudiantes
+
+                </button>
+
+
+                <!-- PROGRAMAS Y PLANES (nuevo: US-07.01, US-08.01,
+                     US-09.01, US-10.02, US-11.01) -->
+
+                <button
+                    class="menu-item"
+                    id="btn-academico"
+                    onclick="mostrarVista('academico')">
+
+                    <span class="menu-icon">
+                        ▥
+                    </span>
+
+                    Programas y Planes
 
                 </button>
 
@@ -2291,6 +2307,246 @@
 
             <!-- =================================================
                  =================================================
+                 VISTA PROGRAMAS Y PLANES (nuevo)
+
+                 Cubre: US-07.01 (asignaturas), US-08.01 (programas),
+                 US-09.01 (planes), US-10.02 (interfaz de asociación)
+                 y US-11.01 (asociar documentos).
+
+                 Es visual/mock, igual que Carga y Cursos, porque
+                 el backend todavía no tiene entidades para
+                 asignaturas, programas, planes ni asociaciones.
+                 =================================================
+                 ================================================= -->
+
+            <section
+                id="vista-academico"
+                class="page-view">
+
+                <div class="page-intro">
+                    <span class="section-label">MÓDULO 05</span>
+                    <h2>Programas y Planes</h2>
+                    <p>
+                        Diseña y registra la estructura académica:
+                        asignaturas, programas, planes de estudio y su
+                        asociación con documentos.
+                    </p>
+                </div>
+
+                <div class="tabs-bar">
+                    <button class="tab-button active" id="tab-asignaturas" onclick="mostrarTab('asignaturas')">Asignaturas</button>
+                    <button class="tab-button" id="tab-programas" onclick="mostrarTab('programas')">Programas</button>
+                    <button class="tab-button" id="tab-planes" onclick="mostrarTab('planes')">Planes de estudio</button>
+                    <button class="tab-button" id="tab-asociacion" onclick="mostrarTab('asociacion')">Asociar documentos</button>
+                </div>
+
+                <!-- TAB ASIGNATURAS (US-07.01) -->
+                <div id="contenido-asignaturas" class="tab-content active-tab">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Registrar asignatura</h3>
+                                <p>Define una nueva asignatura dentro de un programa académico.</p>
+                            </div>
+                            <span class="required-label">* Campo requerido</span>
+                        </div>
+
+                        <form id="form-asignatura">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Código de asignatura *</label>
+                                    <input id="asig-codigo" type="text" placeholder="Ej. SIS00030" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre de la asignatura *</label>
+                                    <input id="asig-nombre" type="text" placeholder="Nombre de la asignatura" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Programa académico *</label>
+                                    <select id="asig-programa" required>
+                                        <option value="" disabled selected>Seleccione un programa</option>
+                                        <option>Ingeniería de Sistemas</option>
+                                        <option>Ingeniería Electrónica</option>
+                                        <option>Administración de Empresas</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Créditos *</label>
+                                    <input id="asig-creditos" type="number" min="1" max="10" placeholder="Ej. 3" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="secondary-button" type="button">Cancelar</button>
+                                <button class="primary-button" type="submit">Guardar asignatura</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAB PROGRAMAS (US-08.01) -->
+                <div id="contenido-programas" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Registrar programa académico</h3>
+                                <p>Crea un nuevo programa dentro de la institución.</p>
+                            </div>
+                            <span class="required-label">* Campo requerido</span>
+                        </div>
+
+                        <form id="form-programa">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Código del programa *</label>
+                                    <input id="prog-codigo" type="text" placeholder="Ej. PRG-001" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre del programa *</label>
+                                    <input id="prog-nombre" type="text" placeholder="Ej. Ingeniería de Sistemas" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Facultad *</label>
+                                    <input id="prog-facultad" type="text" placeholder="Ej. Facultad de Ingeniería" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Duración (semestres)</label>
+                                    <input id="prog-duracion" type="number" min="1" max="14" placeholder="Ej. 10">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="secondary-button" type="button">Cancelar</button>
+                                <button class="primary-button" type="submit">Guardar programa</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAB PLANES (US-09.01) -->
+                <div id="contenido-planes" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Registrar plan de estudios</h3>
+                                <p>Define un plan de estudios asociado a un programa académico.</p>
+                            </div>
+                            <span class="required-label">* Campo requerido</span>
+                        </div>
+
+                        <form id="form-plan">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Programa académico *</label>
+                                    <select id="plan-programa" required>
+                                        <option value="" disabled selected>Seleccione un programa</option>
+                                        <option>Ingeniería de Sistemas</option>
+                                        <option>Ingeniería Electrónica</option>
+                                        <option>Administración de Empresas</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Versión del plan *</label>
+                                    <input id="plan-version" type="text" placeholder="Ej. 2026-1" required>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Descripción</label>
+                                    <input id="plan-descripcion" type="text" placeholder="Descripción breve del plan">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="secondary-button" type="button">Cancelar</button>
+                                <button class="primary-button" type="submit">Guardar plan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- TAB ASOCIACIÓN DE DOCUMENTOS (US-10.02 / US-11.01) -->
+                <div id="contenido-asociacion" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Asociar documento a asignatura</h3>
+                                <p>Vincula un documento cargado previamente con una asignatura académica.</p>
+                            </div>
+                            <span class="required-label">* Campo requerido</span>
+                        </div>
+
+                        <form id="form-asociacion">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Documento *</label>
+                                    <select id="asoc-documento" required>
+                                        <option value="" disabled selected>Seleccione un documento</option>
+                                        <option>Syllabus — Programación de Computadores</option>
+                                        <option>Carta descriptiva — Bases de Datos</option>
+                                        <option>Contenido programático — Ingeniería de Software</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Asignatura *</label>
+                                    <select id="asoc-asignatura" required>
+                                        <option value="" disabled selected>Seleccione una asignatura</option>
+                                        <option>Programación de Computadores</option>
+                                        <option>Bases de Datos</option>
+                                        <option>Ingeniería de Software</option>
+                                    </select>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Observaciones</label>
+                                    <input id="asoc-observaciones" type="text" placeholder="Observaciones (opcional)">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button class="secondary-button" type="button">Cancelar</button>
+                                <button class="primary-button" type="submit">Asociar documento</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <div>
+                                <span class="section-label">ASOCIACIONES</span>
+                                <h3>Documentos asociados</h3>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Documento</th>
+                                        <th>Asignatura</th>
+                                        <th>Fecha de asociación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Syllabus — Programación de Computadores</td>
+                                        <td>Programación de Computadores</td>
+                                        <td>Hace 2 días</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Carta descriptiva — Bases de Datos</td>
+                                        <td>Bases de Datos</td>
+                                        <td>Hace 5 días</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+
+
+            <!-- =================================================
+                 =================================================
                  HISTORIAL
                  
                  ESTA SECCIÓN SE UTILIZA CUANDO SE HACE CLIC
@@ -2433,17 +2689,9 @@
 
     <!-- =========================================================
          JAVASCRIPT
-         
-         Todo el comportamiento visual de la página está aquí.
-         
-         NO hay:
-         - Base de datos
-         - API
-         - Backend
-         - Servidor
-         - Servicios externos
-         
-         Solo cambia visualmente entre las diferentes vistas.
+
+         Todo el comportamiento del panel (navegación, historial,
+         formularios y conexión con el backend) está en app.js.
          ========================================================= -->
 
 
