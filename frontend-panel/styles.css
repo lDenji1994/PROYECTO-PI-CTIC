@@ -1,5 +1,4 @@
-
-        /* =========================================================
+/* =========================================================
            VARIABLES DE COLORES
            
            Si quieres cambiar los colores principales del sistema,
@@ -2084,4 +2083,132 @@
 
         .login-note-success {
             color: var(--verde);
+        }
+
+
+        /* =========================================================
+           MEJORAS VISUALES DEL LOGIN (agregado)
+
+           Todo lo de aquí en adelante es nuevo. No se modificó
+           ninguna regla anterior; estas reglas usan los mismos
+           selectores para reforzar el estilo por encima de las
+           reglas base (cascada de CSS), y algunas clases nuevas
+           que no existían antes.
+           ========================================================= */
+
+        @keyframes loginApareceCard {
+
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        }
+
+
+        .login-page {
+
+            background:
+                linear-gradient(
+                    160deg,
+                    var(--rojo-upb) 0%,
+                    var(--rojo-oscuro) 38%,
+                    var(--gris-fondo) 38%
+                );
+
+        }
+
+
+        .login-card {
+
+            box-shadow:
+                0 20px 45px rgba(30, 10, 15, 0.18);
+
+            border-top:
+                4px solid var(--rojo-upb);
+
+            animation:
+                loginApareceCard 0.45s ease;
+
+        }
+
+
+        .login-logo .logo-box {
+
+            box-shadow:
+                0 8px 18px rgba(176, 24, 43, 0.35);
+
+        }
+
+
+        .login-card .form-group input {
+
+            transition:
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+
+        }
+
+
+        .login-card .form-group input:focus {
+
+            box-shadow:
+                0 0 0 3px var(--rojo-claro);
+
+        }
+
+
+        .login-submit {
+
+            transition:
+                transform 0.15s ease,
+                box-shadow 0.15s ease;
+
+        }
+
+
+        .login-submit:hover {
+
+            transform: translateY(-1px);
+
+            box-shadow:
+                0 10px 20px rgba(176, 24, 43, 0.25);
+
+        }
+
+
+        .toggle-password:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+        /* Usada por JavaScript para ocultar el login con
+           una pequeña transición, en vez de solo "display: none". */
+
+        .login-oculto {
+
+            animation:
+                loginDesaparece 0.35s ease forwards;
+
+        }
+
+
+        @keyframes loginDesaparece {
+
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+                display: none;
+            }
+
         }
