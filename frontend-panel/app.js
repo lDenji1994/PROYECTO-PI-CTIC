@@ -7,6 +7,8 @@
            carga
            cursos
            certificaciones
+           estudiantes
+           academico
            historial
            ========================================================= */
 
@@ -123,6 +125,13 @@
 
             }
 
+            else if (vista === "academico") {
+
+                titulo.textContent =
+                    "Programas y Planes";
+
+            }
+
 
             /* Cargar datos reales al entrar a un modulo conectado
                con el backend */
@@ -192,6 +201,48 @@
             boton.style.opacity = "0.6";
 
             boton.style.cursor = "default";
+
+        }
+
+
+
+        /* =========================================================
+           CAMBIO ENTRE PESTAÑAS (nuevo)
+
+           Se usa en el módulo "Programas y Planes" para alternar
+           entre Asignaturas / Programas / Planes / Asociar
+           documentos.
+           ========================================================= */
+
+        function mostrarTab(tab) {
+
+            const contenidos =
+                document.querySelectorAll(".tab-content");
+
+            contenidos.forEach(function (elemento) {
+                elemento.classList.remove("active-tab");
+            });
+
+            const botones =
+                document.querySelectorAll(".tab-button");
+
+            botones.forEach(function (boton) {
+                boton.classList.remove("active");
+            });
+
+            const contenidoSeleccionado =
+                document.getElementById("contenido-" + tab);
+
+            const botonSeleccionado =
+                document.getElementById("tab-" + tab);
+
+            if (contenidoSeleccionado) {
+                contenidoSeleccionado.classList.add("active-tab");
+            }
+
+            if (botonSeleccionado) {
+                botonSeleccionado.classList.add("active");
+            }
 
         }
 
@@ -543,9 +594,10 @@
    modulos "Estudiantes" y "Certificaciones" leen y escriben datos
    reales a traves de la API REST del backend, servida bajo /api.
 
-   Los modulos "Carga de informacion" y "Contenido de cursos"
-   siguen siendo visuales/mock, porque el backend actual no tiene
-   entidades para documentos academicos ni cursos.
+   Los modulos "Carga de informacion", "Contenido de cursos" y
+   "Programas y Planes" siguen siendo visuales/mock, porque el
+   backend actual no tiene entidades para documentos academicos,
+   cursos, asignaturas, programas, planes ni asociaciones.
    ===================================================================== */
 
 const API_BASE = '/api';
@@ -984,6 +1036,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Precargar estudiantes en memoria para el select de certificados */
     cargarEstudiantes();
+
+});
+
+
+
+/* =========================================================
+   MÓDULO "PROGRAMAS Y PLANES" (nuevo)
+
+   Cubre: US-07.01, US-08.01, US-09.01, US-10.02, US-11.01.
+
+   Como el backend todavia no tiene entidades para
+   asignaturas, programas, planes ni asociaciones, estos
+   formularios solo validan y muestran una confirmacion
+   visual, igual que el resto del prototipo de Carga y
+   Cursos.
+   ========================================================= */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const formulariosMock = [
+        'form-asignatura',
+        'form-programa',
+        'form-plan',
+        'form-asociacion'
+    ];
+
+    formulariosMock.forEach(function (idFormulario) {
+
+        const formulario =
+            document.getElementById(idFormulario);
+
+        if (formulario) {
+
+            formulario.addEventListener('submit', function (evento) {
+
+                evento.preventDefault();
+
+                alert(
+                    'Guardado correctamente (prototipo visual, ' +
+                    'aun sin conexion a backend).'
+                );
+
+                formulario.reset();
+
+            });
+
+        }
+
+    });
 
 });
 
