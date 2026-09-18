@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,13 +25,23 @@ public class DocumentoService {
         this.fileStorageService = fileStorageService;
     }
 
+    public List<Documento> listarTodos() {
+        return documentoRepository.findAll();
+    }
+
+    public List<Documento> buscarConFiltros(String tipoDocumento) {
+        if (tipoDocumento != null && !tipoDocumento.isBlank()) {
+            return documentoRepository.findByTipoDocumento(tipoDocumento);
+        }
+        return documentoRepository.findAll();
+    }
+
     public Documento registrarDocumento(MultipartFile archivo) {
         if (archivo == null || archivo.isEmpty()) {
             throw new IllegalArgumentException("El archivo no puede estar vacío");
         }
 
         String ruta = fileStorageService.almacenarArchivo(archivo);
-
         String id = UUID.randomUUID().toString();
 
         Documento documento = new Documento(

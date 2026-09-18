@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface DocumentoRepository extends JpaRepository<Documento, String> {
+public interface ArchivoAcademicoRepository extends JpaRepository<Documento, String> {
 
-    // Cambiado para alinearse con 'private String tipoDocumento' en Documento.java
+   
     List<Documento> findByTipoDocumento(String tipoDocumento);
 }

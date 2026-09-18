@@ -6,7 +6,6 @@ import com.certificados.app.dto.HistorialEstadoCertificadoDTO;
 import com.certificados.app.model.EstadoCertificado;
 import com.certificados.app.service.CertificadoService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

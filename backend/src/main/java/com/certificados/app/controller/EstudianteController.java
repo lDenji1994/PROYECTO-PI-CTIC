@@ -3,9 +3,7 @@ package com.certificados.app.controller;
 import com.certificados.app.dto.EstudianteDTO;
 import com.certificados.app.service.EstudianteService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
