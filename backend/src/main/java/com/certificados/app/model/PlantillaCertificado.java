@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_TiposCertificadosS",
+        name = "CertificadosCursosAcademicosUPB_PlantillasCertificadosS",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "t_nombre",
@@ -12,22 +12,27 @@ import jakarta.persistence.*;
                 )
         }
 )
-public class TipoCertificado {
+public class PlantillaCertificado {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "n_idTipoCertificado")
+    @Column(name = "n_idPlantillaCertificado")
     private Integer id;
 
     @Column(
             name = "t_nombre",
             nullable = false,
-            unique = true,
             length = 150
     )
     private String nombre;
 
-    public TipoCertificado() {
+    @Column(
+            name = "n_idTipoCertificado",
+            nullable = false
+    )
+    private Integer idTipoCertificado;
+
+    public PlantillaCertificado() {
     }
 
     public Integer getId() {
@@ -44,5 +49,13 @@ public class TipoCertificado {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public Integer getIdTipoCertificado() {
+        return idTipoCertificado;
+    }
+
+    public void setIdTipoCertificado(Integer idTipoCertificado) {
+        this.idTipoCertificado = idTipoCertificado;
     }
 }

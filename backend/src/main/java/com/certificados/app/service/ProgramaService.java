@@ -11,6 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio del módulo de Programas Académicos.
+ *
+ * Gestiona el registro y consulta de programas académicos.
+ * Los datos administrados corresponden directamente a ProgramasS
+ * de la base de datos.
+ */
 @Service
 @Transactional
 public class ProgramaService {
@@ -21,40 +28,71 @@ public class ProgramaService {
         this.programaRepository = programaRepository;
     }
 
+    /**
+     * Consulta todos los programas académicos registrados.
+     */
     public List<ProgramaDTO> listarTodos() {
-        return programaRepository.findAll().stream()
+        return programaRepository.findAll()
+                .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }
 
-    public ProgramaDTO buscarPorId(Long id) {
+    /**
+     * Consulta un programa académico por su identificador.
+     */
+    public ProgramaDTO buscarPorId(Integer id) {
         return toDTO(obtenerEntidad(id));
     }
 
+    /**
+     * Registra un nuevo programa académico.
+     *
+     * El código es opcional de acuerdo con la estructura de la BD.
+     * Si se proporciona, no puede repetirse.
+     */
     public ProgramaDTO crear(ProgramaDTO dto) {
-        if (programaRepository.existsByCodigo(dto.getCodigo())) {
-            throw new BusinessException("Ya existe un programa registrado con el código " + dto.getCodigo());
+
+        if (dto.getCodigo() != null
+                && programaRepository.existsByCodigo(dto.getCodigo())) {
+
+            throw new BusinessException(
+                    "Ya existe un programa registrado con el código "
+                            + dto.getCodigo()
+            );
         }
 
         Programa programa = new Programa();
-        programa.setNombre(dto.getNombre());
+
         programa.setCodigo(dto.getCodigo());
-        programa.setDescripcion(dto.getDescripcion());
+        programa.setNombre(dto.getNombre());
 
         return toDTO(programaRepository.save(programa));
     }
 
-    private Programa obtenerEntidad(Long id) {
+    /**
+     * Obtiene la entidad correspondiente al identificador indicado.
+     */
+    private Programa obtenerEntidad(Integer id) {
         return programaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Programa no encontrado con id " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Programa no encontrado con id " + id
+                        )
+                );
     }
 
-    private ProgramaDTO toDTO(Programa p) {
+    /**
+     * Convierte la entidad JPA a DTO.
+     */
+    private ProgramaDTO toDTO(Programa programa) {
+
         ProgramaDTO dto = new ProgramaDTO();
-        dto.setId(p.getId());
-        dto.setNombre(p.getNombre());
-        dto.setCodigo(p.getCodigo());
-        dto.setDescripcion(p.getDescripcion());
+
+        dto.setId(programa.getId());
+        dto.setCodigo(programa.getCodigo());
+        dto.setNombre(programa.getNombre());
+
         return dto;
     }
 }

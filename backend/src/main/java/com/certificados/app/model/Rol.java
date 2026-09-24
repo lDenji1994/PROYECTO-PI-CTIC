@@ -4,30 +4,36 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_TiposCertificadosS",
+        name = "CertificadosCursosAcademicosUPB_RolesS",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "t_nombre",
-                        columnNames = "t_nombre"
+                        name = "c_nombre",
+                        columnNames = "c_nombre"
                 )
         }
 )
-public class TipoCertificado {
+public class Rol {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "n_idTipoCertificado")
+    @Column(name = "n_idRol")
     private Integer id;
 
     @Column(
-            name = "t_nombre",
+            name = "c_nombre",
             nullable = false,
             unique = true,
-            length = 150
+            length = 50
     )
     private String nombre;
 
-    public TipoCertificado() {
+    @Column(
+            name = "t_descripcion",
+            length = 150
+    )
+    private String descripcion;
+
+    public Rol() {
     }
 
     public Integer getId() {
@@ -45,4 +51,13 @@ public class TipoCertificado {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
 }
+

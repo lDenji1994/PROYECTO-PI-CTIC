@@ -1,23 +1,24 @@
-package com.certificados.app.dto;
+package com.certificados.app.model;
 
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.*;
 
-/**
- * DTO utilizado para transferir información de programas académicos
- * entre el cliente y la API.
- *
- * Contiene únicamente los datos definidos para ProgramasS:
- * código y nombre del programa.
- */
-public class ProgramaDTO {
+@Entity
+@Table(name = "CertificadosCursosAcademicosUPB_AsignaturasS")
+public class Asignatura {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "n_idAsignatura")
     private Integer id;
 
-    @Size(max = 20, message = "El código no puede exceder 20 caracteres")
+    @Column(name = "c_codigo", nullable = false, unique = true, length = 20)
     private String codigo;
 
-    @Size(max = 150, message = "El nombre no puede exceder 150 caracteres")
+    @Column(name = "t_nombre", nullable = false, length = 150)
     private String nombre;
+
+    public Asignatura() {
+    }
 
     public Integer getId() {
         return id;

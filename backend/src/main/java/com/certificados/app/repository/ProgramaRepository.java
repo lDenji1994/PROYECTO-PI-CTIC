@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ProgramaRepository extends JpaRepository<Programa, Long> {
+public interface ProgramaRepository extends JpaRepository<Programa, Integer> {
     boolean existsByCodigo(String codigo);
     Optional<Programa> findByCodigo(String codigo);
 }

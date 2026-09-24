@@ -26,7 +26,7 @@ public class ProgramaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProgramaDTO> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ProgramaDTO> buscarPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(programaService.buscarPorId(id));
     }
 

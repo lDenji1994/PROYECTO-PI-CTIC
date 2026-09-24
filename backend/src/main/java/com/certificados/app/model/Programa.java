@@ -1,51 +1,72 @@
 package com.certificados.app.model;
 
 import jakarta.persistence.*;
+
 import java.util.Objects;
 
+/**
+ * Módulo de Programas Académicos.
+ *
+ * Representa los programas académicos registrados en la plataforma.
+ * Estos programas pueden relacionarse posteriormente con las versiones
+ * de documentos académicos mediante VersionesDocumentosProgramasS.
+ *
+ * La entidad se encuentra alineada con la tabla:
+ * CertificadosCursosAcademicosUPB_ProgramasS
+ */
 @Entity
-@Table(name = "programas")
+@Table(name = "CertificadosCursosAcademicosUPB_ProgramasS")
 public class Programa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "n_idPrograma")
+    private Integer id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String nombre;
-
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(name = "c_codigo", length = 20, unique = true)
     private String codigo;
 
-    @Column(length = 255)
-    private String descripcion;
+    @Column(name = "t_nombre", length = 150, nullable = false)
+    private String nombre;
 
     public Programa() {
     }
 
-    public Programa(Long id, String nombre, String codigo, String descripcion) {
+    public Programa(Integer id, String codigo, String nombre) {
         this.id = id;
-        this.nombre = nombre;
         this.codigo = codigo;
-        this.descripcion = descripcion;
+        this.nombre = nombre;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Integer getId() {
+        return id;
+    }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-    public String getCodigo() { return codigo; }
-    public void setCodigo(String codigo) { this.codigo = codigo; }
+    public String getCodigo() {
+        return codigo;
+    }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         Programa programa = (Programa) o;
         return id != null && Objects.equals(id, programa.id);
     }

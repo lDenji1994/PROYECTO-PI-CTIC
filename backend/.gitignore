@@ -1,2 +1,8 @@
-uploads_test/
-uploads/
+﻿.gradle/
+build/
+*.class
+*.jar
+*.pdf
+*.log
+backend/
+SolicitudCertificadoService.BACKUP.java
