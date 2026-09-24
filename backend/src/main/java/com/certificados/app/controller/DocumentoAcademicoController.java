@@ -1,7 +1,9 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.DocumentoCertificadoDTO;
 import com.certificados.app.model.DocumentoAcademico;
 import com.certificados.app.service.DocumentoAcademicoService;
+import com.certificados.app.service.DocumentoCertificadoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +16,15 @@ import java.util.List;
 public class DocumentoAcademicoController {
 
     private final DocumentoAcademicoService service;
+    private final DocumentoCertificadoService documentoCertificadoService;
 
     public DocumentoAcademicoController(
-            DocumentoAcademicoService service) {
+            DocumentoAcademicoService service,
+            DocumentoCertificadoService documentoCertificadoService) {
+
         this.service = service;
+        this.documentoCertificadoService =
+                documentoCertificadoService;
     }
 
     @GetMapping
@@ -28,13 +35,23 @@ public class DocumentoAcademicoController {
     @GetMapping("/{id}")
     public DocumentoAcademico buscarPorId(
             @PathVariable Integer id) {
+
         return service.buscarPorId(id);
     }
 
     @GetMapping("/asignatura/{idAsignatura}")
     public List<DocumentoAcademico> listarPorAsignatura(
             @PathVariable Integer idAsignatura) {
+
         return service.listarPorAsignatura(idAsignatura);
+    }
+
+    @GetMapping("/solicitud/{idSolicitud}")
+    public List<DocumentoCertificadoDTO> listarPorSolicitud(
+            @PathVariable Integer idSolicitud) {
+
+        return documentoCertificadoService
+                .obtenerDocumentosPorSolicitud(idSolicitud);
     }
 
     @PostMapping
