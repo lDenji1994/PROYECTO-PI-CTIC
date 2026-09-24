@@ -39,6 +39,14 @@ public class AsignaturaService {
     }
 
     public Asignatura crear(Asignatura asignatura) {
+
+        if (repository.existsByCodigo(asignatura.getCodigo())) {
+            throw new RuntimeException(
+                    "Ya existe una asignatura con el código "
+                    + asignatura.getCodigo()
+            );
+        }
+
         return repository.save(asignatura);
     }
 }

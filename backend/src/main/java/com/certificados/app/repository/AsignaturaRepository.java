@@ -9,4 +9,6 @@ public interface AsignaturaRepository
         extends JpaRepository<Asignatura, Integer> {
 
     Optional<Asignatura> findByCodigo(String codigo);
+
+    boolean existsByCodigo(String codigo);
 }

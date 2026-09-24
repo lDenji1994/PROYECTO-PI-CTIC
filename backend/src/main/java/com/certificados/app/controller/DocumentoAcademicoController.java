@@ -2,6 +2,7 @@ package com.certificados.app.controller;
 
 import com.certificados.app.model.DocumentoAcademico;
 import com.certificados.app.service.DocumentoAcademicoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class DocumentoAcademicoController {
 
     @PostMapping
     public ResponseEntity<DocumentoAcademico> guardar(
-            @RequestBody DocumentoAcademico documento) {
+            @Valid @RequestBody DocumentoAcademico documento) {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

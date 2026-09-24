@@ -1,6 +1,8 @@
 package com.certificados.app.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(
@@ -22,15 +24,19 @@ public class DocumentoAcademico {
     @Column(name = "n_idDocumentoAcademico")
     private Integer id;
 
+    @NotBlank(message = "El código de formato es obligatorio")
     @Column(name = "c_codigoFormato", length = 50)
     private String codigoFormato;
 
+    @NotBlank(message = "La versión del formato es obligatoria")
     @Column(name = "c_versionFormato", length = 20)
     private String versionFormato;
 
+    @NotNull(message = "La asignatura es obligatoria")
     @Column(name = "n_idAsignatura", nullable = false)
     private Integer idAsignatura;
 
+    @NotNull(message = "El tipo de documento académico es obligatorio")
     @Column(name = "n_idTipoDocumentoAcademico", nullable = false)
     private Integer idTipoDocumentoAcademico;
 

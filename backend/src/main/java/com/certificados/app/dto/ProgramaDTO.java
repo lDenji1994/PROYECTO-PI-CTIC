@@ -1,5 +1,6 @@
 package com.certificados.app.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -13,9 +14,11 @@ public class ProgramaDTO {
 
     private Integer id;
 
+    @NotBlank(message = "El código del programa es obligatorio")
     @Size(max = 20, message = "El código no puede exceder 20 caracteres")
     private String codigo;
 
+    @NotBlank(message = "El nombre del programa es obligatorio")
     @Size(max = 150, message = "El nombre no puede exceder 150 caracteres")
     private String nombre;
 
