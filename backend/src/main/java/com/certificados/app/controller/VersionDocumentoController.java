@@ -3,7 +3,9 @@ package com.certificados.app.controller;
 import com.certificados.app.dto.VersionDocumentoDTO;
 import com.certificados.app.service.VersionDocumentoService;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import java.nio.charset.StandardCharsets;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -77,9 +79,12 @@ public class VersionDocumentoController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" +
-                                nombreArchivo +
-                                "\""
+                        // ContentDisposition escapa el nombre (tildes, comillas):
+                        // evita inyeccion de cabeceras.
+                        ContentDisposition.inline()
+                                .filename(nombreArchivo, StandardCharsets.UTF_8)
+                                .build()
+                                .toString()
                 )
                 .contentLength(archivo.length)
                 .body(resource);

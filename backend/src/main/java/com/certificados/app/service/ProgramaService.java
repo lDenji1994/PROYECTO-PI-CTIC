@@ -23,9 +23,12 @@ import java.util.stream.Collectors;
 public class ProgramaService {
 
     private final ProgramaRepository programaRepository;
+    private final ActividadService actividadService;
 
-    public ProgramaService(ProgramaRepository programaRepository) {
+    public ProgramaService(ProgramaRepository programaRepository,
+                           ActividadService actividadService) {
         this.programaRepository = programaRepository;
+        this.actividadService = actividadService;
     }
 
     /**
@@ -67,7 +70,14 @@ public class ProgramaService {
         programa.setCodigo(dto.getCodigo());
         programa.setNombre(dto.getNombre());
 
-        return toDTO(programaRepository.save(programa));
+        Programa guardado = programaRepository.save(programa);
+
+        // Bitacora: queda en la "Actividad reciente" del Dashboard
+        actividadService.registrar(ActividadService.TABLA_PROGRAMAS,
+                ActividadService.CREAR_PROGRAMA,
+                (guardado.getCodigo() != null ? guardado.getCodigo() + " - " : "") + guardado.getNombre());
+
+        return toDTO(guardado);
     }
 
     /**

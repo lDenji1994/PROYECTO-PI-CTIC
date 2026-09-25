@@ -1,7 +1,10 @@
 package com.certificados.app.service;
 
+import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.dto.VersionDocumentoDTO;
+import com.certificados.app.model.DocumentoAcademico;
 import com.certificados.app.model.VersionDocumento;
+import com.certificados.app.repository.AsignaturaRepository;
 import com.certificados.app.repository.DocumentoAcademicoRepository;
 import com.certificados.app.repository.VersionDocumentoRepository;
 import org.springframework.stereotype.Service;
@@ -19,13 +22,22 @@ public class VersionDocumentoService {
 
     private final VersionDocumentoRepository repository;
     private final DocumentoAcademicoRepository documentoAcademicoRepository;
+    private final AsignaturaRepository asignaturaRepository;
+    private final FormatoService formatoService;
+    private final ActividadService actividadService;
 
     public VersionDocumentoService(
             VersionDocumentoRepository repository,
-            DocumentoAcademicoRepository documentoAcademicoRepository) {
+            DocumentoAcademicoRepository documentoAcademicoRepository,
+            AsignaturaRepository asignaturaRepository,
+            FormatoService formatoService,
+            ActividadService actividadService) {
 
         this.repository = repository;
         this.documentoAcademicoRepository = documentoAcademicoRepository;
+        this.asignaturaRepository = asignaturaRepository;
+        this.formatoService = formatoService;
+        this.actividadService = actividadService;
     }
 
     public List<VersionDocumentoDTO> listarTodos() {
@@ -77,22 +89,85 @@ public class VersionDocumentoService {
             );
         }
 
-        String nombreArchivo = archivo.getOriginalFilename();
+        String nombreArchivo = limpiarNombreArchivo(archivo.getOriginalFilename());
 
-        if (nombreArchivo == null || nombreArchivo.isBlank()) {
+        if (nombreArchivo.isBlank()) {
             throw new IllegalArgumentException(
                     "El archivo debe tener un nombre válido"
+            );
+        }
+
+        byte[] contenido = archivo.getBytes();
+
+        // Seguridad: el tipo MIME lo manda el navegador y se puede falsificar,
+        // asi que tambien se verifica la firma real de un PDF ("%PDF").
+        if (contenido.length < 4
+                || contenido[0] != '%' || contenido[1] != 'P'
+                || contenido[2] != 'D' || contenido[3] != 'F') {
+            throw new IllegalArgumentException(
+                    "El archivo no es un PDF válido"
+            );
+        }
+
+        String periodoLimpio = (periodo == null || periodo.isBlank()) ? null : periodo.trim();
+        if (periodoLimpio != null && !periodoLimpio.matches("^\\d{4}-\\d{1,2}$")) {
+            throw new IllegalArgumentException(
+                    "El periodo debe tener el formato AAAA-N (ej. 2026-2)"
             );
         }
 
         VersionDocumento version = new VersionDocumento();
 
         version.setIdDocumentoAcademico(idDocumentoAcademico);
-        version.setPeriodo(periodo);
+        version.setPeriodo(periodoLimpio);
         version.setNombreArchivo(nombreArchivo);
-        version.setArchivo(archivo.getBytes());
+        version.setArchivo(contenido);
 
-        return repository.save(version);
+        VersionDocumento guardada = repository.save(version);
+
+        registrarCarga(idDocumentoAcademico, guardada);
+
+        return guardada;
+    }
+
+    /**
+     * Bitacora: deja constancia de la carga y avisa si el formato del
+     * documento esta desactualizado (se ve en amarillo en el Dashboard).
+     */
+    private void registrarCarga(Integer idDocumentoAcademico, VersionDocumento version) {
+        DocumentoAcademico documento = documentoAcademicoRepository
+                .findById(idDocumentoAcademico).orElse(null);
+        if (documento == null) {
+            return;
+        }
+        String asignatura = asignaturaRepository.findById(documento.getIdAsignatura())
+                .map(a -> a.getCodigo() + " - " + a.getNombre())
+                .orElse("Asignatura #" + documento.getIdAsignatura());
+        boolean vigente = formatoService.esVigente(
+                documento.getCodigoFormato(), documento.getVersionFormato());
+
+        actividadService.registrar(
+                ActividadService.TABLA_VERSIONES,
+                vigente ? ActividadService.CARGAR_DOCUMENTO : ActividadService.CARGAR_DOCUMENTO_ANTIGUO,
+                asignatura + " (" + documento.getCodigoFormato() + " v" + documento.getVersionFormato()
+                        + (version.getPeriodo() != null ? ", " + version.getPeriodo() : "") + ")");
+    }
+
+    /**
+     * Deja solo un nombre de archivo seguro: sin rutas (../), sin comillas
+     * ni saltos de linea (evita inyeccion en la cabecera de descarga).
+     */
+    static String limpiarNombreArchivo(String original) {
+        if (original == null) {
+            return "";
+        }
+        String nombre = original.replace('\\', '/');
+        nombre = nombre.substring(nombre.lastIndexOf('/') + 1);
+        nombre = nombre.replaceAll("[^\\p{L}\\p{N} ._()\\-]", "_").trim();
+        if (nombre.length() > 200) {
+            nombre = nombre.substring(nombre.length() - 200);
+        }
+        return nombre;
     }
 
     public byte[] obtenerArchivo(Integer id) {
@@ -106,7 +181,7 @@ public class VersionDocumentoService {
     private VersionDocumento obtenerEntidad(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Versión de documento no encontrada con id " + id
                         )
                 );

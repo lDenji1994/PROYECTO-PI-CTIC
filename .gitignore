@@ -14,3 +14,7 @@ frontend/.angular/
 *.iml
 .vscode/
 .DS_Store
+
+# Credenciales locales
+application-local.properties
+backend/bin/

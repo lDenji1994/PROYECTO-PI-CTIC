@@ -1,0 +1,16 @@
+# =====================================================================
+#  COPIA este archivo como "application-local.properties" (misma
+#  carpeta) y pon TUS datos de MySQL. Ese archivo esta en .gitignore:
+#  nunca se sube al repositorio.
+#
+#  Arranque:  gradle bootRun --args='--spring.profiles.active=local'
+# =====================================================================
+spring.datasource.url=jdbc:mysql://localhost:3307/CertificadosCursosAcademicosUPB?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
+spring.datasource.username=root
+spring.datasource.password=TU_CONTRASENA_AQUI
+
+# Id de un usuario existente en la tabla de usuarios (para la bitacora)
+app.auditoria.id-usuario-por-defecto=1
+
+# Descomenta para ver el SQL en consola mientras depuras
+# spring.jpa.show-sql=true

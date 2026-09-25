@@ -1,5 +1,11 @@
 package com.certificados.app.controller;
 
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.nio.charset.StandardCharsets;
+
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.service.CertificadoGeneradorService;
@@ -74,5 +80,32 @@ public class CertificadoGeneradoController {
                         idVersionPlantilla
                 )
         );
+    }
+
+    /**
+     * GET /api/certificados-generados/solicitud/{idSolicitud}/archivo
+     * Descarga/abre el PDF del certificado generado para una solicitud.
+     * (Agregado para el boton "Ver PDF" del panel de Certificaciones.)
+     */
+    @GetMapping("/solicitud/{idSolicitud}/archivo")
+    public ResponseEntity<ByteArrayResource> descargarPorSolicitud(
+            @PathVariable Integer idSolicitud) {
+
+        CertificadoGenerado certificado = repository
+                .findByIdSolicitudCertificado(idSolicitud)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un certificado generado para la solicitud " + idSolicitud));
+
+        byte[] archivo = certificado.getArchivo();
+        String nombre = certificado.getNombreArchivo() == null
+                ? "certificado-" + idSolicitud + ".pdf"
+                : certificado.getNombreArchivo();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(nombre, StandardCharsets.UTF_8).build().toString())
+                .contentLength(archivo.length)
+                .body(new ByteArrayResource(archivo));
     }
 }
