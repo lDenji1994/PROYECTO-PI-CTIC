@@ -1,19 +1,19 @@
 package com.certificados.app.controller;
 
-import com.certificados.app.dto.DocumentoResumenDTO;
-import org.springframework.http.MediaType;
-import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-
 import com.certificados.app.dto.DocumentoCertificadoDTO;
+import com.certificados.app.dto.DocumentoResumenDTO;
+import com.certificados.app.dto.InformacionDocumentoCertificadoDTO;
 import com.certificados.app.model.DocumentoAcademico;
 import com.certificados.app.service.DocumentoAcademicoService;
 import com.certificados.app.service.DocumentoCertificadoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -51,12 +51,29 @@ public class DocumentoAcademicoController {
         return service.listarPorAsignatura(idAsignatura);
     }
 
+    /**
+     * Obtiene los documentos académicos asociados a las asignaturas
+     * de una solicitud de certificado.
+     */
     @GetMapping("/solicitud/{idSolicitud}")
     public List<DocumentoCertificadoDTO> listarPorSolicitud(
             @PathVariable Integer idSolicitud) {
 
         return documentoCertificadoService
                 .obtenerDocumentosPorSolicitud(idSolicitud);
+    }
+
+    /**
+     * Obtiene la información documental requerida por la plantilla
+     * correspondiente al tipo de certificado de la solicitud.
+     */
+    @GetMapping("/solicitud/{idSolicitud}/informacion")
+    public List<InformacionDocumentoCertificadoDTO>
+    obtenerInformacionRequerida(
+            @PathVariable Integer idSolicitud) {
+
+        return documentoCertificadoService
+                .obtenerInformacionRequerida(idSolicitud);
     }
 
     @PostMapping
@@ -74,32 +91,55 @@ public class DocumentoAcademicoController {
 
     /**
      * GET /api/documentos-academicos/resumen[?idAsignatura=5]
+     *
      * Documentos con asignatura (materia + curso), tipo, vigencia del
      * formato y versiones cargadas (sin el PDF), mas recientes primero.
      */
     @GetMapping("/resumen")
     public List<DocumentoResumenDTO> resumen(
             @RequestParam(required = false) Integer idAsignatura) {
+
         return service.listarResumen(idAsignatura);
     }
 
     /**
-     * POST /api/documentos-academicos/cargar  (multipart/form-data)
-     * Registra (o reutiliza) el documento de la asignatura + tipo y guarda
-     * el PDF como nueva version, todo en una sola operacion.
+     * POST /api/documentos-academicos/cargar
+     *
+     * multipart/form-data.
+     *
+     * Registra (o reutiliza) el documento de la asignatura + tipo
+     * y guarda el PDF como nueva versión.
      */
-    @PostMapping(value = "/cargar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(
+            value = "/cargar",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentoResumenDTO> cargar(
             @RequestParam("idAsignatura") Integer idAsignatura,
-            @RequestParam("idTipoDocumentoAcademico") Integer idTipoDocumentoAcademico,
-            @RequestParam("codigoFormato") String codigoFormato,
-            @RequestParam("versionFormato") String versionFormato,
-            @RequestParam(value = "periodo", required = false) String periodo,
-            @RequestParam(value = "idPrograma", required = false) Integer idPrograma,
-            @RequestParam("archivo") MultipartFile archivo) throws IOException {
+            @RequestParam("idTipoDocumentoAcademico")
+            Integer idTipoDocumentoAcademico,
+            @RequestParam("codigoFormato")
+            String codigoFormato,
+            @RequestParam("versionFormato")
+            String versionFormato,
+            @RequestParam(value = "periodo", required = false)
+            String periodo,
+            @RequestParam(value = "idPrograma", required = false)
+            Integer idPrograma,
+            @RequestParam("archivo")
+            MultipartFile archivo) throws IOException {
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                service.cargarDocumento(idAsignatura, idTipoDocumentoAcademico,
-                        codigoFormato, versionFormato, periodo, idPrograma, archivo));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        service.cargarDocumento(
+                                idAsignatura,
+                                idTipoDocumentoAcademico,
+                                codigoFormato,
+                                versionFormato,
+                                periodo,
+                                idPrograma,
+                                archivo
+                        )
+                );
     }
 }
