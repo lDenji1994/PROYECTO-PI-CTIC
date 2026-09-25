@@ -5,11 +5,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import java.util.Arrays;
+
 /**
- * Configuracion de CORS. Solo relevante en desarrollo, cuando el
- * frontend Angular corre por separado en http://localhost:4200.
- * En produccion (monolito empaquetado) esto no hace falta porque
- * Angular se sirve desde el mismo origen.
+ * Configuracion de CORS.
+ *
+ * El panel normalmente se sirve desde el MISMO servidor (localhost:8080),
+ * asi que CORS no interviene. Solo importa si alguien abre el HTML desde
+ * otro origen (Live Server, otro puerto...).
+ *
+ * SE PUEDE MODIFICAR: la lista de origenes en application.properties
+ * (app.cors.allowed-origins) o con la variable de entorno CORS_ORIGINS.
+ * NO MODIFICAR: la division por comas. Antes se pasaba la lista completa
+ * como un unico origen y CORS nunca funcionaba.
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -19,9 +27,14 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        String[] origenes = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
+
         registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins(origenes)
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }
 }

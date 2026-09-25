@@ -1,5 +1,6 @@
 package com.certificados.app.service;
 
+import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Log;
 import com.certificados.app.repository.LogRepository;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class LogService {
     public Log buscarPorId(Integer id) {
         return repository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Log no encontrado con id " + id
                         ));
     }

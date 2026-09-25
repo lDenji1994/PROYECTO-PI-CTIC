@@ -37,6 +37,7 @@ public class SolicitudCertificadoService {
     private final VersionPlantillaRepository versionPlantillaRepository;
     private final CertificadoGeneradorService certificadoGeneradorService;
     private final LogRepository logRepository;
+    private final ActividadService actividadService;
 
     public SolicitudCertificadoService(
             SolicitudCertificadoRepository repository,
@@ -47,7 +48,8 @@ public class SolicitudCertificadoService {
             PlantillaCertificadoRepository plantillaCertificadoRepository,
             VersionPlantillaRepository versionPlantillaRepository,
             CertificadoGeneradorService certificadoGeneradorService,
-            LogRepository logRepository) {
+            LogRepository logRepository,
+            ActividadService actividadService) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -61,6 +63,7 @@ public class SolicitudCertificadoService {
         this.certificadoGeneradorService =
                 certificadoGeneradorService;
         this.logRepository = logRepository;
+        this.actividadService = actividadService;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -154,7 +157,10 @@ public class SolicitudCertificadoService {
                 LocalDateTime.now()
         );
 
-        return toDTO(repository.save(solicitud));
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.CREAR_SOLICITUD, "");
+
+        return toDTO(guardada);
     }
 
     @Transactional(noRollbackFor = BusinessException.class)
@@ -185,7 +191,7 @@ public class SolicitudCertificadoService {
 
         Log log = new Log();
 
-        log.setIp("127.0.0.1");
+        log.setIp(actividadService.ipActual());
         log.setNombreTabla("CertificadosGeneradosS");
         log.setNombreProceso("GENERAR_CERTIFICADO");
 
@@ -263,7 +269,10 @@ public class SolicitudCertificadoService {
                 EstadoSolicitudCertificado.ESPERANDO_DOCUMENTOS
         );
 
-        return toDTO(repository.save(solicitud));
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.SOLICITUD_ESPERANDO, "");
+
+        return toDTO(guardada);
     }
 
     public SolicitudCertificadoDTO marcarRealizada(
@@ -284,7 +293,10 @@ public class SolicitudCertificadoService {
                 LocalDateTime.now()
         );
 
-        return toDTO(repository.save(solicitud));
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.SOLICITUD_REALIZADA, "");
+
+        return toDTO(guardada);
     }
 
     public SolicitudCertificadoDTO marcarError(
@@ -305,7 +317,10 @@ public class SolicitudCertificadoService {
                 LocalDateTime.now()
         );
 
-        return toDTO(repository.save(solicitud));
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.SOLICITUD_ERROR, "");
+
+        return toDTO(guardada);
     }
 
     public void agregarAsignatura(
@@ -341,6 +356,21 @@ public class SolicitudCertificadoService {
                 );
 
         detalleRepository.save(detalle);
+
+        SolicitudCertificado solicitud = obtener(idSolicitud);
+        String asignatura = asignaturaRepository.findById(idAsignatura)
+                .map(a -> a.getCodigo() + " - " + a.getNombre()).orElse("#" + idAsignatura);
+        actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD,
+                ActividadService.AGREGAR_ASIGNATURA_SOLICITUD,
+                "Solicitud #" + idSolicitud + ": " + asignatura,
+                solicitud.getIdUsuarioEncargado());
+    }
+
+    /** Bitacora de solicitudes (a nombre del usuario encargado). */
+    private void registrar(SolicitudCertificado solicitud, String proceso, String extra) {
+        actividadService.registrar(ActividadService.TABLA_SOLICITUDES, proceso,
+                "Solicitud #" + solicitud.getId() + " - estudiante " + solicitud.getIdEstudiante() + extra,
+                solicitud.getIdUsuarioEncargado());
     }
 
     public List<Asignatura> listarAsignaturas(

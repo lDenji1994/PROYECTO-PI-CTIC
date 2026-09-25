@@ -1,155 +1,198 @@
-# Certificados Estudiantiles - Proyecto Monolitico (Panel + Java)
+# Certificados de Cursos Académicos UPB (PROYECTO-PI-CTIC)
 
-Panel de administracion academica (basado en el frontend que
-proporcionaste) integrado con el backend Spring Boot para la
-creacion y administracion de certificados estudiantiles.
-
-## 1. Que cambio en esta version
-
-Tu frontend (`index.html` + `styles.css` + `app.js`) es HTML/CSS/JS
-plano, no Angular. Por eso la integracion tomo este camino:
-
-- El panel ya esta copiado dentro de
-  `backend/src/main/resources/static/` — Spring Boot lo sirve
-  directamente, **sin ningun paso de build**. Al levantar el
-  backend, el panel ya esta disponible en `http://localhost:8080`.
-- Se agrego un modulo nuevo, **Estudiantes**, que no existia en tu
-  panel (necesario porque un certificado siempre pertenece a un
-  estudiante).
-- El modulo **Certificaciones** dejo de mostrar datos de ejemplo:
-  ahora lista, crea, emite y anula certificados reales contra la
-  API (`/api/certificados`), y las 4 tarjetas de estadisticas
-  (Total / Pendientes / Emitidas / Anuladas) se calculan con datos
-  reales.
-- Los modulos **Carga de informacion** y **Contenido de cursos**
-  siguen siendo visuales (datos de ejemplo), porque el backend
-  actual no tiene entidades para documentos academicos ni cursos.
-  Si los necesitas conectados, puedo agregar esos modelos y
-  endpoints.
-- Las 4 tarjetas del Dashboard con su "Historial" (documentos,
-  cursos, certificaciones, pendientes) tambien siguen mostrando
-  datos de ejemplo por el mismo motivo.
-- El frontend Angular que armamos antes quedo en
-  `frontend-angular-no-usado/`, por si lo quieres retomar mas
-  adelante. No esta conectado a nada en esta version.
-
-## 2. Arquitectura
+Panel web (HTML/CSS/JS) + backend Spring Boot + MySQL, todo en **un solo servidor**:
+Spring Boot se conecta a MySQL y además sirve el panel. No hace falta Node.js ni Angular.
 
 ```
-certificados-app/
-├── backend/                          # Spring Boot (Java 17 + Gradle)
-│   └── src/main/java/com/certificados/app/
-│       ├── controller/                # Capa REST (entrada HTTP)
-│       ├── service/                   # Logica de negocio
-│       ├── repository/                # Acceso a datos (Spring Data JPA)
-│       ├── model/                     # Entidades JPA (Estudiante, Certificado)
-│       ├── dto/                       # Objetos de transferencia
-│       ├── exception/                 # Manejo centralizado de errores
-│       └── config/
-│   └── src/main/resources/
-│       ├── application.properties     # Config de MySQL y app
-│       └── static/                    # <- tu panel (index.html, styles.css, app.js)
-│
-├── frontend-panel/                   # Copia editable de tu panel (fuente)
-│   ├── index.html
-│   ├── styles.css
-│   └── app.js
-│
-├── frontend-angular-no-usado/        # Frontend Angular anterior, sin conectar
-│
-├── build-monolito.sh                 # Empaqueta el JAR final
-└── README.md
+Navegador ──► http://localhost:8080  (Spring Boot)
+                 ├── /            → panel (backend/src/main/resources/static)
+                 └── /api/...     → API REST  ──►  MySQL (CertificadosCursosAcademicosUPB)
 ```
 
-`frontend-panel/` es la fuente editable: si modificas algo ahi,
-vuelve a copiarlo a `backend/src/main/resources/static/` antes de
-levantar el backend (o corre `build-monolito.sh`, que ya usa lo que
-esta en `static/`).
+---
 
-## 3. Entorno necesario para trabajar
+## 1. Estructura
 
-| Herramienta | Version recomendada | Para que sirve |
-|---|---|---|
-| JDK | 17 o superior | Compilar y correr el backend |
-| Gradle | 8.8 (o uno instalado localmente) | Build del backend |
-| MySQL | 8.x | Base de datos |
-| IDE sugerido | IntelliJ IDEA | - |
-
-Ya no necesitas Node.js/Angular CLI para correr este proyecto: el
-panel es HTML/CSS/JS puro y Spring Boot lo sirve tal cual.
-
-## 4. Preparar la base de datos
-
-```sql
-CREATE DATABASE certificados_db;
+```
+PROYECTO-PI-CTIC/
+├── database/
+│   ├── 01_esquema_BASE_DE_DATOS_PI_TRACK1.sql   ← esquema oficial del equipo (sin cambios)
+│   └── 02_datos_iniciales.sql                   ← usuario admin, tipos, plantilla PDF mínima, ejemplos
+├── backend/
+│   ├── build.gradle
+│   └── src/main/
+│       ├── java/com/certificados/app/
+│       │   ├── controller/   ← endpoints REST (/api/...)
+│       │   ├── service/      ← lógica de negocio y validaciones
+│       │   ├── repository/   ← acceso a datos (Spring Data JPA)
+│       │   ├── model/        ← entidades = tablas del script SQL
+│       │   ├── dto/          ← lo que se envía/recibe en JSON
+│       │   ├── exception/    ← errores en JSON uniforme {"messages": [...]}
+│       │   └── config/       ← CORS, nombres de tablas, redirección del panel
+│       └── resources/
+│           ├── application.properties                 ← configuración (SIN contraseñas)
+│           ├── application-local.properties.example   ← copia para tus credenciales
+│           └── static/        ← EL PANEL (index.html, app.js, styles.css, login.*)
+├── frontend-panel/           ← copia del panel para GitHub Pages (solo visual, sin backend)
+└── build-monolito.sh         ← genera el JAR final
 ```
 
-Las tablas se crean solas al levantar el backend
-(`spring.jpa.hibernate.ddl-auto=update`). Ajusta usuario/clave en
-`backend/src/main/resources/application.properties` si no usas
-`root/root`.
+> **La fuente del panel es `backend/src/main/resources/static/`.** Si editas `frontend-panel/`,
+> copia los cambios a `static/` (o al revés) para que no se desincronicen.
 
-## 5. Ejecutar el proyecto
+---
+
+## 2. Requisitos
+
+| Herramienta | Versión |
+|---|---|
+| JDK | **21** (lo exige `build.gradle`) |
+| Gradle | 8.x (o el wrapper `gradlew` del proyecto) |
+| MySQL | 8.x |
+| IDE sugerido | IntelliJ IDEA o VS Code con Extension Pack for Java |
+
+---
+
+## 3. Paso a paso para correrlo en local
+
+### 3.1 Base de datos
+
+En MySQL Workbench (o consola), ejecutar **en este orden**:
+
+1. `database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql` (crea la BD y las tablas).
+   Si la BD ya existe, sáltalo.
+2. `database/02_datos_iniciales.sql` (se puede correr varias veces sin duplicar).
+
+El paso 2 crea el usuario `admin` (id 1), que es a nombre de quien se registra la
+**bitácora / actividad reciente** mientras no exista login. Sin ningún usuario en la
+tabla de usuarios la bitácora no se guarda (la tabla Logs exige un usuario).
+
+### 3.2 Tus credenciales (sin subirlas a GitHub)
+
+```bash
+cd backend/src/main/resources
+copy application-local.properties.example application-local.properties     # Windows
+# cp application-local.properties.example application-local.properties     # Mac/Linux
+```
+
+Edita `application-local.properties` con tu puerto (3306 o 3307), usuario y contraseña.
+Ese archivo está en `.gitignore`: **nunca se sube**.
+
+Alternativa sin archivo: variables de entorno `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`.
+
+### 3.3 Levantar el backend
 
 ```bash
 cd backend
 gradle bootRun
-# o, si generaste el wrapper: ./gradlew bootRun
 ```
 
-Abre `http://localhost:8080`. Ahi mismo esta el panel completo,
-consumiendo la API en el mismo origen (no hace falta configurar
-CORS para uso normal).
+`application-local.properties` se carga automáticamente si existe (no hace falta activar perfiles).
 
-> Nota sobre Gradle: el wrapper (`gradlew`) esta en la estructura
-> del proyecto pero sin el binario `gradle-wrapper.jar` (no se pudo
-> descargar sin conexion a internet en este entorno). La primera
-> vez, con Gradle instalado localmente, ejecuta dentro de
-> `backend/`:
-> ```bash
-> gradle wrapper --gradle-version 8.8
-> ```
-> Desde ahi `./gradlew` funciona normal.
+### 3.4 Abrir el panel
 
-## 6. Empaquetar el JAR final (produccion)
+<http://localhost:8080> — el punto de la barra superior se pone rojo si el panel no logra
+comunicarse con el backend.
 
-```bash
-./build-monolito.sh
-```
+### 3.5 Prueba rápida de extremo a extremo
 
-Genera `backend/build/libs/certificados-app-0.0.1-SNAPSHOT.jar`,
-que ya incluye el panel dentro. Ejecutalo con:
+1. **Contenido de cursos** → registrar asignatura `ISIS` + `0202` + "Bases de Datos".
+2. **Carga de información** → elegir la asignatura, tipo "Carta Descriptiva", formato
+   `DA-FO-085N v03` (vigente) y subir un PDF. Repetir con otra asignatura usando
+   `SYLLABUS v1` → aparece como **Desactualizado**.
+3. **Certificaciones** → ID estudiante, tipo de certificado, encargado, marcar
+   asignaturas → *Crear solicitud* → *Generar PDF* → *Ver PDF*.
+4. **Dashboard** → los contadores y la *Actividad reciente* muestran todo lo anterior.
 
-```bash
-java -jar backend/build/libs/certificados-app-0.0.1-SNAPSHOT.jar
-```
+---
 
-## 7. Modulos del panel
+## 4. Qué hace cada módulo del panel
 
-| Modulo | Estado | Conectado a |
+| Módulo | Qué hace | API que usa |
 |---|---|---|
-| Dashboard | Parcial | Las 4 tarjetas de "Historial" siguen con datos de ejemplo |
-| Carga de informacion | Visual/mock | Sin backend (no hay entidad Documento) |
-| Contenido de cursos | Visual/mock | Sin backend (no hay entidad Curso) |
-| Certificaciones | **Real** | `/api/certificados` |
-| Estudiantes (nuevo) | **Real** | `/api/estudiantes` |
+| **Dashboard** | Contadores reales, aviso de formatos desactualizados y **actividad reciente** (bitácora). Clic en una tarjeta → historial del módulo. | `/api/actividades`, `/api/documentos-academicos/resumen`, `/api/solicitudes-certificados` |
+| **Carga de información** | Sube el PDF de una asignatura (materia + curso), tipo y formato. Muestra en vivo si el formato es **vigente** o **desactualizado**. Tabla con todas las cargas. | `POST /api/documentos-academicos/cargar`, `/api/formatos` |
+| **Contenido de cursos** | Registrar asignaturas (código de **materia** + código de **curso**) y programas. Tarjetas por asignatura con el estado de sus formatos e historial de versiones. | `/api/asignaturas`, `/api/programas` |
+| **Certificaciones** | Crear solicitudes con asignaturas, cambiar su estado, generar y ver el PDF. Vista previa con los documentos y la vigencia de cada formato. | `/api/solicitudes-certificados`, `/api/certificados-generados` |
 
-## 8. Endpoints principales
+### Código de materia + código de curso
 
-| Metodo | Ruta | Descripcion |
+En las plantillas institucionales el código de una asignatura tiene dos partes, p. ej.
+`FION 0001` → materia `FION`, curso `0001`. La BD **no cambió**: se guarda en la columna
+`c_codigo` como `"MATERIA CURSO"` y el backend lo separa (`AsignaturaDTO.codigoMateria` /
+`codigoCurso`). Asignaturas antiguas tipo `SIS00001` se separan como `SIS` + `00001`.
+
+### Formato vigente / desactualizado
+
+Se configura en `application.properties` → `app.formatos.catalogo` (no está quemado en código):
+
+```
+CODIGO:VERSION:Nombre visible:VIGENTE|ANTIGUO ; ...
+DA-FO-085N:03:Carta descriptiva del curso:VIGENTE
+DA-FO-763:2:Carta descriptiva del curso (version 2):ANTIGUO
+SYLLABUS / CONTENIDOS / PROGRAMA  → formatos antiguos
+```
+
+Cuando salga una versión nueva de la carta descriptiva: agregarla como `VIGENTE` y pasar
+la anterior a `ANTIGUO`. Todo documento con otro formato pasa a verse como **Desactualizado**.
+
+### Actividad reciente (bitácora)
+
+Se guarda en la tabla `..._LogS` del esquema (IP, usuario, tabla, proceso, fechas).
+Se registra automáticamente al: crear programa/asignatura, crear documento, cambiar su
+formato, cargar versión (en amarillo si el formato es viejo), crear solicitud, agregar
+asignaturas, cambiar estado y generar el certificado. Ver `service/ActividadService.java`.
+
+---
+
+## 5. Endpoints nuevos o modificados en esta versión
+
+| Método | Ruta | Descripción |
 |---|---|---|
-| GET | /api/estudiantes | Listar estudiantes |
-| POST | /api/estudiantes | Crear estudiante |
-| DELETE | /api/estudiantes/{id} | Eliminar estudiante |
-| GET | /api/certificados | Listar certificados |
-| POST | /api/certificados | Solicitar certificado |
-| PATCH | /api/certificados/{id}/emitir | Marcar como emitido |
-| PATCH | /api/certificados/{id}/anular | Anular certificado |
+| GET | `/api/actividades?modulo=&limite=` | Actividad reciente legible (módulos: documentos, cursos, certificaciones) |
+| GET | `/api/formatos` | Catálogo de formatos con cuál es el vigente |
+| GET | `/api/documentos-academicos/resumen` | Documentos con materia/curso, tipo, vigencia y versiones (sin binarios) |
+| POST | `/api/documentos-academicos/cargar` | Multipart: crea/reutiliza el documento y guarda el PDF como versión nueva |
+| GET/POST | `/api/asignaturas` | Ahora con `codigoMateria` y `codigoCurso` (acepta el `codigo` anterior) |
+| GET | `/api/usuarios` | Usuarios activos (sin contraseña) para elegir encargado |
+| GET | `/api/certificados-generados/solicitud/{id}/archivo` | Abre el PDF del certificado |
+| GET | `/api/solicitudes-certificados/{id}/asignaturas` | Ahora devuelve materia/curso separados |
 
-## 9. Proximos pasos sugeridos
+Los demás endpoints del equipo (plantillas, secciones, campos, logs, etc.) no cambiaron.
 
-- Conectar "Carga de informacion" y "Contenido de cursos" a
-  entidades reales (Documento, Curso) si los necesitas funcionales.
-- Reemplazar los datos de ejemplo del Dashboard con conteos reales.
-- Agregar autenticacion (Spring Security + JWT).
-- Generar el PDF del certificado al emitirlo.
+---
+
+## 6. Seguridad aplicada (no quitar)
+
+* **Sin credenciales en el código**: `application.properties` usa variables / perfil `local`.
+* **SQL injection**: todo acceso es por Spring Data JPA (consultas parametrizadas), sin SQL armado a mano.
+* **XSS**: el panel escapa todo texto del servidor (`escaparTexto`) y no usa `onclick` con datos.
+* **Archivos**: solo PDF reales (se revisa la firma `%PDF`, no solo la extensión), máx. 20 MB,
+  nombre de archivo limpiado y cabecera de descarga escapada (evita inyección de cabeceras).
+* **Errores**: el navegador recibe mensajes claros; las trazas internas solo salen en la consola.
+* **Usuarios**: `/api/usuarios` nunca devuelve contraseñas.
+
+---
+
+## 7. Notas importantes para el equipo
+
+1. **Contraseña expuesta**: la versión anterior de `application.properties` en GitHub tenía la
+   contraseña de MySQL de un integrante. Ya se quitó, pero **sigue en el historial de git**:
+   esa persona debe **cambiar su contraseña de MySQL**.
+2. **Nombres de tablas en Mac/Linux**: `LowerCaseTableNamingStrategy` pasa los nombres de
+   tabla a minúsculas (en Windows MySQL ya los guarda así). En Mac/Linux, MySQL distingue
+   mayúsculas: hay que crear la BD con `lower_case_table_names=1` o no funcionará.
+3. `ddl-auto=validate`: Hibernate **no** crea ni cambia tablas; el esquema manda. Si se cambia
+   el SQL, hay que ajustar la entidad correspondiente en `model/`.
+4. `backend/bin/` (compilación del IDE) se eliminó del repo y quedó en `.gitignore`.
+5. El login (`login.html`) sigue siendo solo visual: falta Spring Security + JWT. Mientras
+   tanto, la bitácora usa `app.auditoria.id-usuario-por-defecto`.
+
+---
+
+## 8. Próximos pasos sugeridos
+
+* Login real (Spring Security + BCrypt + JWT) y usar el usuario autenticado en la bitácora.
+* Extraer automáticamente los datos de la carta descriptiva (horas, créditos, CINE…) al cargarla
+  (las columnas ya existen en `VersionesDocumentosS`).
+* Pantalla para administrar plantillas de certificado desde el panel.

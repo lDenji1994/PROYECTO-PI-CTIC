@@ -1,5 +1,8 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.AsignaturaDTO;
+import com.certificados.app.service.AsignaturaService;
+
 import com.certificados.app.dto.SolicitudCertificadoDTO;
 import com.certificados.app.model.Asignatura;
 import com.certificados.app.model.EstadoSolicitudCertificado;
@@ -113,12 +116,15 @@ public class SolicitudCertificadoController {
         return ResponseEntity.ok().build();
     }
 
+    /** Asignaturas de la solicitud, con codigo de materia y de curso separados. */
     @GetMapping("/{id}/asignaturas")
-    public ResponseEntity<List<Asignatura>> listarAsignaturas(
+    public ResponseEntity<List<AsignaturaDTO>> listarAsignaturas(
             @PathVariable Integer id) {
 
         return ResponseEntity.ok(
-                service.listarAsignaturas(id)
+                service.listarAsignaturas(id).stream()
+                        .map(AsignaturaService::aDTO)
+                        .toList()
         );
     }
 }

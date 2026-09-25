@@ -2085,3 +2085,225 @@
         .login-note-success {
             color: var(--verde);
         }
+
+
+/* =====================================================================
+   AGREGADOS PARA EL PANEL CONECTADO AL BACKEND
+   (estados de formato, actividad por nivel, mensajes, listas, etc.)
+   SE PUEDE MODIFICAR: colores y tamanos. Las clases las usa app.js.
+   ===================================================================== */
+
+/* Las tarjetas del dashboard ahora son <button> (accesibles con teclado) */
+button.stat-card {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+
+/* Badges extra */
+.badge.danger { background: var(--rojo-claro); color: var(--rojo-upb); }
+.badge.neutral { background: var(--gris-claro); color: var(--gris-texto); }
+
+/* Punto de color de la actividad segun su nivel */
+.activity-dot.success, .history-marker.success { background: #e8f6ef; color: var(--verde); }
+.activity-dot.warning, .history-marker.warning { background: #fff3d8; color: var(--amarillo); }
+.activity-dot.danger, .history-marker.danger { background: var(--rojo-claro); color: var(--rojo-upb); }
+.activity-dot.info, .history-marker.info { background: #e7f1fa; color: var(--azul); }
+
+.activity-more button {
+    background: none;
+    border: none;
+    color: var(--rojo-upb);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Codigos de materia y de curso */
+.code-chip {
+    display: inline-block;
+    padding: 3px 8px;
+    margin-right: 4px;
+    border-radius: 6px;
+    background: var(--gris-oscuro);
+    color: var(--blanco);
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+.code-chip.course { background: var(--azul); }
+
+.cell-help {
+    display: block;
+    color: var(--gris-texto);
+    font-size: 11px;
+    margin-top: 3px;
+}
+
+.field-help {
+    display: block;
+    color: var(--gris-texto);
+    font-size: 12px;
+    margin-top: 6px;
+}
+.field-help a { color: var(--rojo-upb); }
+
+.formato-preview {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.formato-preview small { color: var(--gris-texto); }
+
+.empty-state {
+    color: var(--gris-texto);
+    text-align: center;
+    padding: 18px;
+    font-size: 14px;
+}
+
+/* Aviso amarillo del dashboard */
+.alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 0 0 22px;
+    border: 1px solid #f1d58b;
+    background: #fff8e6;
+    color: #7a5200;
+}
+.alert-banner span { flex: 1; }
+.alert-banner[hidden] { display: none; }
+
+/* Mensajes emergentes */
+.toast-container {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+}
+.toast {
+    padding: 13px 16px;
+    border-radius: 9px;
+    color: var(--blanco);
+    box-shadow: var(--sombra);
+    font-size: 14px;
+    animation: aparecer .2s ease;
+}
+.toast.success { background: var(--verde); }
+.toast.warning { background: var(--amarillo); }
+.toast.error { background: var(--rojo-upb); }
+
+/* Indicador de servidor desconectado */
+.notification.offline { color: var(--rojo-upb); }
+
+/* Zona de archivo al arrastrar */
+.upload-area { display: block; cursor: pointer; }
+.upload-area.dragging { border-color: var(--rojo-upb); background: var(--rojo-claro); }
+
+/* Dos columnas (asignatura / programa) */
+.two-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 22px;
+}
+
+.chip-list {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.chip {
+    background: var(--gris-claro);
+    border-radius: 16px;
+    padding: 5px 11px;
+    font-size: 12px;
+}
+
+/* Lista de documentos dentro de cada tarjeta de curso */
+.course-docs {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 14px;
+    font-size: 13px;
+    color: var(--gris-texto);
+}
+.course-docs li { padding: 4px 0; }
+
+/* Lista de asignaturas con casillas (solicitudes) */
+.checkbox-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 8px;
+}
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 4px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* Botones dentro de tablas */
+.table-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.small { padding: 6px 10px !important; font-size: 12px; }
+.danger-button {
+    background: var(--blanco);
+    color: var(--rojo-upb);
+    border: 1px solid var(--rojo-upb);
+    border-radius: 7px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.link-button {
+    color: var(--rojo-upb);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 13px;
+    align-self: center;
+}
+.link-button:hover { text-decoration: underline; }
+
+.inline-form { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-start; }
+.inline-form select { flex: 1; min-width: 220px; }
+.inline-form[hidden] { display: none; }
+
+.filter-actions input[type="search"] {
+    padding: 9px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+}
+
+.search-card select {
+    padding: 10px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+}
+
+[hidden] { display: none !important; }
+
+.filter-actions select {
+    padding: 9px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+    background: var(--blanco);
+    font: inherit;
+    font-size: 13px;
+}

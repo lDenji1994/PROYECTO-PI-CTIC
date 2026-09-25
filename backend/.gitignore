@@ -6,3 +6,13 @@ build/
 *.log
 backend/
 SolicitudCertificadoService.BACKUP.java
+
+# Credenciales locales de cada integrante (NUNCA subir)
+application-local.properties
+
+# Carpetas de compilacion de IDEs (Eclipse / VS Code)
+bin/
+uploads/
+
+# El wrapper de Gradle SI debe subirse
+!gradle/wrapper/gradle-wrapper.jar
