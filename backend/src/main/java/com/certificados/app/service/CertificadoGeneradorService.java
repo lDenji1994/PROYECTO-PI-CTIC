@@ -50,6 +50,7 @@ public class CertificadoGeneradorService {
         this.campoRepository = campoRepository;
     }
 
+    @Transactional(noRollbackFor = {BusinessException.class, ResourceNotFoundException.class})
     public CertificadoGenerado generar(
             Integer idSolicitud,
             Integer idVersionPlantilla) {
