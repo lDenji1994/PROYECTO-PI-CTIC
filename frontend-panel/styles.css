@@ -2307,3 +2307,105 @@ button.stat-card {
     font: inherit;
     font-size: 13px;
 }
+
+/* =========================================================
+   FASE 2: datos del curso a mano, login, usuarios
+   SE PUEDE MODIFICAR: colores, tamanos y espacios.
+   ========================================================= */
+
+/* Bloque dentro de una tarjeta (ej. "DATOS DEL CURSO") */
+.subsection {
+    margin: 24px 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--gris-borde);
+}
+.subsection > .field-help { margin: 4px 0 16px; }
+
+/* Cajas de texto grandes para copiar y pegar */
+.form-group textarea {
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+    padding: 11px 12px;
+    outline: none;
+    background: white;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.45;
+    resize: vertical;
+    min-height: 70px;
+}
+.form-group textarea:focus { border-color: var(--rojo-upb); }
+
+/* Campo con error de validacion */
+.form-group .input-error,
+.form-group .input-error:focus {
+    border-color: var(--rojo-upb);
+    background: #fff5f5;
+}
+
+/* "Mas datos de la carta descriptiva (opcional)" */
+.optional-fields {
+    margin-top: 18px;
+    border: 1px dashed var(--gris-borde);
+    border-radius: 9px;
+    padding: 12px 16px;
+}
+.optional-fields summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--rojo-upb);
+}
+.optional-fields[open] summary { margin-bottom: 16px; }
+
+/* Aviso rojo: la carga fallo, se puede reintentar */
+.alert-banner.danger {
+    border-color: #f0b4bb;
+    background: #fff1f2;
+    color: #8c1322;
+    margin: 18px 0 0;
+}
+
+/* Campos sueltos dentro de un formulario en linea (archivo, contrasena) */
+.inline-form input[type="password"],
+.inline-form input[type="file"] {
+    flex: 1;
+    min-width: 220px;
+    padding: 9px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+    background: var(--blanco);
+    font: inherit;
+    font-size: 13px;
+}
+
+.required-label { color: var(--gris-texto); font-size: 12px; }
+
+#btn-cerrar-sesion { white-space: nowrap; }
+
+/* Resultado de "Pegar codigos del Kardex" */
+.paste-result {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--gris-borde);
+    background: #f8fafc;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.paste-result.warning { border-color: #f1d58b; background: #fff8e6; color: #7a5200; }
+.paste-result strong { display: block; }
+
+/* Boton "x" para eliminar un programa (solo lo ve el administrador) */
+.chip-remove {
+    margin-left: 8px;
+    border: none;
+    background: transparent;
+    color: var(--rojo-upb);
+    font-size: 16px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.chip-remove:hover { color: #7d0f1d; }

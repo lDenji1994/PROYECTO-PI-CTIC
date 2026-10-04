@@ -1,6 +1,7 @@
 package com.certificados.app.controller;
 
 import com.certificados.app.dto.DocumentoCertificadoDTO;
+import com.certificados.app.dto.DatosCursoDTO;
 import com.certificados.app.dto.DocumentoResumenDTO;
 import com.certificados.app.dto.InformacionDocumentoCertificadoDTO;
 import com.certificados.app.model.DocumentoAcademico;
@@ -108,7 +109,8 @@ public class DocumentoAcademicoController {
      * multipart/form-data.
      *
      * Registra (o reutiliza) el documento de la asignatura + tipo
-     * y guarda el PDF como nueva versión.
+     * y guarda el archivo (PDF, Word o Excel) como nueva versión,
+     * junto con los datos del curso registrados a mano.
      */
     @PostMapping(
             value = "/cargar",
@@ -125,6 +127,10 @@ public class DocumentoAcademicoController {
             String periodo,
             @RequestParam(value = "idPrograma", required = false)
             Integer idPrograma,
+            // Datos del curso escritos a mano (descripcion, detalleContenido,
+            // creditos, horas...). Cada campo del formulario llega con el
+            // mismo nombre que tiene en DatosCursoDTO.
+            @ModelAttribute DatosCursoDTO datos,
             @RequestParam("archivo")
             MultipartFile archivo) throws IOException {
 
@@ -138,6 +144,7 @@ public class DocumentoAcademicoController {
                                 versionFormato,
                                 periodo,
                                 idPrograma,
+                                datos,
                                 archivo
                         )
                 );

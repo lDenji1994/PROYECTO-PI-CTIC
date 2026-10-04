@@ -11,4 +11,7 @@ public interface CriterioCompetenciaRepository
         extends JpaRepository<CriterioCompetencia, Integer> {
 
     List<CriterioCompetencia> findByIdCompetencia(Integer idCompetencia);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdCompetencia(Integer idCompetencia);
 }

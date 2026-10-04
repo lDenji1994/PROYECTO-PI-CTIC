@@ -1,11 +1,16 @@
 /* ---------------------------------------------------------------------
-   PANTALLA DE LOGIN (US-26.01)
+   PANTALLA DE LOGIN (US-25)
 
-   El HTML trae la estructura, el CSS define los colores de cada estado
-   (input-error, login-note-error, login-note-success). Este script solo
-   decide CUANDO se aplica cada clase, igual que hace ESTADO_BADGE en
-   app.js con los certificados.
+   Envia usuario y contrasena a POST /api/auth/login. Si son correctos, el
+   servidor deja una cookie de sesion y se entra al panel (index.html).
+
+   SEGURIDAD (NO MODIFICAR):
+   - La contrasena NUNCA se guarda en el navegador (ni localStorage ni
+     cookies propias): solo viaja al servidor en esta peticion.
+   - Los mensajes se pintan con textContent (no innerHTML).
    --------------------------------------------------------------------- */
+
+'use strict';
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -15,20 +20,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const errorUsuario = document.getElementById('error-usuario');
     const errorPassword = document.getElementById('error-password');
     const botonMostrar = document.getElementById('btn-toggle-password');
+    const botonEntrar = form.querySelector('button[type="submit"]');
     const nota = document.getElementById('login-note');
 
-    /* Mostrar / ocultar contraseña */
-    if (botonMostrar && inputPassword) {
+    /* Si ya hay una sesion activa, entra directo al panel */
+    fetch('/api/auth/yo').then(function (respuesta) {
+        if (respuesta.ok) {
+            window.location.replace('/');
+        }
+    }).catch(function () { /* servidor apagado: se queda en el login */ });
 
-        botonMostrar.addEventListener('click', function () {
-
-            const estaOculta = inputPassword.type === 'password';
-
-            inputPassword.type = estaOculta ? 'text' : 'password';
-            botonMostrar.textContent = estaOculta ? 'Ocultar' : 'Mostrar';
-
-        });
-    }
+    /* Mostrar / ocultar contrasena */
+    botonMostrar.addEventListener('click', function () {
+        const estaOculta = inputPassword.type === 'password';
+        inputPassword.type = estaOculta ? 'text' : 'password';
+        botonMostrar.textContent = estaOculta ? 'Ocultar' : 'Mostrar';
+    });
 
     function limpiarError(input, mensaje) {
         input.classList.remove('input-error');
@@ -40,56 +47,65 @@ document.addEventListener('DOMContentLoaded', function () {
         mensaje.textContent = texto;
     }
 
-    /* Quitar el estado de error apenas el usuario vuelve a escribir */
-    if (inputUsuario) {
-        inputUsuario.addEventListener('input', function () {
-            limpiarError(inputUsuario, errorUsuario);
-        });
+    function mostrarNota(texto, esError) {
+        nota.classList.toggle('login-note-error', esError);
+        nota.classList.toggle('login-note-success', !esError);
+        nota.textContent = texto;
     }
 
-    if (inputPassword) {
-        inputPassword.addEventListener('input', function () {
-            limpiarError(inputPassword, errorPassword);
-        });
-    }
+    inputUsuario.addEventListener('input', function () { limpiarError(inputUsuario, errorUsuario); });
+    inputPassword.addEventListener('input', function () { limpiarError(inputPassword, errorPassword); });
 
-    if (form) {
+    form.addEventListener('submit', async function (evento) {
+        evento.preventDefault();
 
-        form.addEventListener('submit', function (evento) {
+        const usuario = inputUsuario.value.trim();
+        const contrasena = inputPassword.value;
+        let esValido = true;
 
-            evento.preventDefault();
+        if (!usuario) {
+            marcarError(inputUsuario, errorUsuario, 'Ingresa tu usuario.');
+            esValido = false;
+        }
+        if (!contrasena) {
+            marcarError(inputPassword, errorPassword, 'Ingresa tu contraseña.');
+            esValido = false;
+        }
+        if (!esValido) {
+            mostrarNota('Completa los campos marcados en rojo.', true);
+            return;
+        }
 
-            let esValido = true;
+        botonEntrar.disabled = true;
+        mostrarNota('Verificando…', false);
 
-            if (!inputUsuario.value.trim()) {
-                marcarError(inputUsuario, errorUsuario, 'Ingresa tu usuario institucional.');
-                esValido = false;
-            }
+        try {
+            const respuesta = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario: usuario, contrasena: contrasena })
+            });
 
-            if (!inputPassword.value.trim()) {
-                marcarError(inputPassword, errorPassword, 'Ingresa tu contraseña.');
-                esValido = false;
-            }
-
-            if (!nota) {
+            if (respuesta.ok) {
+                window.location.replace('/');
                 return;
             }
 
-            if (!esValido) {
-                nota.classList.remove('login-note-success');
-                nota.classList.add('login-note-error');
-                nota.textContent = 'Completa los campos marcados en rojo.';
-                return;
-            }
+            /* El backend responde { "messages": ["..."] } */
+            let mensaje = 'No fue posible iniciar sesión.';
+            try {
+                const cuerpo = await respuesta.json();
+                if (cuerpo && Array.isArray(cuerpo.messages) && cuerpo.messages.length) {
+                    mensaje = cuerpo.messages.join(' ');
+                }
+            } catch (e) { /* respuesta sin JSON */ }
 
-            /* Aun no hay backend de autenticacion conectado (ver README),
-               asi que por ahora solo confirmamos que el formulario esta
-               completo y listo para conectarse mas adelante. */
-            nota.classList.remove('login-note-error');
-            nota.classList.add('login-note-success');
-            nota.textContent = 'Datos completos. Falta conectar el backend de autenticación (Spring Security + JWT).';
-
-        });
-    }
-
+            inputPassword.value = '';
+            mostrarNota(mensaje, true);
+        } catch (e) {
+            mostrarNota('No se pudo conectar con el servidor. ¿Está encendido el backend?', true);
+        } finally {
+            botonEntrar.disabled = false;
+        }
+    });
 });

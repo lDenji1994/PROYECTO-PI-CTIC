@@ -1,5 +1,6 @@
 package com.certificados.app.service;
 
+import com.certificados.app.dto.DatosCursoDTO;
 import com.certificados.app.dto.DocumentoResumenDTO;
 import com.certificados.app.dto.VersionResumenDTO;
 import com.certificados.app.exception.BusinessException;
@@ -116,7 +117,12 @@ public class DocumentoAcademicoService {
             String versionFormato,
             String periodo,
             Integer idPrograma,
+            DatosCursoDTO datos,
             MultipartFile archivo) throws IOException {
+
+        if (datos == null) {
+            throw new BusinessException("Faltan los datos del curso (descripción, contenido, créditos y horas)");
+        }
 
         Asignatura asignatura = obtenerAsignatura(idAsignatura);
         TipoDocumentoAcademico tipo = obtenerTipo(idTipoDocumento);
@@ -154,8 +160,11 @@ public class DocumentoAcademicoService {
                     etiqueta + ": " + anterior + " -> " + codigo + " v" + version);
         }
 
-        // Guarda el PDF como nueva version (valida PDF, tamano y deja su propia bitacora)
-        VersionDocumento nueva = versionDocumentoService.cargarArchivo(archivo, documento.getId(), periodo);
+        // Guarda el archivo (PDF, Word o Excel) como nueva version junto con los
+        // datos del curso escritos a mano. Si algo falla (archivo danado, dato
+        // invalido...) se revierte TODO: no queda un documento a medias.
+        VersionDocumento nueva = versionDocumentoService.cargarArchivo(
+                archivo, documento.getId(), periodo, datos);
         if (idPrograma != null) {
             nueva.setIdProgramaDisena(idPrograma);
             versionRepository.save(nueva);

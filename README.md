@@ -17,7 +17,7 @@ Navegador ──► http://localhost:8080  (Spring Boot)
 PROYECTO-PI-CTIC/
 ├── database/
 │   ├── 01_esquema_BASE_DE_DATOS_PI_TRACK1.sql   ← esquema oficial del equipo (sin cambios)
-│   └── 02_datos_iniciales.sql                   ← usuario admin, tipos, plantilla PDF mínima, ejemplos
+│   └── 02_datos_iniciales.sql                   ← usuario admin (sin contraseña), tipos, plantilla PDF mínima, ejemplos
 ├── backend/
 │   ├── build.gradle
 │   └── src/main/
@@ -28,7 +28,8 @@ PROYECTO-PI-CTIC/
 │       │   ├── model/        ← entidades = tablas del script SQL
 │       │   ├── dto/          ← lo que se envía/recibe en JSON
 │       │   ├── exception/    ← errores en JSON uniforme {"messages": [...]}
-│       │   └── config/       ← CORS, nombres de tablas, redirección del panel
+│       │   ├── security/     ← login: usuario de la sesión, admin inicial, límite de intentos
+│       │   └── config/       ← reglas de seguridad por rol, CORS, nombres de tablas
 │       └── resources/
 │           ├── application.properties                 ← configuración (SIN contraseñas)
 │           ├── application-local.properties.example   ← copia para tus credenciales
@@ -63,9 +64,9 @@ En MySQL Workbench (o consola), ejecutar **en este orden**:
    Si la BD ya existe, sáltalo.
 2. `database/02_datos_iniciales.sql` (se puede correr varias veces sin duplicar).
 
-El paso 2 crea el usuario `admin` (id 1), que es a nombre de quien se registra la
-**bitácora / actividad reciente** mientras no exista login. Sin ningún usuario en la
-tabla de usuarios la bitácora no se guarda (la tabla Logs exige un usuario).
+El paso 2 crea el usuario `admin` **sin contraseña**. La contraseña se la asigna el
+servidor la primera vez que arranca (paso 3.2). Esta versión **no cambia el esquema**:
+si ya tenías la base de datos creada no hay que volver a correr nada.
 
 ### 3.2 Tus credenciales (sin subirlas a GitHub)
 
@@ -75,8 +76,18 @@ copy application-local.properties.example application-local.properties     # Win
 # cp application-local.properties.example application-local.properties     # Mac/Linux
 ```
 
-Edita `application-local.properties` con tu puerto (3306 o 3307), usuario y contraseña.
-Ese archivo está en `.gitignore`: **nunca se sube**.
+Edita `application-local.properties` con:
+
+* tu puerto de MySQL (3306 o 3307), usuario y contraseña;
+* la **contraseña del administrador del panel**:
+
+```properties
+app.seguridad.admin-inicial.usuario=admin
+app.seguridad.admin-inicial.contrasena=   ← escribe aquí la tuya (mín. 8, con letras y números)
+```
+
+Ese archivo está en `.gitignore`: **nunca se sube**. `application.properties` (el que sí se
+sube) ya **no trae ninguna contraseña por defecto**, ni de MySQL ni del panel.
 
 Alternativa sin archivo: variables de entorno `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`.
 
@@ -84,24 +95,34 @@ Alternativa sin archivo: variables de entorno `DB_URL`, `DB_USERNAME`, `DB_PASSW
 
 ```bash
 cd backend
-gradle bootRun
+.\gradlew.bat bootRun        # Windows
+# ./gradlew bootRun          # Mac/Linux
 ```
 
-`application-local.properties` se carga automáticamente si existe (no hace falta activar perfiles).
+`application-local.properties` se carga automáticamente si existe. En la consola debe
+aparecer `LOGIN: administrador inicial 'admin' listo para iniciar sesion.` (solo la primera vez).
 
-### 3.4 Abrir el panel
+### 3.4 Entrar al panel
 
-<http://localhost:8080> — el punto de la barra superior se pone rojo si el panel no logra
-comunicarse con el backend.
+<http://localhost:8080> → pide iniciar sesión → usuario `admin` y la contraseña del paso 3.2.
+
+Después, en el menú **Usuarios**, el administrador crea las cuentas de las auxiliares
+(máximo 4 activas; se cambia con `app.seguridad.max-auxiliares`). Cada quien puede cambiar
+su contraseña en **Mi cuenta**.
+
+> ¿El administrador olvidó su contraseña? Pon una nueva en `application-local.properties`,
+> agrega `app.seguridad.admin-inicial.forzar=true`, reinicia el servidor y luego quita esa línea.
 
 ### 3.5 Prueba rápida de extremo a extremo
 
 1. **Contenido de cursos** → registrar asignatura `ISIS` + `0202` + "Bases de Datos".
 2. **Carga de información** → elegir la asignatura, tipo "Carta Descriptiva", formato
-   `DA-FO-085N v03` (vigente) y subir un PDF. Repetir con otra asignatura usando
-   `SYLLABUS v1` → aparece como **Desactualizado**.
-3. **Certificaciones** → ID estudiante, tipo de certificado, encargado, marcar
-   asignaturas → *Crear solicitud* → *Generar PDF* → *Ver PDF*.
+   `DA-FO-085N v03`, **pegar la descripción del curso y el contenido (un tema por línea)**,
+   escribir créditos y horas, y subir el archivo (PDF, Word o Excel).
+3. **Certificaciones** → ID estudiante, tipo de certificado, pegar los códigos del Kárdex
+   (o marcar las asignaturas a mano) →
+   *Crear solicitud*. La vista previa muestra lo que dirá el certificado y qué asignaturas
+   están incompletas → *Generar PDF* → *Ver PDF*.
 4. **Dashboard** → los contadores y la *Actividad reciente* muestran todo lo anterior.
 
 ---
@@ -110,10 +131,95 @@ comunicarse con el backend.
 
 | Módulo | Qué hace | API que usa |
 |---|---|---|
-| **Dashboard** | Contadores reales, aviso de formatos desactualizados y **actividad reciente** (bitácora). Clic en una tarjeta → historial del módulo. | `/api/actividades`, `/api/documentos-academicos/resumen`, `/api/solicitudes-certificados` |
-| **Carga de información** | Sube el PDF de una asignatura (materia + curso), tipo y formato. Muestra en vivo si el formato es **vigente** o **desactualizado**. Tabla con todas las cargas. | `POST /api/documentos-academicos/cargar`, `/api/formatos` |
-| **Contenido de cursos** | Registrar asignaturas (código de **materia** + código de **curso**) y programas. Tarjetas por asignatura con el estado de sus formatos e historial de versiones. | `/api/asignaturas`, `/api/programas` |
-| **Certificaciones** | Crear solicitudes con asignaturas, cambiar su estado, generar y ver el PDF. Vista previa con los documentos y la vigencia de cada formato. | `/api/solicitudes-certificados`, `/api/certificados-generados` |
+| **Login** | Usuario y contraseña contra la tabla de usuarios (hash BCrypt). Sesión por cookie. | `/api/auth/*` |
+| **Dashboard** | Contadores reales, aviso de formatos desactualizados y **actividad reciente** (la auxiliar ve la suya; el administrador, la de todos). | `/api/actividades`, `/api/documentos-academicos/resumen`, `/api/solicitudes-certificados` |
+| **Carga de información** | Sube el documento (PDF, Word, Excel) y registra **a mano** los datos del curso. Permite corregir los datos o reemplazar el archivo después. | `POST /api/documentos-academicos/cargar`, `/api/versiones-documentos/{id}/datos`, `/api/versiones-documentos/{id}/archivo` |
+| **Contenido de cursos** | Registrar asignaturas (código de **materia** + código de **curso**) y programas (solo administrador). | `/api/asignaturas`, `/api/programas` |
+| **Certificaciones** | Solicitudes con asignaturas, vista previa del contenido, generar y ver **un solo PDF** con todas las asignaturas. | `/api/solicitudes-certificados`, `/api/certificados-generados` |
+| **Usuarios** (solo administrador) | Crear cuentas, activar/desactivar, asignar contraseña. | `/api/usuarios` |
+| **Mi cuenta** | Cambiar la contraseña propia. | `POST /api/auth/cambiar-contrasena` |
+
+### Quién puede hacer qué
+
+| Acción | Auxiliar | Administrador |
+|---|---|---|
+| Cargar documentos y registrar / corregir datos del curso | ✔ | ✔ |
+| Registrar asignaturas | ✔ | ✔ |
+| Crear solicitudes y generar certificados | ✔ | ✔ |
+| Ver la actividad | solo la suya | la de todos |
+| Registrar programas | ✘ | ✔ |
+| Crear usuarios, activar/desactivar, asignar contraseñas | ✘ | ✔ |
+| Cambiar plantillas del certificado (API) | ✘ | ✔ |
+
+Las reglas están en `config/SecurityConfig.java` (el panel solo oculta los botones; quien
+decide es el backend).
+
+### Datos del curso: todo manual (sin lectura automática de documentos)
+
+El sistema **no lee** el contenido del PDF/Word/Excel. La auxiliar copia y pega desde la
+carta descriptiva o el syllabus:
+
+| Campo | ¿Obligatorio? | Dónde se guarda |
+|---|---|---|
+| Descripción del curso | Sí | `VersionesDocumentosS.t_descripcion` |
+| Detalle de contenido (un tema por línea) | Sí | `ContenidosS` (una fila por tema, con orden) |
+| Créditos | Sí | `VersionesDocumentosS` |
+| Horas teóricas / prácticas / laboratorio / independientes | Al menos una > 0 | `VersionesDocumentosS` |
+| Escuela, facultad, CINE, NBC, ciclo, nivel, requisitos, propósito, justificación, modalidades, observaciones | No (sección plegable) | `VersionesDocumentosS` |
+
+La lista de campos del formulario está en `static/app.js` → `CAMPOS_CURSO`, y en el backend
+en `dto/DatosCursoDTO.java` + `service/VersionDocumentoService.java`.
+
+### Si la carga de un documento falla
+
+* Lo escrito **no se pierde**: el formulario no se limpia y además se guarda un borrador en
+  el navegador (se recupera aunque se recargue la página). El archivo sí hay que volver a elegirlo.
+* Aparece un aviso rojo con el motivo y el botón **Reintentar**.
+* Si el documento quedó cargado pero con el archivo equivocado o datos mal escritos: botón
+  **Corregir** en la tabla → *Guardar datos del curso* o *Reemplazar archivo*.
+* En el servidor la carga es una sola transacción: o queda todo guardado o no queda nada.
+
+### Eliminar desde el panel (sin tocar la base de datos)
+
+Cada vista donde se sube o se crea algo tiene su botón **Eliminar** (siempre pide confirmación
+y queda en la actividad quién lo hizo):
+
+| Qué | Dónde está el botón | Quién | Regla |
+|---|---|---|---|
+| Documento cargado (archivo + datos del curso) | Carga de información y *Ver versiones* | Auxiliar y admin | Si hay versiones anteriores se conservan; si era la única, el documento sale de la lista |
+| Asignatura | Tarjeta en Contenido de cursos | Auxiliar y admin | Solo si no tiene documentos ni está en una solicitud |
+| Programa | «×» junto al programa | Solo admin | Solo si ningún documento lo usa |
+| Solicitud de certificado | Tabla de solicitudes | Auxiliar y admin | Con certificado ya generado, solo el admin (se borra también el PDF) |
+| Usuario | Menú Usuarios | Solo admin | Solo cuentas sin actividad; si ya trabajó, se **desactiva** |
+
+Reglas en `service/EliminacionService.java`; permisos en `config/SecurityConfig.java`.
+
+### Archivos aceptados
+
+`pdf, docx, doc, xlsx, xlsm, xls` (propiedad `app.documentos.extensiones-permitidas`), máx. 20 MB.
+Se valida la extensión **y** los primeros bytes del archivo (un `.exe` renombrado a `.docx`
+se rechaza). Los PDF se abren en el navegador; Word y Excel se descargan.
+
+### Certificado de contenidos resumidos
+
+Un solo PDF por solicitud: encabezado de la plantilla (título, estudiante, solicitud) y,
+debajo, un bloque por asignatura con código, nombre, créditos, horas, descripción y contenido;
+al final, fecha de expedición y firma. Si a alguna asignatura le falta documento, descripción,
+contenido o créditos, **no se genera** y se indica qué falta (la solicitud no cambia de estado).
+De cada asignatura se toma la versión con datos completos, de formato vigente y más reciente
+(`service/ContenidoCertificadoService.java`). El diseño del cuerpo está en
+`service/CertificadoContenidosPdf.java`; ciudad y cargo de la firma en
+`app.certificados.ciudad` / `app.certificados.cargo-firma`.
+
+### Kárdex manual (pegar códigos)
+
+El sistema **no lee** el archivo del Kárdex. En *Certificaciones → Solicitar certificado* la
+auxiliar copia del Kárdex los códigos de las asignaturas del estudiante, los pega en el cuadro
+«Pegar códigos del Kárdex» y pulsa **Marcar asignaturas**: se marcan todas de una vez y se
+avisa qué códigos no están registrados. Acepta `FION 0001`, `FION-0001` o `FION0001`,
+separados por coma, espacio o salto de línea, y también filas completas copiadas del Kárdex
+(ignora nombres y notas). El texto pegado **no se envía al servidor ni se guarda**.
+Lógica en `static/app.js` → `buscarCodigosEnTexto`.
 
 ### Código de materia + código de curso
 
@@ -130,69 +236,83 @@ Se configura en `application.properties` → `app.formatos.catalogo` (no está q
 CODIGO:VERSION:Nombre visible:VIGENTE|ANTIGUO ; ...
 DA-FO-085N:03:Carta descriptiva del curso:VIGENTE
 DA-FO-763:2:Carta descriptiva del curso (version 2):ANTIGUO
-SYLLABUS / CONTENIDOS / PROGRAMA  → formatos antiguos
 ```
 
 Cuando salga una versión nueva de la carta descriptiva: agregarla como `VIGENTE` y pasar
-la anterior a `ANTIGUO`. Todo documento con otro formato pasa a verse como **Desactualizado**.
+la anterior a `ANTIGUO`.
 
 ### Actividad reciente (bitácora)
 
-Se guarda en la tabla `..._LogS` del esquema (IP, usuario, tabla, proceso, fechas).
-Se registra automáticamente al: crear programa/asignatura, crear documento, cambiar su
-formato, cargar versión (en amarillo si el formato es viejo), crear solicitud, agregar
-asignaturas, cambiar estado y generar el certificado. Ver `service/ActividadService.java`.
+Se guarda en la tabla `..._LogS` (IP, usuario, tabla, proceso, fechas), **a nombre de quien
+tiene la sesión iniciada**. Ver `service/ActividadService.java`.
 
 ---
 
-## 5. Endpoints nuevos o modificados en esta versión
+## 5. Endpoints nuevos o modificados
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/actividades?modulo=&limite=` | Actividad reciente legible (módulos: documentos, cursos, certificaciones) |
+| POST | `/api/auth/login` | `{usuario, contrasena}` → inicia sesión (cookie) |
+| GET | `/api/auth/yo` | Quién tiene la sesión (401 si nadie) |
+| POST | `/api/auth/logout` | Cierra la sesión |
+| POST | `/api/auth/cambiar-contrasena` | `{actual, nueva}` |
+| GET | `/api/usuarios` | Administrador: todos. Auxiliar: solo activos (nunca contraseñas) |
+| POST | `/api/usuarios` | *(admin)* crea usuario `{nombreCompleto, usuario, correo, contrasena, rol}` |
+| PATCH | `/api/usuarios/{id}/estado?activo=` | *(admin)* activar / desactivar |
+| PATCH | `/api/usuarios/{id}/contrasena` | *(admin)* `{nueva}` |
+| GET | `/api/configuracion` | Extensiones permitidas y tamaño máximo |
+| POST | `/api/documentos-academicos/cargar` | Multipart: archivo + datos del curso (campos de `DatosCursoDTO`) |
+| GET / PUT | `/api/versiones-documentos/{id}/datos` | Leer / corregir los datos del curso |
+| POST | `/api/versiones-documentos/{id}/archivo` | Reemplazar el archivo de una versión |
+| GET | `/api/solicitudes-certificados/{id}/contenido` | Lo que dirá el certificado, por asignatura, y qué falta |
+| DELETE | `/api/versiones-documentos/{id}` | Elimina un documento cargado |
+| DELETE | `/api/asignaturas/{id}` | Elimina una asignatura sin documentos ni solicitudes |
+| DELETE | `/api/programas/{id}` | *(admin)* elimina un programa sin uso |
+| DELETE | `/api/solicitudes-certificados/{id}` | Elimina la solicitud, sus asignaturas y su certificado |
+| DELETE | `/api/usuarios/{id}` | *(admin)* elimina una cuenta sin actividad |
+| GET | `/api/actividades?modulo=&limite=` | Actividad (módulos: documentos, cursos, certificaciones, usuarios) |
 | GET | `/api/formatos` | Catálogo de formatos con cuál es el vigente |
-| GET | `/api/documentos-academicos/resumen` | Documentos con materia/curso, tipo, vigencia y versiones (sin binarios) |
-| POST | `/api/documentos-academicos/cargar` | Multipart: crea/reutiliza el documento y guarda el PDF como versión nueva |
-| GET/POST | `/api/asignaturas` | Ahora con `codigoMateria` y `codigoCurso` (acepta el `codigo` anterior) |
-| GET | `/api/usuarios` | Usuarios activos (sin contraseña) para elegir encargado |
-| GET | `/api/certificados-generados/solicitud/{id}/archivo` | Abre el PDF del certificado |
-| GET | `/api/solicitudes-certificados/{id}/asignaturas` | Ahora devuelve materia/curso separados |
+| GET | `/api/documentos-academicos/resumen` | Documentos con materia/curso, vigencia y versiones (sin binarios) |
 
-Los demás endpoints del equipo (plantillas, secciones, campos, logs, etc.) no cambiaron.
+Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responden `401`.
 
 ---
 
 ## 6. Seguridad aplicada (no quitar)
 
-* **Sin credenciales en el código**: `application.properties` usa variables / perfil `local`.
-* **SQL injection**: todo acceso es por Spring Data JPA (consultas parametrizadas), sin SQL armado a mano.
+* **Sin credenciales en el código ni en el repositorio**: ni la de MySQL ni la del panel.
+  Los usuarios `{noop}` que había en `SecurityConfig` se eliminaron.
+* **Contraseñas con hash BCrypt**; nunca se devuelven en la API ni se escriben en consola.
+* **Bloqueo por intentos**: 5 fallos seguidos bloquean 5 minutos (`app.seguridad.*`).
+* **Sesión**: cookie `HttpOnly` + `SameSite=Strict`, caduca a los 60 min sin uso; si el
+  administrador desactiva a alguien o le cambia la contraseña, su sesión abierta se cierra.
+* **Permisos por rol en el backend** (`SecurityConfig`), no solo en el panel.
+* **SQL injection**: todo acceso es por Spring Data JPA (consultas parametrizadas).
 * **XSS**: el panel escapa todo texto del servidor (`escaparTexto`) y no usa `onclick` con datos.
-* **Archivos**: solo PDF reales (se revisa la firma `%PDF`, no solo la extensión), máx. 20 MB,
-  nombre de archivo limpiado y cabecera de descarga escapada (evita inyección de cabeceras).
+* **Archivos**: extensión + firma del archivo, máx. 20 MB, se guardan en la BD y nunca se
+  ejecutan; se descargan con `X-Content-Type-Options: nosniff`.
 * **Errores**: el navegador recibe mensajes claros; las trazas internas solo salen en la consola.
-* **Usuarios**: `/api/usuarios` nunca devuelve contraseñas.
 
 ---
 
 ## 7. Notas importantes para el equipo
 
-1. **Contraseña expuesta**: la versión anterior de `application.properties` en GitHub tenía la
-   contraseña de MySQL de un integrante. Ya se quitó, pero **sigue en el historial de git**:
-   esa persona debe **cambiar su contraseña de MySQL**.
-2. **Nombres de tablas en Mac/Linux**: `LowerCaseTableNamingStrategy` pasa los nombres de
-   tabla a minúsculas (en Windows MySQL ya los guarda así). En Mac/Linux, MySQL distingue
-   mayúsculas: hay que crear la BD con `lower_case_table_names=1` o no funcionará.
-3. `ddl-auto=validate`: Hibernate **no** crea ni cambia tablas; el esquema manda. Si se cambia
-   el SQL, hay que ajustar la entidad correspondiente en `model/`.
-4. `backend/bin/` (compilación del IDE) se eliminó del repo y quedó en `.gitignore`.
-5. El login (`login.html`) sigue siendo solo visual: falta Spring Security + JWT. Mientras
-   tanto, la bitácora usa `app.auditoria.id-usuario-por-defecto`.
+1. **`application.properties` ya no trae contraseña de MySQL por defecto.** Cada integrante
+   debe tener su `application-local.properties` (paso 3.2) o no conectará.
+2. **Contraseñas viejas en el historial de git** (MySQL de un integrante y `admin123` /
+   `auxiliar123` del `SecurityConfig` anterior): no reutilizarlas en ningún lado.
+3. **Nombres de tablas en Mac/Linux**: hay que crear la BD con `lower_case_table_names=1`.
+4. `ddl-auto=validate`: Hibernate **no** crea ni cambia tablas; el esquema manda.
+5. Si en tu BD existe el usuario `auxiliar` de una versión anterior del script 02, cuenta
+   como una de las 4 auxiliares: asígnale contraseña desde **Usuarios** o desactívalo.
+6. Documentos cargados antes de esta versión aparecen con datos *Por completar*: usar
+   **Corregir** para registrarlos.
 
 ---
 
 ## 8. Próximos pasos sugeridos
 
-* Login real (Spring Security + BCrypt + JWT) y usar el usuario autenticado en la bitácora.
-* Extraer automáticamente los datos de la carta descriptiva (horas, créditos, CINE…) al cargarla
-  (las columnas ya existen en `VersionesDocumentosS`).
+* Plantilla institucional del certificado (logo, membrete, firma real).
+* Lectura automática de la carta descriptiva (se descartó en esta entrega por tiempo).
 * Pantalla para administrar plantillas de certificado desde el panel.
+* Token CSRF si el panel llega a servirse desde otro dominio distinto al del backend.

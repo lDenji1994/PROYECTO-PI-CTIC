@@ -1,5 +1,6 @@
 package com.certificados.app.service;
 
+import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.CampoPlantilla;
@@ -34,13 +35,17 @@ public class CertificadoGeneradorService {
     private final VersionPlantillaRepository versionPlantillaRepository;
     private final ElementoPlantillaRepository elementoRepository;
     private final CampoPlantillaRepository campoRepository;
+    private final ContenidoCertificadoService contenidoCertificadoService;
+    private final CertificadoContenidosPdf contenidosPdf;
 
     public CertificadoGeneradorService(
             CertificadoGeneradoRepository certificadoRepository,
             SolicitudCertificadoRepository solicitudRepository,
             VersionPlantillaRepository versionPlantillaRepository,
             ElementoPlantillaRepository elementoRepository,
-            CampoPlantillaRepository campoRepository) {
+            CampoPlantillaRepository campoRepository,
+            ContenidoCertificadoService contenidoCertificadoService,
+            CertificadoContenidosPdf contenidosPdf) {
 
         this.certificadoRepository = certificadoRepository;
         this.solicitudRepository = solicitudRepository;
@@ -48,6 +53,20 @@ public class CertificadoGeneradorService {
                 versionPlantillaRepository;
         this.elementoRepository = elementoRepository;
         this.campoRepository = campoRepository;
+        this.contenidoCertificadoService = contenidoCertificadoService;
+        this.contenidosPdf = contenidosPdf;
+    }
+
+    /**
+     * Donde termina el encabezado de la plantilla en la primera pagina:
+     * la posicion Y mas baja de sus elementos, mas un espacio.
+     */
+    private float finDelEncabezado(List<ElementoPlantilla> elementos) {
+        float maximo = 0;
+        for (ElementoPlantilla elemento : elementos) {
+            maximo = Math.max(maximo, decimalToFloat(elemento.getPosicionY(), 0));
+        }
+        return maximo + 28;
     }
 
     @Transactional(noRollbackFor = {BusinessException.class, ResourceNotFoundException.class})
@@ -93,6 +112,11 @@ public class CertificadoGeneradorService {
             );
         }
 
+        // Informacion de cada asignatura registrada a mano por la auxiliar.
+        // Si a alguna le falta algo se detiene aqui con un mensaje claro.
+        List<AsignaturaCertificadoDTO> asignaturas =
+                contenidoCertificadoService.validarCompleto(idSolicitud);
+
         elementos.sort(
                 Comparator.comparing(
                         ElementoPlantilla::getOrden,
@@ -107,6 +131,11 @@ public class CertificadoGeneradorService {
 
             Document document =
                     new Document(PageSize.A4);
+
+            // Margenes del cuerpo que fluye debajo del encabezado
+            // (izquierda, derecha, arriba, abajo). El encabezado de la
+            // plantilla usa posiciones fijas y no depende de esto.
+            document.setMargins(50, 50, 50, 60);
 
             PdfWriter writer =
                     PdfWriter.getInstance(
@@ -127,6 +156,15 @@ public class CertificadoGeneradorService {
                         solicitud
                 );
             }
+
+            // Cuerpo del certificado de contenidos resumidos: un bloque por
+            // asignatura (creditos, horas, descripcion y contenido), debajo
+            // del encabezado y continuando en las paginas necesarias.
+            contenidosPdf.agregar(
+                    document,
+                    finDelEncabezado(elementos),
+                    asignaturas
+            );
 
             document.close();
 
@@ -155,6 +193,11 @@ public class CertificadoGeneradorService {
             return certificadoRepository.save(
                     certificado
             );
+
+        } catch (BusinessException e) {
+
+            // Ya trae un mensaje claro para el usuario: se deja tal cual
+            throw e;
 
         } catch (Exception e) {
 

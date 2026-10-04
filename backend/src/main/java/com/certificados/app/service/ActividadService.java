@@ -5,6 +5,8 @@ import com.certificados.app.model.Log;
 import com.certificados.app.model.Usuario;
 import com.certificados.app.repository.LogRepository;
 import com.certificados.app.repository.UsuarioRepository;
+import com.certificados.app.security.UsuarioDetallesService;
+import com.certificados.app.security.UsuarioSesion;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +61,7 @@ public class ActividadService {
     public static final String TABLA_SOLICITUDES = "SolicitudesCertificadosS";
     public static final String TABLA_DETALLE_SOLICITUD = "DetallesSolicitudesCertificadosS";
     public static final String TABLA_CERTIFICADOS = "CertificadosGeneradosS";
+    public static final String TABLA_USUARIOS = "UsuariosS";
 
     /* ---------- Procesos (primera parte de t_nombreProceso) ---------- */
     public static final String CREAR_PROGRAMA = "CREAR_PROGRAMA";
@@ -72,6 +75,17 @@ public class ActividadService {
     public static final String SOLICITUD_ESPERANDO = "SOLICITUD_ESPERANDO_DOCUMENTOS";
     public static final String SOLICITUD_REALIZADA = "SOLICITUD_REALIZADA";
     public static final String SOLICITUD_ERROR = "SOLICITUD_ERROR";
+    public static final String ACTUALIZAR_DATOS_CURSO = "ACTUALIZAR_DATOS_CURSO";
+    public static final String REEMPLAZAR_ARCHIVO = "REEMPLAZAR_ARCHIVO_DOCUMENTO";
+    public static final String ELIMINAR_DOCUMENTO = "ELIMINAR_VERSION_DOCUMENTO";
+    public static final String ELIMINAR_ASIGNATURA = "ELIMINAR_ASIGNATURA";
+    public static final String ELIMINAR_PROGRAMA = "ELIMINAR_PROGRAMA";
+    public static final String ELIMINAR_SOLICITUD = "ELIMINAR_SOLICITUD_CERTIFICADO";
+    public static final String ELIMINAR_USUARIO = "ELIMINAR_USUARIO";
+    public static final String CREAR_USUARIO = "CREAR_USUARIO";
+    public static final String ACTIVAR_USUARIO = "ACTIVAR_USUARIO";
+    public static final String DESACTIVAR_USUARIO = "DESACTIVAR_USUARIO";
+    public static final String CAMBIAR_CONTRASENA = "CAMBIAR_CONTRASENA";
     /** Lo registra SolicitudCertificadoService.iniciarProcesamiento (codigo del equipo). */
     public static final String GENERAR_CERTIFICADO = "GENERAR_CERTIFICADO";
 
@@ -87,21 +101,40 @@ public class ActividadService {
             Map.entry(SOLICITUD_ESPERANDO, "Solicitud en espera de documentos"),
             Map.entry(SOLICITUD_REALIZADA, "Solicitud marcada como realizada"),
             Map.entry(SOLICITUD_ERROR, "Solicitud marcada con error"),
+            Map.entry(ACTUALIZAR_DATOS_CURSO, "Datos del curso corregidos"),
+            Map.entry(REEMPLAZAR_ARCHIVO, "Archivo de documento reemplazado"),
+            Map.entry(ELIMINAR_DOCUMENTO, "Documento cargado eliminado"),
+            Map.entry(ELIMINAR_ASIGNATURA, "Asignatura eliminada"),
+            Map.entry(ELIMINAR_PROGRAMA, "Programa académico eliminado"),
+            Map.entry(ELIMINAR_SOLICITUD, "Solicitud de certificado eliminada"),
+            Map.entry(ELIMINAR_USUARIO, "Usuario eliminado"),
+            Map.entry(CREAR_USUARIO, "Usuario creado"),
+            Map.entry(ACTIVAR_USUARIO, "Usuario activado"),
+            Map.entry(DESACTIVAR_USUARIO, "Usuario desactivado"),
+            Map.entry(CAMBIAR_CONTRASENA, "Contraseña cambiada"),
             Map.entry(GENERAR_CERTIFICADO, "Generación de certificado PDF")
     );
 
-    private static final Map<String, String> NIVELES = Map.of(
-            CARGAR_DOCUMENTO_ANTIGUO, "warning",
-            SOLICITUD_ESPERANDO, "warning",
-            SOLICITUD_ERROR, "danger",
-            GENERAR_CERTIFICADO, "info"
+    private static final Map<String, String> NIVELES = Map.ofEntries(
+            Map.entry(CARGAR_DOCUMENTO_ANTIGUO, "warning"),
+            Map.entry(SOLICITUD_ESPERANDO, "warning"),
+            Map.entry(SOLICITUD_ERROR, "danger"),
+            Map.entry(DESACTIVAR_USUARIO, "warning"),
+            Map.entry(ELIMINAR_DOCUMENTO, "warning"),
+            Map.entry(ELIMINAR_ASIGNATURA, "warning"),
+            Map.entry(ELIMINAR_PROGRAMA, "warning"),
+            Map.entry(ELIMINAR_SOLICITUD, "warning"),
+            Map.entry(ELIMINAR_USUARIO, "warning"),
+            Map.entry(REEMPLAZAR_ARCHIVO, "info"),
+            Map.entry(GENERAR_CERTIFICADO, "info")
     );
 
     /** Que tablas pertenecen a cada modulo del panel (filtro del Dashboard). */
     private static final Map<String, List<String>> MODULOS = Map.of(
             "documentos", List.of(TABLA_DOCUMENTOS, TABLA_VERSIONES),
             "cursos", List.of(TABLA_ASIGNATURAS, TABLA_PROGRAMAS),
-            "certificaciones", List.of(TABLA_SOLICITUDES, TABLA_DETALLE_SOLICITUD, TABLA_CERTIFICADOS)
+            "certificaciones", List.of(TABLA_SOLICITUDES, TABLA_DETALLE_SOLICITUD, TABLA_CERTIFICADOS),
+            "usuarios", List.of(TABLA_USUARIOS)
     );
 
     private final LogRepository logRepository;
@@ -136,7 +169,13 @@ public class ActividadService {
      */
     @Transactional
     public void registrar(String tabla, String proceso, String detalle, Integer idUsuario) {
-        Integer usuario = idUsuario != null ? idUsuario : idUsuarioPorDefecto;
+        // Quien queda en la bitacora, por prioridad:
+        //   1. el usuario que tiene la sesion iniciada (quien realmente lo hizo)
+        //   2. el usuario indicado por quien llama (p. ej. el encargado de la solicitud)
+        //   3. el usuario por defecto de la configuracion (tareas sin sesion)
+        Integer usuario = UsuarioDetallesService.actual()
+                .map(UsuarioSesion::getId)
+                .orElse(idUsuario != null ? idUsuario : idUsuarioPorDefecto);
 
         if (usuario == null || !usuarioRepository.existsById(usuario)) {
             LOG.warn("Bitacora: el usuario {} no existe; no se registra '{}'. "
@@ -181,21 +220,28 @@ public class ActividadService {
 
     /**
      * Ultimas acciones, de la mas reciente a la mas antigua.
-     * @param modulo documentos | cursos | certificaciones | null (todas)
-     * @param limite cuantas traer (1..200)
+     * @param modulo    documentos | cursos | certificaciones | usuarios | null (todas)
+     * @param limite    cuantas traer (1..200)
+     * @param idUsuario si no es null, solo las acciones de ese usuario
+     *                  (las auxiliares solo ven su propia actividad)
      */
     @Transactional(readOnly = true)
-    public List<ActividadDTO> listarRecientes(String modulo, int limite) {
+    public List<ActividadDTO> listarRecientes(String modulo, int limite, Integer idUsuario) {
         int cantidad = Math.max(1, Math.min(limite, MAX_POR_CONSULTA));
         PageRequest pagina = PageRequest.of(0, cantidad);
 
         List<Log> logs;
         if (modulo != null && MODULOS.containsKey(modulo)) {
-            logs = logRepository.findByNombreTablaInOrderByFechaInicioDescIdDesc(MODULOS.get(modulo), pagina);
+            List<String> tablas = MODULOS.get(modulo);
+            logs = idUsuario == null
+                    ? logRepository.findByNombreTablaInOrderByFechaInicioDescIdDesc(tablas, pagina)
+                    : logRepository.findByNombreTablaInAndIdUsuarioOrderByFechaInicioDescIdDesc(tablas, idUsuario, pagina);
         } else if (modulo == null || modulo.isBlank() || "todos".equals(modulo)) {
-            logs = logRepository.findAllByOrderByFechaInicioDescIdDesc(pagina);
+            logs = idUsuario == null
+                    ? logRepository.findAllByOrderByFechaInicioDescIdDesc(pagina)
+                    : logRepository.findByIdUsuarioOrderByFechaInicioDescIdDesc(idUsuario, pagina);
         } else {
-            throw new IllegalArgumentException("Modulo no valido: use documentos, cursos o certificaciones");
+            throw new IllegalArgumentException("Modulo no valido: use documentos, cursos, certificaciones o usuarios");
         }
 
         Set<Integer> idsUsuarios = logs.stream().map(Log::getIdUsuario)

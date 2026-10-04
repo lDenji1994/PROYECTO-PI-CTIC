@@ -16,4 +16,7 @@ public interface VersionDocumentoProgramaRepository
 
     List<VersionDocumentoPrograma> findByIdPrograma(
             Integer idPrograma);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdVersionDocumento(Integer idVersionDocumento);
 }

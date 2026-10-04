@@ -1,5 +1,6 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.DatosCursoDTO;
 import com.certificados.app.dto.VersionDocumentoDTO;
 import com.certificados.app.service.VersionDocumentoService;
 import org.springframework.core.io.ByteArrayResource;
@@ -65,6 +66,11 @@ public class VersionDocumentoController {
         return ResponseEntity.status(201).build();
     }
 
+    /**
+     * GET /api/versiones-documentos/{id}/archivo
+     * Entrega el archivo original. Los PDF se abren en el navegador; Word y
+     * Excel se descargan (nunca se ejecutan en el servidor).
+     */
     @GetMapping("/{id}/archivo")
     public ResponseEntity<ByteArrayResource> descargar(
             @PathVariable Integer id) {
@@ -72,21 +78,50 @@ public class VersionDocumentoController {
         byte[] archivo = service.obtenerArchivo(id);
         String nombreArchivo = service.obtenerNombreArchivo(id);
 
-        ByteArrayResource resource =
-                new ByteArrayResource(archivo);
+        ContentDisposition disposicion = (service.esPdf(nombreArchivo)
+                ? ContentDisposition.inline()
+                : ContentDisposition.attachment())
+                // ContentDisposition escapa el nombre (tildes, comillas):
+                // evita inyeccion de cabeceras.
+                .filename(nombreArchivo, StandardCharsets.UTF_8)
+                .build();
 
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        // ContentDisposition escapa el nombre (tildes, comillas):
-                        // evita inyeccion de cabeceras.
-                        ContentDisposition.inline()
-                                .filename(nombreArchivo, StandardCharsets.UTF_8)
-                                .build()
-                                .toString()
-                )
+                .contentType(MediaType.parseMediaType(service.tipoMime(nombreArchivo)))
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposicion.toString())
+                // El navegador no debe "adivinar" otro tipo de contenido
+                .header("X-Content-Type-Options", "nosniff")
                 .contentLength(archivo.length)
-                .body(resource);
+                .body(new ByteArrayResource(archivo));
+    }
+
+    /* ------------------------------------------------------------------
+       Datos del curso registrados a mano y correccion de cargas fallidas
+       ------------------------------------------------------------------ */
+
+    /** GET /api/versiones-documentos/{id}/datos -> datos del curso de esa version. */
+    @GetMapping("/{id}/datos")
+    public DatosCursoDTO obtenerDatos(@PathVariable Integer id) {
+        return service.obtenerDatos(id);
+    }
+
+    /** PUT /api/versiones-documentos/{id}/datos -> corrige los datos del curso (JSON). */
+    @PutMapping("/{id}/datos")
+    public DatosCursoDTO actualizarDatos(
+            @PathVariable Integer id,
+            @RequestBody DatosCursoDTO datos) {
+        return service.actualizarDatos(id, datos);
+    }
+
+    /**
+     * POST /api/versiones-documentos/{id}/archivo  (multipart, campo "archivo")
+     * Reemplaza el archivo de una version que se subio danado o equivocado.
+     */
+    @PostMapping(value = "/{id}/archivo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> reemplazarArchivo(
+            @PathVariable Integer id,
+            @RequestParam("archivo") MultipartFile archivo) throws IOException {
+        service.reemplazarArchivo(id, archivo);
+        return ResponseEntity.noContent().build();
     }
 }

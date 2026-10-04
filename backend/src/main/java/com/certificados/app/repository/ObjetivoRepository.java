@@ -10,4 +10,7 @@ import java.util.List;
 public interface ObjetivoRepository extends JpaRepository<Objetivo, Integer> {
 
     List<Objetivo> findByIdVersionDocumento(Integer idVersionDocumento);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdVersionDocumento(Integer idVersionDocumento);
 }

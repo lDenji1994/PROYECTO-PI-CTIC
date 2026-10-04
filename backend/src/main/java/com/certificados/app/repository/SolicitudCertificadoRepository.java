@@ -16,5 +16,8 @@ public interface SolicitudCertificadoRepository
     List<SolicitudCertificado> findByIdEstudiante(
             Integer idEstudiante
     );
+
+    /** ¿El usuario es encargado de alguna solicitud? */
+    boolean existsByIdUsuarioEncargado(Integer idUsuarioEncargado);
 }
 
