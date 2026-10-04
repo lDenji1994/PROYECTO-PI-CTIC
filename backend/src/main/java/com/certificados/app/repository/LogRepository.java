@@ -11,6 +11,9 @@ public interface LogRepository extends JpaRepository<Log, Integer> {
 
     List<Log> findByIdUsuario(Integer idUsuario);
 
+    /** ¿El usuario tiene actividad registrada? (si la tiene no se puede eliminar) */
+    boolean existsByIdUsuario(Integer idUsuario);
+
     List<Log> findByNombreTabla(String nombreTabla);
 
     List<Log> findByNombreProceso(String nombreProceso);

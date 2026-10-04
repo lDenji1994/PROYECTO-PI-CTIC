@@ -179,6 +179,21 @@ en `dto/DatosCursoDTO.java` + `service/VersionDocumentoService.java`.
   **Corregir** en la tabla → *Guardar datos del curso* o *Reemplazar archivo*.
 * En el servidor la carga es una sola transacción: o queda todo guardado o no queda nada.
 
+### Eliminar desde el panel (sin tocar la base de datos)
+
+Cada vista donde se sube o se crea algo tiene su botón **Eliminar** (siempre pide confirmación
+y queda en la actividad quién lo hizo):
+
+| Qué | Dónde está el botón | Quién | Regla |
+|---|---|---|---|
+| Documento cargado (archivo + datos del curso) | Carga de información y *Ver versiones* | Auxiliar y admin | Si hay versiones anteriores se conservan; si era la única, el documento sale de la lista |
+| Asignatura | Tarjeta en Contenido de cursos | Auxiliar y admin | Solo si no tiene documentos ni está en una solicitud |
+| Programa | «×» junto al programa | Solo admin | Solo si ningún documento lo usa |
+| Solicitud de certificado | Tabla de solicitudes | Auxiliar y admin | Con certificado ya generado, solo el admin (se borra también el PDF) |
+| Usuario | Menú Usuarios | Solo admin | Solo cuentas sin actividad; si ya trabajó, se **desactiva** |
+
+Reglas en `service/EliminacionService.java`; permisos en `config/SecurityConfig.java`.
+
 ### Archivos aceptados
 
 `pdf, docx, doc, xlsx, xlsm, xls` (propiedad `app.documentos.extensiones-permitidas`), máx. 20 MB.
@@ -250,6 +265,11 @@ tiene la sesión iniciada**. Ver `service/ActividadService.java`.
 | GET / PUT | `/api/versiones-documentos/{id}/datos` | Leer / corregir los datos del curso |
 | POST | `/api/versiones-documentos/{id}/archivo` | Reemplazar el archivo de una versión |
 | GET | `/api/solicitudes-certificados/{id}/contenido` | Lo que dirá el certificado, por asignatura, y qué falta |
+| DELETE | `/api/versiones-documentos/{id}` | Elimina un documento cargado |
+| DELETE | `/api/asignaturas/{id}` | Elimina una asignatura sin documentos ni solicitudes |
+| DELETE | `/api/programas/{id}` | *(admin)* elimina un programa sin uso |
+| DELETE | `/api/solicitudes-certificados/{id}` | Elimina la solicitud, sus asignaturas y su certificado |
+| DELETE | `/api/usuarios/{id}` | *(admin)* elimina una cuenta sin actividad |
 | GET | `/api/actividades?modulo=&limite=` | Actividad (módulos: documentos, cursos, certificaciones, usuarios) |
 | GET | `/api/formatos` | Catálogo de formatos con cuál es el vigente |
 | GET | `/api/documentos-academicos/resumen` | Documentos con materia/curso, vigencia y versiones (sin binarios) |

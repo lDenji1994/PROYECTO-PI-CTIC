@@ -82,6 +82,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").authenticated()
                 .requestMatchers("/api/usuarios/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.POST, "/api/programas/**").hasRole(ADMIN)
+                .requestMatchers(HttpMethod.DELETE, "/api/programas/**").hasRole(ADMIN)
                 .requestMatchers("/api/logs/**").hasRole(ADMIN)
                 // Plantillas del certificado: todos las leen, solo el administrador las cambia
                 .requestMatchers(HttpMethod.GET, PLANTILLAS).authenticated()
@@ -90,6 +91,14 @@ public class SecurityConfig {
                 // flujo normal). El panel usa /api/solicitudes-certificados/{id}/procesar.
                 .requestMatchers(HttpMethod.POST, "/api/certificados-generados/**").hasRole(ADMIN)
                 .requestMatchers("/actuator/**").hasRole(ADMIN)
+
+                // ELIMINAR (EliminacionController): documentos cargados, asignaturas y
+                // solicitudes sin certificado los puede eliminar cualquier usuario con
+                // sesion (queda en la bitacora quien fue). Programas y usuarios, solo
+                // el administrador (reglas de arriba). SE PUEDE MODIFICAR: para dejar
+                // TODA eliminacion solo al administrador, quita las "//" de la linea
+                // siguiente.
+                // .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole(ADMIN)
 
                 // Todo lo demas (panel y API): cualquier usuario con sesion
                 .anyRequest().authenticated()

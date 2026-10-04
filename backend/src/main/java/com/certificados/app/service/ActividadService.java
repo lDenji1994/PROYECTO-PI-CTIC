@@ -77,6 +77,11 @@ public class ActividadService {
     public static final String SOLICITUD_ERROR = "SOLICITUD_ERROR";
     public static final String ACTUALIZAR_DATOS_CURSO = "ACTUALIZAR_DATOS_CURSO";
     public static final String REEMPLAZAR_ARCHIVO = "REEMPLAZAR_ARCHIVO_DOCUMENTO";
+    public static final String ELIMINAR_DOCUMENTO = "ELIMINAR_VERSION_DOCUMENTO";
+    public static final String ELIMINAR_ASIGNATURA = "ELIMINAR_ASIGNATURA";
+    public static final String ELIMINAR_PROGRAMA = "ELIMINAR_PROGRAMA";
+    public static final String ELIMINAR_SOLICITUD = "ELIMINAR_SOLICITUD_CERTIFICADO";
+    public static final String ELIMINAR_USUARIO = "ELIMINAR_USUARIO";
     public static final String CREAR_USUARIO = "CREAR_USUARIO";
     public static final String ACTIVAR_USUARIO = "ACTIVAR_USUARIO";
     public static final String DESACTIVAR_USUARIO = "DESACTIVAR_USUARIO";
@@ -98,6 +103,11 @@ public class ActividadService {
             Map.entry(SOLICITUD_ERROR, "Solicitud marcada con error"),
             Map.entry(ACTUALIZAR_DATOS_CURSO, "Datos del curso corregidos"),
             Map.entry(REEMPLAZAR_ARCHIVO, "Archivo de documento reemplazado"),
+            Map.entry(ELIMINAR_DOCUMENTO, "Documento cargado eliminado"),
+            Map.entry(ELIMINAR_ASIGNATURA, "Asignatura eliminada"),
+            Map.entry(ELIMINAR_PROGRAMA, "Programa académico eliminado"),
+            Map.entry(ELIMINAR_SOLICITUD, "Solicitud de certificado eliminada"),
+            Map.entry(ELIMINAR_USUARIO, "Usuario eliminado"),
             Map.entry(CREAR_USUARIO, "Usuario creado"),
             Map.entry(ACTIVAR_USUARIO, "Usuario activado"),
             Map.entry(DESACTIVAR_USUARIO, "Usuario desactivado"),
@@ -105,13 +115,18 @@ public class ActividadService {
             Map.entry(GENERAR_CERTIFICADO, "Generación de certificado PDF")
     );
 
-    private static final Map<String, String> NIVELES = Map.of(
-            CARGAR_DOCUMENTO_ANTIGUO, "warning",
-            SOLICITUD_ESPERANDO, "warning",
-            SOLICITUD_ERROR, "danger",
-            DESACTIVAR_USUARIO, "warning",
-            REEMPLAZAR_ARCHIVO, "info",
-            GENERAR_CERTIFICADO, "info"
+    private static final Map<String, String> NIVELES = Map.ofEntries(
+            Map.entry(CARGAR_DOCUMENTO_ANTIGUO, "warning"),
+            Map.entry(SOLICITUD_ESPERANDO, "warning"),
+            Map.entry(SOLICITUD_ERROR, "danger"),
+            Map.entry(DESACTIVAR_USUARIO, "warning"),
+            Map.entry(ELIMINAR_DOCUMENTO, "warning"),
+            Map.entry(ELIMINAR_ASIGNATURA, "warning"),
+            Map.entry(ELIMINAR_PROGRAMA, "warning"),
+            Map.entry(ELIMINAR_SOLICITUD, "warning"),
+            Map.entry(ELIMINAR_USUARIO, "warning"),
+            Map.entry(REEMPLAZAR_ARCHIVO, "info"),
+            Map.entry(GENERAR_CERTIFICADO, "info")
     );
 
     /** Que tablas pertenecen a cada modulo del panel (filtro del Dashboard). */

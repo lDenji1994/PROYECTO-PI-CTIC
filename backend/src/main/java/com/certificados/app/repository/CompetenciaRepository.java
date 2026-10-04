@@ -10,4 +10,7 @@ import java.util.List;
 public interface CompetenciaRepository extends JpaRepository<Competencia, Integer> {
 
     List<Competencia> findByIdVersionDocumento(Integer idVersionDocumento);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdVersionDocumento(Integer idVersionDocumento);
 }

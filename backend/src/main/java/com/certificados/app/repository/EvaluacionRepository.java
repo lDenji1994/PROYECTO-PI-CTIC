@@ -10,4 +10,7 @@ import java.util.List;
 public interface EvaluacionRepository extends JpaRepository<Evaluacion, Integer> {
 
     List<Evaluacion> findByIdVersionDocumento(Integer idVersionDocumento);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdVersionDocumento(Integer idVersionDocumento);
 }

@@ -770,7 +770,7 @@ function pintarDocumentos() {
         const acciones = ultima
             ? '<div class="table-actions">' + enlaceArchivo(ultima) +
               '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(ultima.id) +
-              '">Corregir</button></div>'
+              '">Corregir</button>' + botonEliminarVersion(ultima.id) + '</div>'
             : '—';
         return '<tr>' +
             '<td><span class="code-chip">' + escaparTexto(d.codigoMateria) + '</span></td>' +
@@ -1122,6 +1122,139 @@ async function reemplazarArchivo(evento) {
     }
 }
 
+/* ---------------------------------------------------------------------
+   ELIMINAR lo que se subio o registro por error (sin ir a la base de datos).
+   Siempre se pide confirmacion: lo eliminado NO se puede recuperar.
+   Las reglas (que se puede borrar y que no) las decide el backend
+   (EliminacionService); aqui solo se pregunta y se muestra el resultado.
+   --------------------------------------------------------------------- */
+
+function botonEliminarVersion(idVersion) {
+    return '<button type="button" class="danger-button small" data-eliminar-version="' + idSeguro(idVersion) +
+        '">Eliminar</button>';
+}
+
+async function eliminarVersion(idVersion) {
+    const encontrado = buscarVersion(idVersion);
+    if (!encontrado) {
+        mostrarMensaje('No se encontró ese documento. Actualiza la página.', 'error');
+        return;
+    }
+    const d = encontrado.documento;
+    const otras = d.versiones.length - 1;
+    const pregunta = '¿Eliminar el archivo "' + encontrado.version.nombreArchivo + '" de ' +
+        d.codigoMateria + ' ' + (d.codigoCurso || '') + ' — ' + d.nombreAsignatura + '?\n\n' +
+        'Se borran el archivo y los datos del curso registrados con él. ' +
+        (otras > 0
+            ? 'Las otras ' + otras + ' versión(es) de este documento se conservan.'
+            : 'Es el único archivo de este documento, así que desaparecerá de la lista.') +
+        '\n\nEsta acción NO se puede deshacer.';
+    if (!window.confirm(pregunta)) {
+        return;
+    }
+    try {
+        await api('/versiones-documentos/' + idSeguro(idVersion), { method: 'DELETE' });
+        mostrarMensaje('Documento eliminado.', 'success');
+        if (estado.versionEnEdicion === idVersion) {
+            cerrarEditor();
+        }
+        document.getElementById('detalle-curso').hidden = true;
+        await cargarDocumentos();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+async function eliminarAsignatura(idAsignatura) {
+    const asignatura = estado.asignaturas.find(function (a) { return a.id === idAsignatura; });
+    if (!asignatura) {
+        return;
+    }
+    if (!window.confirm('¿Eliminar la asignatura ' + asignatura.codigoMateria + ' ' + (asignatura.codigoCurso || '') +
+        ' — ' + asignatura.nombre + '?\n\nSolo se puede eliminar si no tiene documentos cargados ni está en ' +
+        'una solicitud de certificado.\n\nEsta acción NO se puede deshacer.')) {
+        return;
+    }
+    try {
+        await api('/asignaturas/' + idSeguro(idAsignatura), { method: 'DELETE' });
+        mostrarMensaje('Asignatura eliminada.', 'success');
+        document.getElementById('detalle-curso').hidden = true;
+        await cargarCatalogos();
+        pintarCursos();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+async function eliminarPrograma(idPrograma) {
+    const programa = estado.programas.find(function (p) { return p.id === idPrograma; });
+    if (!programa) {
+        return;
+    }
+    if (!window.confirm('¿Eliminar el programa ' + (programa.codigo ? programa.codigo + ' — ' : '') + programa.nombre +
+        '?\n\nSolo se puede eliminar si ningún documento cargado lo usa.\n\nEsta acción NO se puede deshacer.')) {
+        return;
+    }
+    try {
+        await api('/programas/' + idSeguro(idPrograma), { method: 'DELETE' });
+        mostrarMensaje('Programa eliminado.', 'success');
+        await cargarCatalogos();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+async function eliminarSolicitud(idSolicitud) {
+    const solicitud = estado.solicitudes.find(function (s) { return s.id === idSolicitud; });
+    if (!solicitud) {
+        return;
+    }
+    const conCertificado = solicitud.estado === 'REALIZADO';
+    if (!window.confirm('¿Eliminar la solicitud #' + idSolicitud + ' del estudiante ' +
+        formatearIdEstudiante(solicitud.idEstudiante) + '?\n\n' +
+        (conCertificado
+            ? 'OJO: esta solicitud YA tiene un certificado generado. También se borrará el PDF.'
+            : 'Se borra la solicitud con las asignaturas que tenía marcadas.') +
+        '\n\nEsta acción NO se puede deshacer.')) {
+        return;
+    }
+    try {
+        await api('/solicitudes-certificados/' + idSeguro(idSolicitud), { method: 'DELETE' });
+        mostrarMensaje('Solicitud #' + idSolicitud + ' eliminada.', 'success');
+        if (estado.solicitudSeleccionada === idSolicitud) {
+            estado.solicitudSeleccionada = null;
+            document.getElementById('detalle-solicitud').hidden = true;
+        }
+        await cargarSolicitudes();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+async function eliminarUsuario(idUsuario) {
+    const usuario = estado.usuarios.find(function (u) { return u.id === idUsuario; });
+    if (!usuario) {
+        return;
+    }
+    if (!window.confirm('¿Eliminar la cuenta de ' + usuario.nombreCompleto + ' (' + usuario.usuario + ')?\n\n' +
+        'Solo se puede eliminar una cuenta que todavía no ha hecho nada en el sistema. ' +
+        'Si ya tiene actividad, usa «Desactivar».\n\nEsta acción NO se puede deshacer.')) {
+        return;
+    }
+    try {
+        await api('/usuarios/' + idSeguro(idUsuario), { method: 'DELETE' });
+        mostrarMensaje('Usuario eliminado.', 'success');
+        await cargarUsuarios();
+        pintarCatalogos();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
 /* =====================================================================
    10. CONTENIDO DE CURSOS (asignaturas y programas)
    ===================================================================== */
@@ -1169,8 +1302,10 @@ function pintarCursos() {
             '<div class="course-header"><span>' + codigoAsignatura(a) + '</span>' + badges[a.resumen.estado] + '</div>' +
             '<h3>' + escaparTexto(a.nombre) + '</h3>' +
             (docs ? '<ul class="course-docs">' + docs + '</ul>' : '<p>Sin documentos cargados.</p>') +
+            '<div class="table-actions">' +
             '<button class="outline-button" type="button" data-ver-curso="' + idSeguro(a.id) + '">Ver versiones →</button>' +
-            '</div>';
+            '<button class="danger-button small" type="button" data-eliminar-asignatura="' + idSeguro(a.id) + '">Eliminar</button>' +
+            '</div></div>';
     }).join('');
 }
 
@@ -1200,7 +1335,7 @@ function verDetalleCurso(idAsignatura) {
                 '<td>' + escaparTexto(formatearFecha(v.fechaCarga)) + '</td>' +
                 '<td><div class="table-actions">' + enlaceArchivo(v) +
                 '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(v.id) +
-                '">Corregir</button></div></td>' +
+                '">Corregir</button>' + botonEliminarVersion(v.id) + '</div></td>' +
                 '</tr>');
         });
     });
@@ -1255,7 +1390,9 @@ async function registrarAsignatura(evento) {
 function pintarProgramas() {
     const lista = document.getElementById('lista-programas');
     lista.innerHTML = estado.programas.map(function (p) {
-        return '<li class="chip">' + escaparTexto(p.codigo ? p.codigo + ' · ' : '') + escaparTexto(p.nombre) + '</li>';
+        return '<li class="chip">' + escaparTexto(p.codigo ? p.codigo + ' · ' : '') + escaparTexto(p.nombre) +
+            (esAdmin() ? '<button type="button" class="chip-remove" data-eliminar-programa="' + idSeguro(p.id) +
+                '" title="Eliminar programa" aria-label="Eliminar programa">×</button>' : '') + '</li>';
     }).join('');
 }
 
@@ -1463,6 +1600,11 @@ function accionesSolicitud(s) {
     if (s.estado === 'REALIZADO') {
         acciones.push('<a class="link-button" target="_blank" rel="noopener" href="' + API_BASE +
             '/certificados-generados/solicitud/' + id + '/archivo">Ver PDF</a>');
+    }
+    /* Eliminar: una solicitud con certificado ya generado solo la borra el administrador */
+    if (esAdmin() || s.estado !== 'REALIZADO') {
+        acciones.push('<button type="button" class="danger-button small" data-eliminar-solicitud="' + id +
+            '">Eliminar</button>');
     }
     return '<div class="table-actions">' + acciones.join('') + '</div>';
 }
@@ -1735,7 +1877,8 @@ async function cargarUsuarios() {
                 : '<button type="button" class="outline-button small" data-usuario-contrasena="' + id + '">Cambiar contraseña</button>') +
             (esYo ? '' : '<button type="button" class="' + (activo ? 'danger-button' : 'outline-button') +
                 ' small" data-usuario-estado="' + id + '" data-activar="' + (activo ? 'false' : 'true') + '">' +
-                (activo ? 'Desactivar' : 'Activar') + '</button>') +
+                (activo ? 'Desactivar' : 'Activar') + '</button>' +
+                '<button type="button" class="danger-button small" data-eliminar-usuario="' + id + '">Eliminar</button>') +
             '</div></td></tr>';
     }).join('');
 }
@@ -1882,6 +2025,31 @@ document.addEventListener('DOMContentLoaded', async function () {
         const editar = e.target.closest('[data-editar-version]');
         if (editar) {
             abrirEditor(Number(editar.dataset.editarVersion));
+            return;
+        }
+        const eliminarDoc = e.target.closest('[data-eliminar-version]');
+        if (eliminarDoc) {
+            eliminarVersion(Number(eliminarDoc.dataset.eliminarVersion));
+            return;
+        }
+        const eliminarAsig = e.target.closest('[data-eliminar-asignatura]');
+        if (eliminarAsig) {
+            eliminarAsignatura(Number(eliminarAsig.dataset.eliminarAsignatura));
+            return;
+        }
+        const eliminarProg = e.target.closest('[data-eliminar-programa]');
+        if (eliminarProg) {
+            eliminarPrograma(Number(eliminarProg.dataset.eliminarPrograma));
+            return;
+        }
+        const eliminarSol = e.target.closest('[data-eliminar-solicitud]');
+        if (eliminarSol) {
+            eliminarSolicitud(Number(eliminarSol.dataset.eliminarSolicitud));
+            return;
+        }
+        const eliminarUsr = e.target.closest('[data-eliminar-usuario]');
+        if (eliminarUsr) {
+            eliminarUsuario(Number(eliminarUsr.dataset.eliminarUsuario));
             return;
         }
         const contrasena = e.target.closest('[data-usuario-contrasena]');

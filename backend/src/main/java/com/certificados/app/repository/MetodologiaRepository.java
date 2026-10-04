@@ -10,4 +10,7 @@ import java.util.List;
 public interface MetodologiaRepository extends JpaRepository<Metodologia, Integer> {
 
     List<Metodologia> findByIdVersionDocumento(Integer idVersionDocumento);
+
+    /** Se usa al eliminar un documento cargado (EliminacionService). */
+    void deleteByIdVersionDocumento(Integer idVersionDocumento);
 }

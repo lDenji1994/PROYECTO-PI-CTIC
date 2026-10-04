@@ -2395,3 +2395,17 @@ button.stat-card {
 }
 .paste-result.warning { border-color: #f1d58b; background: #fff8e6; color: #7a5200; }
 .paste-result strong { display: block; }
+
+/* Boton "x" para eliminar un programa (solo lo ve el administrador) */
+.chip-remove {
+    margin-left: 8px;
+    border: none;
+    background: transparent;
+    color: var(--rojo-upb);
+    font-size: 16px;
+    line-height: 1;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.chip-remove:hover { color: #7d0f1d; }

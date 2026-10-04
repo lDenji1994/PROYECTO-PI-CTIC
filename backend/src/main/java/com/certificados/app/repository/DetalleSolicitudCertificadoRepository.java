@@ -14,6 +14,12 @@ public interface DetalleSolicitudCertificadoRepository
     List<DetalleSolicitudCertificado>
     findByIdSolicitudCertificado(Integer idSolicitudCertificado);
 
+    /** ¿La asignatura esta en alguna solicitud? (no se puede eliminar si es asi) */
+    boolean existsByIdAsignatura(Integer idAsignatura);
+
+    /** Quita las asignaturas de una solicitud (se usa al eliminar la solicitud). */
+    void deleteByIdSolicitudCertificado(Integer idSolicitudCertificado);
+
     boolean existsByIdSolicitudCertificadoAndIdAsignatura(
             Integer idSolicitudCertificado,
             Integer idAsignatura
