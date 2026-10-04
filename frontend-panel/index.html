@@ -38,10 +38,10 @@
         </div>
 
         <div class="admin-profile">
-            <div class="profile-icon">A</div>
+            <div class="profile-icon" id="perfil-inicial">·</div>
             <div>
-                <strong>Administrador</strong>
-                <span>Gestión académica</span>
+                <strong id="perfil-nombre">Cargando…</strong>
+                <span id="perfil-rol"></span>
             </div>
         </div>
 
@@ -58,6 +58,13 @@
             </button>
             <button class="menu-item" type="button" data-vista="certificaciones" id="btn-certificaciones">
                 <span class="menu-icon">▣</span> Certificaciones
+            </button>
+            <!-- Solo lo ve el ADMINISTRADOR (app.js lo muestra segun el rol) -->
+            <button class="menu-item" type="button" data-vista="usuarios" id="btn-usuarios" data-solo-admin hidden>
+                <span class="menu-icon">◉</span> Usuarios
+            </button>
+            <button class="menu-item" type="button" data-vista="cuenta" id="btn-cuenta">
+                <span class="menu-icon">⚙</span> Mi cuenta
             </button>
         </nav>
 
@@ -78,10 +85,11 @@
             <div class="topbar-user">
                 <div class="notification" id="estado-servidor" title="Estado del servidor">●</div>
                 <div class="user-info">
-                    <strong>Personal administrativo</strong>
-                    <span>Gestión académica</span>
+                    <strong id="usuario-nombre">Cargando…</strong>
+                    <span id="usuario-rol"></span>
                 </div>
-                <div class="avatar">A</div>
+                <div class="avatar" id="usuario-inicial">·</div>
+                <button class="outline-button small" type="button" id="btn-cerrar-sesion">Cerrar sesión</button>
             </div>
         </header>
 
@@ -170,8 +178,9 @@
             <div class="page-intro">
                 <span class="section-label">MÓDULO 01</span>
                 <h2>Carga de información</h2>
-                <p>Carga las cartas descriptivas y syllabus (PDF) de cada asignatura. El sistema indica si el
-                    formato usado es el <strong>vigente</strong> o uno <strong>desactualizado</strong>.</p>
+                <p>Carga la carta descriptiva o el syllabus de cada asignatura (PDF, Word o Excel) y registra a mano
+                    los datos del curso que necesita el certificado. El sistema indica si el formato usado es el
+                    <strong>vigente</strong> o uno <strong>desactualizado</strong>.</p>
             </div>
 
             <div class="content-card">
@@ -240,14 +249,30 @@
                         </div>
                     </div>
 
+                    <!-- DATOS DEL CURSO: los escribe (o copia y pega) la auxiliar.
+                         app.js construye los campos a partir de CAMPOS_CURSO. -->
+                    <div class="subsection">
+                        <span class="section-label">DATOS DEL CURSO</span>
+                        <p class="field-help">Copia y pega desde la carta descriptiva o el syllabus. Lo que escribas se
+                            guarda como borrador en este navegador hasta que el documento quede cargado.</p>
+                        <div id="carga-campos-curso"></div>
+                    </div>
+
                     <label class="upload-area" id="zona-archivo" for="carga-archivo">
                         <div class="upload-icon">↑</div>
-                        <h3>Seleccionar documento PDF *</h3>
-                        <p>Arrastra el archivo aquí o haz clic para buscarlo (máx. 20 MB).</p>
+                        <h3>Seleccionar documento *</h3>
+                        <p id="carga-archivo-ayuda">Arrastra el archivo aquí o haz clic para buscarlo.</p>
                         <span class="secondary-button">Seleccionar archivo</span>
                         <small id="carga-archivo-nombre">Ningún archivo seleccionado</small>
-                        <input id="carga-archivo" type="file" accept="application/pdf,.pdf" hidden>
+                        <input id="carga-archivo" type="file" hidden>
                     </label>
+
+                    <!-- Aviso cuando la carga falla: los datos NO se pierden y se puede reintentar -->
+                    <div id="carga-error" class="alert-banner danger" role="alert" hidden>
+                        <strong>La carga falló:</strong>
+                        <span id="carga-error-texto"></span>
+                        <button type="button" class="outline-button" id="btn-reintentar-carga">Reintentar</button>
+                    </div>
 
                     <div class="form-actions">
                         <button class="secondary-button" type="reset">Limpiar</button>
@@ -283,15 +308,45 @@
                             <th>Documento</th>
                             <th>Formato</th>
                             <th>Estado del formato</th>
+                            <th>Datos del curso</th>
                             <th>Versiones</th>
                             <th>Última carga</th>
                             <th>Acciones</th>
                         </tr>
                         </thead>
                         <tbody id="tabla-documentos">
-                        <tr><td colspan="9">Cargando documentos…</td></tr>
+                        <tr><td colspan="10">Cargando documentos…</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Corregir una carga: datos del curso o archivo (se abre desde la tabla) -->
+            <div class="content-card" id="panel-editar" hidden>
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">CORREGIR CARGA</span>
+                        <h3 id="editar-titulo"></h3>
+                        <p id="editar-subtitulo"></p>
+                    </div>
+                    <button class="outline-button" type="button" id="btn-cerrar-editar">Cerrar</button>
+                </div>
+
+                <form id="form-editar" novalidate>
+                    <div id="editar-campos-curso"></div>
+                    <div class="form-actions">
+                        <button class="primary-button" type="submit">Guardar datos del curso</button>
+                    </div>
+                </form>
+
+                <div class="subsection">
+                    <span class="section-label">REEMPLAZAR ARCHIVO</span>
+                    <p class="field-help">Úsalo si el archivo se subió dañado, incompleto o era el equivocado.
+                        Los datos del curso se conservan.</p>
+                    <form id="form-reemplazar" class="inline-form" novalidate>
+                        <input id="reemplazar-archivo" type="file" aria-label="Archivo nuevo">
+                        <button class="outline-button" type="submit">Reemplazar archivo</button>
+                    </form>
                 </div>
             </div>
         </section>
@@ -341,7 +396,7 @@
                     </form>
                 </div>
 
-                <div class="content-card">
+                <div class="content-card" id="tarjeta-programas">
                     <div class="card-header">
                         <div>
                             <span class="section-label">PROGRAMAS</span>
@@ -349,7 +404,8 @@
                         </div>
                         <span class="required-label">* Requerido</span>
                     </div>
-                    <form id="form-programa" novalidate>
+                    <p class="field-help" id="programas-solo-admin" hidden>Solo el administrador puede registrar programas.</p>
+                    <form id="form-programa" novalidate data-solo-admin hidden>
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="prog-codigo">Código *</label>
@@ -454,7 +510,7 @@
                             <label for="sol-tipo">Tipo de certificado *</label>
                             <select id="sol-tipo" required><option value="">Cargando…</option></select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="grupo-encargado">
                             <label for="sol-encargado">Usuario encargado *</label>
                             <select id="sol-encargado" required><option value="">Cargando…</option></select>
                         </div>
@@ -525,8 +581,12 @@
                     <h2>UNIVERSIDAD PONTIFICIA BOLIVARIANA</h2>
                     <span id="detalle-solicitud-tipo">Certificación académica</span>
                     <hr>
-                    <p>Se certifica que la información académica de las asignaturas relacionadas se encuentra
-                        registrada en el sistema con los siguientes documentos:</p>
+                    <p>Contenidos programáticos resumidos de las asignaturas de la solicitud. El certificado se
+                        genera en <strong>un solo PDF</strong> cuando todas las asignaturas están completas.</p>
+                    <div id="detalle-solicitud-aviso" class="alert-banner warning" hidden>
+                        <strong>Falta información:</strong>
+                        <span id="detalle-solicitud-aviso-texto"></span>
+                    </div>
                     <div class="certificate-data">
                         <div><strong>Estudiante</strong><span id="detalle-solicitud-estudiante"></span></div>
                         <div><strong>Solicitud</strong><span id="detalle-solicitud-numero"></span></div>
@@ -539,7 +599,9 @@
                                 <th>Materia</th>
                                 <th>Curso</th>
                                 <th>Asignatura</th>
-                                <th>Documentos y formato</th>
+                                <th>Créditos y horas</th>
+                                <th>Lo que dirá el certificado</th>
+                                <th>Estado</th>
                             </tr>
                             </thead>
                             <tbody id="detalle-solicitud-asignaturas"></tbody>
@@ -554,6 +616,150 @@
                         <span>Responsable académico</span>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             USUARIOS (solo ADMINISTRADOR)
+             ============================================================ -->
+        <section id="vista-usuarios" class="page-view">
+
+            <div class="page-intro">
+                <span class="section-label">ADMINISTRACIÓN</span>
+                <h2>Usuarios</h2>
+                <p>Crea las cuentas de las auxiliares y controla quién puede entrar al panel.
+                    <span id="usuarios-cupo"></span></p>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">NUEVO USUARIO</span>
+                        <h3>Crear cuenta</h3>
+                    </div>
+                    <span class="required-label">* Campo requerido</span>
+                </div>
+                <form id="form-usuario" novalidate autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="usr-nombre">Nombre completo *</label>
+                            <input id="usr-nombre" type="text" maxlength="150" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="usr-usuario">Usuario *</label>
+                            <input id="usr-usuario" type="text" maxlength="30" placeholder="Ej. auxiliar1" required
+                                   autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="usr-rol">Rol *</label>
+                            <select id="usr-rol" required>
+                                <option value="AUXILIAR">Auxiliar</option>
+                                <option value="ADMINISTRADOR">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="usr-correo">Correo</label>
+                            <input id="usr-correo" type="email" maxlength="150" placeholder="(Opcional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="usr-contrasena">Contraseña inicial *</label>
+                            <input id="usr-contrasena" type="password" minlength="8" maxlength="72" required
+                                   autocomplete="new-password">
+                            <small class="field-help">Mínimo 8 caracteres, con letras y números. La auxiliar puede
+                                cambiarla después en «Mi cuenta».</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="usr-contrasena2">Repetir contraseña *</label>
+                            <input id="usr-contrasena2" type="password" minlength="8" maxlength="72" required
+                                   autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary-button" type="submit">Crear usuario</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">CUENTAS</span>
+                        <h3>Usuarios registrados</h3>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Usuario</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tabla-usuarios"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Asignar contrasena nueva a otro usuario -->
+            <div class="content-card" id="panel-contrasena" hidden>
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">CONTRASEÑA</span>
+                        <h3 id="contrasena-titulo"></h3>
+                    </div>
+                    <button class="outline-button" type="button" id="btn-cerrar-contrasena">Cerrar</button>
+                </div>
+                <form id="form-contrasena" class="inline-form" novalidate autocomplete="off">
+                    <input id="contrasena-nueva" type="password" minlength="8" maxlength="72"
+                           placeholder="Contraseña nueva" aria-label="Contraseña nueva" autocomplete="new-password">
+                    <button class="primary-button" type="submit">Asignar contraseña</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             MI CUENTA (cambiar mi contrasena)
+             ============================================================ -->
+        <section id="vista-cuenta" class="page-view">
+
+            <div class="page-intro">
+                <span class="section-label">MI CUENTA</span>
+                <h2 id="cuenta-nombre"></h2>
+                <p id="cuenta-detalle"></p>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">SEGURIDAD</span>
+                        <h3>Cambiar mi contraseña</h3>
+                    </div>
+                </div>
+                <form id="form-mi-contrasena" novalidate autocomplete="off">
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="mi-actual">Contraseña actual *</label>
+                            <input id="mi-actual" type="password" maxlength="72" required autocomplete="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="mi-nueva">Contraseña nueva *</label>
+                            <input id="mi-nueva" type="password" minlength="8" maxlength="72" required
+                                   autocomplete="new-password">
+                            <small class="field-help">Mínimo 8 caracteres, con letras y números.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="mi-nueva2">Repetir contraseña nueva *</label>
+                            <input id="mi-nueva2" type="password" minlength="8" maxlength="72" required
+                                   autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary-button" type="submit">Cambiar contraseña</button>
+                    </div>
+                </form>
             </div>
         </section>
 

@@ -1,6 +1,8 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.dto.AsignaturaDTO;
+import com.certificados.app.service.ContenidoCertificadoService;
 import com.certificados.app.service.AsignaturaService;
 
 import com.certificados.app.dto.SolicitudCertificadoDTO;
@@ -18,10 +20,13 @@ import java.util.List;
 public class SolicitudCertificadoController {
 
     private final SolicitudCertificadoService service;
+    private final ContenidoCertificadoService contenidoCertificadoService;
 
     public SolicitudCertificadoController(
-            SolicitudCertificadoService service) {
+            SolicitudCertificadoService service,
+            ContenidoCertificadoService contenidoCertificadoService) {
         this.service = service;
+        this.contenidoCertificadoService = contenidoCertificadoService;
     }
 
     @GetMapping
@@ -126,5 +131,18 @@ public class SolicitudCertificadoController {
                         .map(AsignaturaService::aDTO)
                         .toList()
         );
+    }
+
+    /**
+     * GET /api/solicitudes-certificados/{id}/contenido
+     * Lo que dira el certificado de cada asignatura (creditos, horas,
+     * descripcion y contenido) y que le falta a cada una. El panel lo usa
+     * para la vista previa antes de generar el PDF.
+     */
+    @GetMapping("/{id}/contenido")
+    public List<AsignaturaCertificadoDTO> contenidoCertificado(
+            @PathVariable Integer id) {
+
+        return contenidoCertificadoService.obtener(id);
     }
 }

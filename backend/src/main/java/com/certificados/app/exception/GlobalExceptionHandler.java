@@ -6,7 +6,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -61,7 +66,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
         List<String> mensajes = ex.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                // Un fallo de conversion trae un mensaje tecnico: se reemplaza por uno claro
+                .map(e -> e.isBindingFailure()
+                        ? "El valor de '" + e.getField() + "' no es válido."
+                        : e.getDefaultMessage())
                 .collect(Collectors.toList());
         return responder(HttpStatus.BAD_REQUEST, "Error de validacion", mensajes);
     }
@@ -103,9 +111,52 @@ public class GlobalExceptionHandler {
         return responder(HttpStatus.NOT_FOUND, "No encontrado", List.of("Recurso no encontrado."));
     }
 
+    /** Errores con codigo HTTP explicito (login incorrecto, sesion vencida, bloqueo...). */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.BAD_REQUEST;
+        }
+        String mensaje = ex.getReason() != null ? ex.getReason() : "No fue posible completar la solicitud.";
+        return responder(status, "Solicitud rechazada", List.of(mensaje));
+    }
+
+    /** Un campo del formulario llego con un valor que no se pudo leer (p. ej. texto en un numero). */
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiError> handleBind(BindException ex) {
+        List<String> mensajes = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> "El valor de '" + e.getField() + "' no es válido.")
+                .collect(Collectors.toList());
+        if (mensajes.isEmpty()) {
+            mensajes = List.of("Revisa los datos del formulario.");
+        }
+        return responder(HttpStatus.BAD_REQUEST, "Dato invalido", mensajes);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthentication(AuthenticationException ex) {
+        return responder(HttpStatus.UNAUTHORIZED, "No autenticado",
+                List.of("Tu sesión no está activa. Inicia sesión de nuevo."));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
+        return responder(HttpStatus.FORBIDDEN, "Acceso denegado",
+                List.of("Tu usuario no tiene permiso para realizar esta acción."));
+    }
+
     /** Cualquier otro error: mensaje generico hacia fuera, detalle solo en consola. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
+        // Errores del cliente que Spring ya clasifica (405 metodo no permitido,
+        // 415 tipo de contenido no soportado...): se responden como 4xx, no 500.
+        if (ex instanceof ErrorResponse respuesta) {
+            HttpStatus status = HttpStatus.resolve(respuesta.getStatusCode().value());
+            if (status != null && status.is4xxClientError()) {
+                return responder(status, "Solicitud rechazada", List.of("La solicitud no es válida."));
+            }
+        }
         LOG.error("Error no controlado", ex);
         return responder(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno",
                 List.of("Ocurrio un error inesperado. Revisa la consola del servidor."));

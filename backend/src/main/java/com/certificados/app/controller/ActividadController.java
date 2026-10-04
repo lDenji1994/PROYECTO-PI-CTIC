@@ -1,6 +1,8 @@
 package com.certificados.app.controller;
 
 import com.certificados.app.dto.ActividadDTO;
+import com.certificados.app.security.UsuarioDetallesService;
+import com.certificados.app.security.UsuarioSesion;
 import com.certificados.app.service.ActividadService;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +31,11 @@ public class ActividadController {
     public List<ActividadDTO> listar(
             @RequestParam(required = false) String modulo,
             @RequestParam(defaultValue = "20") int limite) {
-        return service.listarRecientes(modulo, limite);
+        // El administrador ve la actividad de todos; una auxiliar, solo la suya.
+        Integer soloDe = UsuarioDetallesService.actual()
+                .filter(u -> !u.esAdministrador())
+                .map(UsuarioSesion::getId)
+                .orElse(null);
+        return service.listarRecientes(modulo, limite, soloDe);
     }
 }

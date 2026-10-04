@@ -7,23 +7,20 @@
 --
 --  SE PUEDE MODIFICAR: nombres, tipos y la plantilla de ejemplo.
 --  IMPORTANTE:
---   * No hay contrasenas reales aqui. El login aun no existe; cuando se
---     implemente, la contrasena se guardara con hash (BCrypt).
---   * El usuario 'admin' (id 1) es el que usa la bitacora por defecto
---     (app.auditoria.id-usuario-por-defecto=1 en application.properties).
+--   * No hay contrasenas aqui. El usuario 'admin' se crea SIN contrasena
+--     valida: la primera vez que arranca el servidor se le asigna la que
+--     pongas en application-local.properties
+--     (app.seguridad.admin-inicial.contrasena), guardada con hash BCrypt.
+--   * Las cuentas de las auxiliares NO se crean aqui: las crea el
+--     administrador desde el panel (menu Usuarios).
 -- =====================================================================
 USE CertificadosCursosAcademicosUPB;
 
--- ---------- Usuario administrador (para bitacora y solicitudes) ----------
+-- ---------- Usuario administrador (el servidor le asigna la contrasena al arrancar) ----------
 INSERT IGNORE INTO CertificadosCursosAcademicosUPB_UsuariosS
     (t_nombreCompleto, t_usuario, t_correo, t_contrasena, b_activo, n_idRol)
 SELECT 'Administrador CTIC', 'admin', NULL, 'PENDIENTE_LOGIN_SIN_CONTRASENA', TRUE, r.n_idRol
 FROM CertificadosCursosAcademicosUPB_RolesS r WHERE r.c_nombre = 'ADMINISTRADOR';
-
-INSERT IGNORE INTO CertificadosCursosAcademicosUPB_UsuariosS
-    (t_nombreCompleto, t_usuario, t_correo, t_contrasena, b_activo, n_idRol)
-SELECT 'Auxiliar de certificados', 'auxiliar', NULL, 'PENDIENTE_LOGIN_SIN_CONTRASENA', TRUE, r.n_idRol
-FROM CertificadosCursosAcademicosUPB_RolesS r WHERE r.c_nombre = 'AUXILIAR';
 
 -- ---------- Tipos de documento (segun las plantillas institucionales) ----------
 INSERT IGNORE INTO CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS (c_codigo, t_nombre) VALUES

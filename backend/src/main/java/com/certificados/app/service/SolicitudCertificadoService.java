@@ -2,6 +2,7 @@ package com.certificados.app.service;
 
 import com.certificados.app.dto.SolicitudCertificadoDTO;
 import com.certificados.app.exception.BusinessException;
+import com.certificados.app.security.UsuarioDetallesService;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Asignatura;
 import com.certificados.app.model.DetalleSolicitudCertificado;
@@ -38,6 +39,7 @@ public class SolicitudCertificadoService {
     private final CertificadoGeneradorService certificadoGeneradorService;
     private final LogRepository logRepository;
     private final ActividadService actividadService;
+    private final ContenidoCertificadoService contenidoCertificadoService;
 
     public SolicitudCertificadoService(
             SolicitudCertificadoRepository repository,
@@ -49,7 +51,8 @@ public class SolicitudCertificadoService {
             VersionPlantillaRepository versionPlantillaRepository,
             CertificadoGeneradorService certificadoGeneradorService,
             LogRepository logRepository,
-            ActividadService actividadService) {
+            ActividadService actividadService,
+            ContenidoCertificadoService contenidoCertificadoService) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -64,6 +67,7 @@ public class SolicitudCertificadoService {
                 certificadoGeneradorService;
         this.logRepository = logRepository;
         this.actividadService = actividadService;
+        this.contenidoCertificadoService = contenidoCertificadoService;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -97,6 +101,14 @@ public class SolicitudCertificadoService {
 
     public SolicitudCertificadoDTO crear(
             SolicitudCertificadoDTO dto) {
+
+        // El encargado es quien tiene la sesion iniciada. Solo el
+        // administrador puede asignar la solicitud a otra persona.
+        UsuarioDetallesService.actual().ifPresent(u -> {
+            if (dto.getIdUsuarioEncargado() == null || !u.esAdministrador()) {
+                dto.setIdUsuarioEncargado(u.getId());
+            }
+        });
 
         if (dto.getIdEstudiante() == null) {
             throw new IllegalArgumentException(
@@ -179,6 +191,12 @@ public class SolicitudCertificadoService {
                         solicitud.getIdTipoCertificado()
                 );
 
+        // Antes de cambiar el estado: si a alguna asignatura le falta
+        // informacion (documento, descripcion, contenido, creditos) se avisa
+        // y la solicitud queda como estaba, para completarla y reintentar.
+        // Asi no termina en ERROR por un dato que solo faltaba registrar.
+        contenidoCertificadoService.validarCompleto(solicitud.getId());
+
         solicitud.setEstado(
                 EstadoSolicitudCertificado.PROCESANDO
         );
@@ -195,8 +213,11 @@ public class SolicitudCertificadoService {
         log.setNombreTabla("CertificadosGeneradosS");
         log.setNombreProceso("GENERAR_CERTIFICADO");
 
+        // A nombre de quien pulsa "Generar PDF" (si no hay sesion, el encargado)
         log.setIdUsuario(
-                solicitud.getIdUsuarioEncargado()
+                UsuarioDetallesService.actual()
+                        .map(u -> u.getId())
+                        .orElse(solicitud.getIdUsuarioEncargado())
         );
 
         log.setFechaInicio(
@@ -248,9 +269,11 @@ public class SolicitudCertificadoService {
 
             repository.save(solicitud);
 
+            // Si el mensaje ya viene explicado (BusinessException) no se repite el prefijo
             throw new BusinessException(
-                    "No fue posible generar el certificado: "
-                            + e.getMessage()
+                    e instanceof BusinessException
+                            ? e.getMessage()
+                            : "No fue posible generar el certificado: " + e.getMessage()
             );
         }
     }

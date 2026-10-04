@@ -22,4 +22,11 @@ public interface LogRepository extends JpaRepository<Log, Integer> {
 
     /** Ultimos registros de un grupo de tablas (un modulo del panel). */
     List<Log> findByNombreTablaInOrderByFechaInicioDescIdDesc(Collection<String> tablas, Pageable pageable);
+
+    /** Ultimos registros de UN usuario (lo que ve una auxiliar). */
+    List<Log> findByIdUsuarioOrderByFechaInicioDescIdDesc(Integer idUsuario, Pageable pageable);
+
+    /** Ultimos registros de un usuario dentro de un modulo. */
+    List<Log> findByNombreTablaInAndIdUsuarioOrderByFechaInicioDescIdDesc(
+            Collection<String> tablas, Integer idUsuario, Pageable pageable);
 }

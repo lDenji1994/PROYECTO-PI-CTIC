@@ -3,7 +3,7 @@
 #  carpeta) y pon TUS datos de MySQL. Ese archivo esta en .gitignore:
 #  nunca se sube al repositorio.
 #
-#  Arranque:  gradle bootRun --args='--spring.profiles.active=local'
+#  Arranque (desde la carpeta backend):  .\gradlew.bat bootRun
 # =====================================================================
 spring.datasource.url=jdbc:mysql://localhost:3307/CertificadosCursosAcademicosUPB?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
 spring.datasource.username=root
@@ -14,3 +14,14 @@ app.auditoria.id-usuario-por-defecto=1
 
 # Descomenta para ver el SQL en consola mientras depuras
 # spring.jpa.show-sql=true
+
+# ---------------------------------------------------------------------
+# ADMINISTRADOR INICIAL DEL PANEL (login)
+# La primera vez que arranca el servidor se crea / habilita este usuario.
+# Escribe TU propia contrasena despues del "=": minimo 8 caracteres, con
+# letras y numeros. Mientras este vacia nadie puede iniciar sesion.
+# Si el usuario ya tiene contrasena no se cambia (para forzarla, agrega
+# la linea  app.seguridad.admin-inicial.forzar=true  y reinicia).
+# ---------------------------------------------------------------------
+app.seguridad.admin-inicial.usuario=admin
+app.seguridad.admin-inicial.contrasena=
