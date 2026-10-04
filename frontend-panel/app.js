@@ -1284,10 +1284,17 @@ async function registrarPrograma(evento) {
    11. CERTIFICACIONES (solicitudes y vista previa)
    ===================================================================== */
 
-function pintarChecklistAsignaturas() {
+/**
+ * Pinta la lista de asignaturas para marcar.
+ * @param cambio (opcional) { agregar: [ids] } marca ademas esas asignaturas;
+ *               { limpiar: true } las desmarca todas.
+ */
+function pintarChecklistAsignaturas(cambio) {
     const contenedor = document.getElementById('sol-asignaturas');
     const texto = document.getElementById('sol-buscar-asignatura').value.trim().toLowerCase();
     const marcadas = new Set(Array.from(contenedor.querySelectorAll('input:checked')).map(function (i) { return i.value; }));
+    if (cambio && cambio.limpiar) { marcadas.clear(); }
+    if (cambio && cambio.agregar) { cambio.agregar.forEach(function (id) { marcadas.add(String(id)); }); }
 
     const lista = estado.asignaturas.filter(function (a) {
         return !texto || textoAsignatura(a).toLowerCase().includes(texto) || marcadas.has(String(a.id));
@@ -1298,6 +1305,115 @@ function pintarChecklistAsignaturas() {
             (marcadas.has(String(id)) ? ' checked' : '') + '> ' + codigoAsignatura(a) + ' ' +
             escaparTexto(a.nombre) + '</label>';
     }).join('') : '<p class="empty-state">No hay asignaturas registradas.</p>';
+    actualizarContadorAsignaturas();
+}
+
+function actualizarContadorAsignaturas() {
+    const total = document.querySelectorAll('#sol-asignaturas input:checked').length;
+    document.getElementById('sol-seleccionadas').textContent =
+        total + (total === 1 ? ' seleccionada' : ' seleccionadas');
+}
+
+/* ---------------------------------------------------------------------
+   KARDEX MANUAL (US-16 / US-12)
+   La auxiliar copia del Kardex los codigos de las asignaturas que curso
+   el estudiante y los pega en un cuadro; aqui se buscan en el catalogo y
+   se marcan todas de una vez. No se lee ningun archivo y el texto pegado
+   no sale del navegador (el Kardex no se guarda en ninguna parte).
+
+   SE PUEDE MODIFICAR: PARECE_CODIGO, si los codigos de la universidad
+   cambian de forma (hoy: letras + numeros, ej. FION 0001 o FION0001).
+   --------------------------------------------------------------------- */
+
+/** "fion-0001" / "FION 0001" -> "FION0001" (clave para comparar codigos). */
+function claveCodigo(texto) {
+    return String(texto || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+const PARECE_MATERIA = /^[A-Z]{2,6}$/;
+const PARECE_CURSO = /^\d[A-Z0-9]{1,7}$/;
+const PARECE_CODIGO = /^[A-Z]{2,6}\d[A-Z0-9]{1,7}$/;
+
+/**
+ * Busca codigos de asignatura dentro de un texto pegado.
+ * Acepta "FION 0001", "FION-0001", "FION0001", separados por coma, punto y
+ * coma, espacios o saltos de linea; ignora el resto (nombres, notas...).
+ * Devuelve { encontradas: [asignaturas], desconocidos: ["FION 0002", ...] }.
+ */
+function buscarCodigosEnTexto(texto) {
+    const catalogo = new Map();
+    estado.asignaturas.forEach(function (a) {
+        catalogo.set(claveCodigo(a.codigoMateria + (a.codigoCurso || '')), a);
+    });
+
+    const palabras = String(texto || '').toUpperCase()
+        .split(/[^A-Z0-9ÁÉÍÓÚÜÑ.]+/)
+        .filter(Boolean);
+
+    const encontradas = new Map();
+    const desconocidos = new Set();
+    let i = 0;
+    while (i < palabras.length) {
+        const una = palabras[i];
+        const dos = i + 1 < palabras.length ? una + palabras[i + 1] : null;
+
+        if (dos && catalogo.has(claveCodigo(dos))) {              /* "FION" "0001" */
+            const a = catalogo.get(claveCodigo(dos));
+            encontradas.set(a.id, a);
+            i += 2;
+        } else if (catalogo.has(claveCodigo(una))) {               /* "FION0001" */
+            const a = catalogo.get(claveCodigo(una));
+            encontradas.set(a.id, a);
+            i += 1;
+        } else if (dos && PARECE_MATERIA.test(una) && PARECE_CURSO.test(palabras[i + 1])) {
+            desconocidos.add(una + ' ' + palabras[i + 1]);         /* parece codigo, no esta registrado */
+            i += 2;
+        } else if (PARECE_CODIGO.test(una)) {
+            desconocidos.add(una);
+            i += 1;
+        } else {
+            i += 1;                                                /* cualquier otra palabra se ignora */
+        }
+    }
+    return { encontradas: Array.from(encontradas.values()), desconocidos: Array.from(desconocidos) };
+}
+
+function marcarAsignaturasPorCodigos() {
+    const resultado = document.getElementById('sol-codigos-resultado');
+    const texto = document.getElementById('sol-codigos').value;
+    if (!texto.trim()) {
+        mostrarMensaje('Pega primero los códigos de las asignaturas.', 'error');
+        return;
+    }
+    const busqueda = buscarCodigosEnTexto(texto);
+    document.getElementById('sol-buscar-asignatura').value = '';
+    pintarChecklistAsignaturas({ agregar: busqueda.encontradas.map(function (a) { return a.id; }) });
+
+    /* Resumen (con textContent: nada de lo pegado se interpreta como HTML) */
+    resultado.textContent = '';
+    resultado.classList.toggle('warning', busqueda.desconocidos.length > 0);
+    const titulo = document.createElement('strong');
+    titulo.textContent = busqueda.encontradas.length + ' asignatura(s) marcada(s)' +
+        (busqueda.encontradas.length ? ': ' + busqueda.encontradas.map(function (a) {
+            return (a.codigoMateria + ' ' + (a.codigoCurso || '')).trim();
+        }).join(', ') : '.');
+    resultado.appendChild(titulo);
+    if (busqueda.desconocidos.length) {
+        const aviso = document.createElement('span');
+        aviso.textContent = busqueda.desconocidos.length + ' código(s) no están registrados y NO se incluyeron: ' +
+            busqueda.desconocidos.join(', ') + '. Regístralos en «Contenido de cursos» y vuelve a pulsar el botón.';
+        resultado.appendChild(aviso);
+    } else if (!busqueda.encontradas.length) {
+        const aviso = document.createElement('span');
+        aviso.textContent = 'No se reconoció ningún código en el texto pegado.';
+        resultado.appendChild(aviso);
+    }
+    resultado.hidden = false;
+}
+
+function desmarcarAsignaturas() {
+    pintarChecklistAsignaturas({ limpiar: true });
+    document.getElementById('sol-codigos-resultado').hidden = true;
 }
 
 async function cargarSolicitudes() {
@@ -1414,7 +1530,8 @@ async function crearSolicitud(evento) {
         mostrarMensaje('Solicitud #' + creada.id + ' creada con ' + asignaturas.length + ' asignatura(s).', 'success');
         document.getElementById('form-solicitud').reset();
         document.getElementById('sol-encargado').value = String(estado.usuario.id);
-        pintarChecklistAsignaturas();
+        document.getElementById('sol-codigos-resultado').hidden = true;
+        pintarChecklistAsignaturas({ limpiar: true });
         estado.solicitudSeleccionada = creada.id;
         await cargarSolicitudes();
         cargarActividad();
@@ -1831,7 +1948,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     /* Certificaciones */
     document.getElementById('form-solicitud').addEventListener('submit', crearSolicitud);
-    document.getElementById('sol-buscar-asignatura').addEventListener('input', pintarChecklistAsignaturas);
+    document.getElementById('sol-buscar-asignatura').addEventListener('input', function () { pintarChecklistAsignaturas(); });
+    document.getElementById('sol-asignaturas').addEventListener('change', actualizarContadorAsignaturas);
+    document.getElementById('btn-marcar-codigos').addEventListener('click', marcarAsignaturasPorCodigos);
+    document.getElementById('btn-desmarcar-todas').addEventListener('click', desmarcarAsignaturas);
     document.getElementById('filtro-estado-solicitudes').addEventListener('change', pintarSolicitudes);
     document.getElementById('btn-actualizar-solicitudes').addEventListener('click', cargarSolicitudes);
     document.getElementById('btn-agregar-asignatura').addEventListener('click', agregarAsignaturaASolicitud);

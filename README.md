@@ -119,7 +119,8 @@ su contraseña en **Mi cuenta**.
 2. **Carga de información** → elegir la asignatura, tipo "Carta Descriptiva", formato
    `DA-FO-085N v03`, **pegar la descripción del curso y el contenido (un tema por línea)**,
    escribir créditos y horas, y subir el archivo (PDF, Word o Excel).
-3. **Certificaciones** → ID estudiante, tipo de certificado, marcar asignaturas →
+3. **Certificaciones** → ID estudiante, tipo de certificado, pegar los códigos del Kárdex
+   (o marcar las asignaturas a mano) →
    *Crear solicitud*. La vista previa muestra lo que dirá el certificado y qué asignaturas
    están incompletas → *Generar PDF* → *Ver PDF*.
 4. **Dashboard** → los contadores y la *Actividad reciente* muestran todo lo anterior.
@@ -194,6 +195,16 @@ De cada asignatura se toma la versión con datos completos, de formato vigente y
 (`service/ContenidoCertificadoService.java`). El diseño del cuerpo está en
 `service/CertificadoContenidosPdf.java`; ciudad y cargo de la firma en
 `app.certificados.ciudad` / `app.certificados.cargo-firma`.
+
+### Kárdex manual (pegar códigos)
+
+El sistema **no lee** el archivo del Kárdex. En *Certificaciones → Solicitar certificado* la
+auxiliar copia del Kárdex los códigos de las asignaturas del estudiante, los pega en el cuadro
+«Pegar códigos del Kárdex» y pulsa **Marcar asignaturas**: se marcan todas de una vez y se
+avisa qué códigos no están registrados. Acepta `FION 0001`, `FION-0001` o `FION0001`,
+separados por coma, espacio o salto de línea, y también filas completas copiadas del Kárdex
+(ignora nombres y notas). El texto pegado **no se envía al servidor ni se guarda**.
+Lógica en `static/app.js` → `buscarCodigosEnTexto`.
 
 ### Código de materia + código de curso
 
@@ -282,7 +293,6 @@ Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responde
 ## 8. Próximos pasos sugeridos
 
 * Plantilla institucional del certificado (logo, membrete, firma real).
-* Kárdex del estudiante (qué asignaturas cursó) para armar la solicitud.
 * Lectura automática de la carta descriptiva (se descartó en esta entrega por tiempo).
 * Pantalla para administrar plantillas de certificado desde el panel.
 * Token CSRF si el panel llega a servirse desde otro dominio distinto al del backend.

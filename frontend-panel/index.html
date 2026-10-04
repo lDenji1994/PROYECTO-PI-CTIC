@@ -514,8 +514,24 @@
                             <label for="sol-encargado">Usuario encargado *</label>
                             <select id="sol-encargado" required><option value="">Cargando…</option></select>
                         </div>
+                        <!-- KARDEX MANUAL: la auxiliar copia los codigos del Kardex del estudiante
+                             y los pega aqui; app.js marca las asignaturas en la lista de abajo.
+                             El texto pegado NO se envia al servidor ni se guarda. -->
                         <div class="form-group full-width">
-                            <label>Asignaturas a certificar</label>
+                            <label for="sol-codigos">Pegar códigos del Kárdex (opcional)</label>
+                            <textarea id="sol-codigos" rows="3" maxlength="20000"
+                                      placeholder="Ej. FION 0001, ISIS 0101, ISIS 0202 — separados por coma, espacio o uno por línea"></textarea>
+                            <small class="field-help">Copia los códigos de las asignaturas desde el Kárdex del
+                                estudiante y pulsa «Marcar asignaturas». También puedes marcarlas a mano en la lista.
+                                Lo que pegues aquí no se guarda.</small>
+                            <div class="inline-form">
+                                <button class="outline-button" type="button" id="btn-marcar-codigos">Marcar asignaturas</button>
+                                <button class="secondary-button" type="button" id="btn-desmarcar-todas">Desmarcar todas</button>
+                            </div>
+                            <div id="sol-codigos-resultado" class="paste-result" role="status" aria-live="polite" hidden></div>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Asignaturas a certificar <span id="sol-seleccionadas" class="badge neutral">0 seleccionadas</span></label>
                             <input id="sol-buscar-asignatura" type="search" placeholder="Filtrar asignaturas…"
                                    aria-label="Filtrar asignaturas">
                             <div id="sol-asignaturas" class="checkbox-list"></div>

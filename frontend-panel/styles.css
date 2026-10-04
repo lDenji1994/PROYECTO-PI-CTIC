@@ -2382,3 +2382,16 @@ button.stat-card {
 .required-label { color: var(--gris-texto); font-size: 12px; }
 
 #btn-cerrar-sesion { white-space: nowrap; }
+
+/* Resultado de "Pegar codigos del Kardex" */
+.paste-result {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--gris-borde);
+    background: #f8fafc;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.paste-result.warning { border-color: #f1d58b; background: #fff8e6; color: #7a5200; }
+.paste-result strong { display: block; }
