@@ -2,15 +2,34 @@
         /* =========================================================
            VARIABLES DE COLORES
            
-           Si quieres cambiar los colores principales del sistema,
-           modifica estos valores.
+           SE PUEDE MODIFICAR: para cambiar los colores del sistema
+           cambia SOLO estos valores; el resto del archivo los usa
+           por nombre.
            ========================================================= */
 
         :root {
 
-            --rojo-upb: #b0182b;
-            --rojo-oscuro: #8f1021;
-            --rojo-claro: #f8e9ec;
+            /* Colores del logo UPB: rosado -> magenta -> morado */
+            --upb-rosado: #ef0c63;
+            --upb-magenta: #d61ea0;
+            --upb-morado: #af3bfe;
+
+            /* Color principal (botones, enlaces, menu). Es un magenta un
+               poco mas oscuro que el del logo para que el texto se lea
+               bien sobre fondo blanco. */
+            --color-primario: #c2198e;
+            --color-primario-oscuro: #8e1470;
+            --color-primario-claro: #fbe8f4;
+
+            /* Degradado del logo: cabecera, menu activo y botones */
+            --degradado-upb: linear-gradient(90deg, #e40b5e 0%, #c41b94 50%, #9a2ee6 100%);
+            --degradado-upb-oscuro: linear-gradient(90deg, #b9094c 0%, #9d1677 50%, #7b24b8 100%);
+
+            /* Errores y botones de borrar: se dejan en rojo a proposito
+               para que no se confundan con el color de la marca */
+            --color-error: #c62828;
+            --color-error-oscuro: #8c1322;
+            --color-error-claro: #fdecec;
 
             --blanco: #ffffff;
 
@@ -121,7 +140,7 @@
 
         .sidebar-header {
 
-            background: var(--rojo-upb);
+            background: var(--degradado-upb);
 
             color: white;
 
@@ -204,9 +223,9 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             display: flex;
 
@@ -300,21 +319,21 @@
 
         .menu-item:hover {
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
         }
 
 
         .menu-item.active {
 
-            background: var(--rojo-upb);
+            background: var(--degradado-upb);
 
             color: white;
 
             box-shadow:
-                0 5px 15px rgba(176,24,43,.22);
+                0 5px 15px rgba(194,25,142,.25);
 
         }
 
@@ -349,7 +368,7 @@
 
             display: block;
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             font-weight: 800;
 
@@ -444,9 +463,9 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             display: flex;
 
@@ -492,7 +511,7 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-upb);
+            background: var(--color-primario);
 
             color: white;
 
@@ -569,7 +588,7 @@
 
             letter-spacing: 1.2px;
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
         }
 
@@ -650,10 +669,10 @@
 
             transform: translateY(-3px);
 
-            border-color: var(--rojo-upb);
+            border-color: var(--color-primario);
 
             box-shadow:
-                0 10px 25px rgba(176,24,43,.12);
+                0 10px 25px rgba(194,25,142,.12);
 
         }
 
@@ -685,9 +704,9 @@
 
         .stat-icon.red {
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
         }
 
@@ -836,9 +855,9 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             display: flex;
 
@@ -899,9 +918,9 @@
 
         .activity-more button {
 
-            border: 1px solid var(--rojo-upb);
+            border: 1px solid var(--color-primario);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             background: white;
 
@@ -918,7 +937,7 @@
 
         .activity-more button:hover {
 
-            background: var(--rojo-upb);
+            background: var(--color-primario);
 
             color: white;
 
@@ -987,7 +1006,7 @@
         .form-group input:focus,
         .form-group select:focus {
 
-            border-color: var(--rojo-upb);
+            border-color: var(--color-primario);
 
         }
 
@@ -1023,9 +1042,9 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             display: flex;
 
@@ -1086,7 +1105,7 @@
 
         .primary-button {
 
-            background: var(--rojo-upb);
+            background: var(--degradado-upb);
 
             color: white;
 
@@ -1095,7 +1114,7 @@
 
         .primary-button:hover {
 
-            background: var(--rojo-oscuro);
+            background: var(--degradado-upb-oscuro);
 
         }
 
@@ -1113,9 +1132,9 @@
 
             background: white;
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
-            border: 1px solid var(--rojo-upb);
+            border: 1px solid var(--color-primario);
 
         }
 
@@ -1348,7 +1367,7 @@
 
         .course-code {
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             font-size: 12px;
 
@@ -1546,7 +1565,7 @@
 
         .certificate-logo {
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             font-size: 28px;
 
@@ -1710,9 +1729,9 @@
 
         .history-back:hover {
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
         }
 
@@ -1801,9 +1820,9 @@
 
             border-radius: 50%;
 
-            background: var(--rojo-claro);
+            background: var(--color-primario-claro);
 
-            color: var(--rojo-upb);
+            color: var(--color-primario);
 
             display: flex;
 
@@ -2005,7 +2024,7 @@
             width: 56px;
             height: 56px;
             border-radius: 10px;
-            background: var(--rojo-upb);
+            background: var(--degradado-upb);
             margin-bottom: 14px;
         }
 
@@ -2043,23 +2062,23 @@
             transform: translateY(-50%);
             border: none;
             background: none;
-            color: var(--rojo-upb);
+            color: var(--color-primario);
             font-size: 12px;
             font-weight: 600;
             padding: 4px 6px;
         }
 
         /* Estado de error: el JS solo agrega/quita esta clase,
-           el color rojo vive aqui. */
+           el color de error vive en --color-error. */
         .input-error {
-            border-color: #c0392b !important;
+            border-color: var(--color-error) !important;
         }
 
         .input-error-message {
             display: block;
             min-height: 16px;
             font-size: 12px;
-            color: #c0392b;
+            color: var(--color-error);
             margin-top: 4px;
         }
 
@@ -2079,7 +2098,7 @@
         }
 
         .login-note-error {
-            color: #c0392b;
+            color: var(--color-error);
         }
 
         .login-note-success {
@@ -2102,19 +2121,19 @@ button.stat-card {
 }
 
 /* Badges extra */
-.badge.danger { background: var(--rojo-claro); color: var(--rojo-upb); }
+.badge.danger { background: var(--color-error-claro); color: var(--color-error); }
 .badge.neutral { background: var(--gris-claro); color: var(--gris-texto); }
 
 /* Punto de color de la actividad segun su nivel */
 .activity-dot.success, .history-marker.success { background: #e8f6ef; color: var(--verde); }
 .activity-dot.warning, .history-marker.warning { background: #fff3d8; color: var(--amarillo); }
-.activity-dot.danger, .history-marker.danger { background: var(--rojo-claro); color: var(--rojo-upb); }
+.activity-dot.danger, .history-marker.danger { background: var(--color-error-claro); color: var(--color-error); }
 .activity-dot.info, .history-marker.info { background: #e7f1fa; color: var(--azul); }
 
 .activity-more button {
     background: none;
     border: none;
-    color: var(--rojo-upb);
+    color: var(--color-primario);
     font-weight: 600;
     cursor: pointer;
 }
@@ -2147,7 +2166,7 @@ button.stat-card {
     font-size: 12px;
     margin-top: 6px;
 }
-.field-help a { color: var(--rojo-upb); }
+.field-help a { color: var(--color-primario); }
 
 .formato-preview {
     min-height: 42px;
@@ -2202,14 +2221,14 @@ button.stat-card {
 }
 .toast.success { background: var(--verde); }
 .toast.warning { background: var(--amarillo); }
-.toast.error { background: var(--rojo-upb); }
+.toast.error { background: var(--color-error); }
 
 /* Indicador de servidor desconectado */
-.notification.offline { color: var(--rojo-upb); }
+.notification.offline { color: var(--color-error); }
 
 /* Zona de archivo al arrastrar */
 .upload-area { display: block; cursor: pointer; }
-.upload-area.dragging { border-color: var(--rojo-upb); background: var(--rojo-claro); }
+.upload-area.dragging { border-color: var(--color-primario); background: var(--color-primario-claro); }
 
 /* Dos columnas (asignatura / programa) */
 .two-columns {
@@ -2266,14 +2285,14 @@ button.stat-card {
 .small { padding: 6px 10px !important; font-size: 12px; }
 .danger-button {
     background: var(--blanco);
-    color: var(--rojo-upb);
-    border: 1px solid var(--rojo-upb);
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
     border-radius: 7px;
     font-weight: 600;
     cursor: pointer;
 }
 .link-button {
-    color: var(--rojo-upb);
+    color: var(--color-primario);
     font-weight: 600;
     text-decoration: none;
     font-size: 13px;
@@ -2334,13 +2353,13 @@ button.stat-card {
     resize: vertical;
     min-height: 70px;
 }
-.form-group textarea:focus { border-color: var(--rojo-upb); }
+.form-group textarea:focus { border-color: var(--color-primario); }
 
 /* Campo con error de validacion */
 .form-group .input-error,
 .form-group .input-error:focus {
-    border-color: var(--rojo-upb);
-    background: #fff5f5;
+    border-color: var(--color-error);
+    background: var(--color-error-claro);
 }
 
 /* "Mas datos de la carta descriptiva (opcional)" */
@@ -2354,15 +2373,15 @@ button.stat-card {
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
-    color: var(--rojo-upb);
+    color: var(--color-primario);
 }
 .optional-fields[open] summary { margin-bottom: 16px; }
 
 /* Aviso rojo: la carga fallo, se puede reintentar */
 .alert-banner.danger {
     border-color: #f0b4bb;
-    background: #fff1f2;
-    color: #8c1322;
+    background: var(--color-error-claro);
+    color: var(--color-error-oscuro);
     margin: 18px 0 0;
 }
 
@@ -2401,11 +2420,11 @@ button.stat-card {
     margin-left: 8px;
     border: none;
     background: transparent;
-    color: var(--rojo-upb);
+    color: var(--color-error);
     font-size: 16px;
     line-height: 1;
     font-weight: 700;
     cursor: pointer;
     padding: 0 2px;
 }
-.chip-remove:hover { color: #7d0f1d; }
+.chip-remove:hover { color: var(--color-error-oscuro); }

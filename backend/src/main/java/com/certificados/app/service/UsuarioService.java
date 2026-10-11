@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  *  - No se puede desactivar al ultimo administrador activo.
  *
  * SE PUEDE MODIFICAR: el maximo de auxiliares (application.properties) y
- * las reglas de la contrasena (PATRON_CONTRASENA / validarContrasena).
+ * las reglas de la contrasena (app.seguridad.contrasena-minima / validarContrasena).
  */
 @Service
 @Transactional
@@ -47,21 +47,33 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final ActividadService actividadService;
     private final int maxAuxiliares;
+    private final int contrasenaMinima;
+
+    /** BCrypt solo usa los primeros 72 bytes: es el maximo posible. NO MODIFICAR. */
+    private static final int CONTRASENA_MAXIMA_BYTES = 72;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           RolRepository rolRepository,
                           PasswordEncoder passwordEncoder,
                           ActividadService actividadService,
-                          @Value("${app.seguridad.max-auxiliares:4}") int maxAuxiliares) {
+                          @Value("${app.seguridad.max-auxiliares:4}") int maxAuxiliares,
+                          @Value("${app.seguridad.contrasena-minima:12}") int contrasenaMinima) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.actividadService = actividadService;
         this.maxAuxiliares = maxAuxiliares;
+        // Nunca menos de 12 (politica de CTIC) ni mas de lo que BCrypt admite
+        this.contrasenaMinima = Math.min(Math.max(contrasenaMinima, 12), CONTRASENA_MAXIMA_BYTES);
     }
 
     public int maxAuxiliares() {
         return maxAuxiliares;
+    }
+
+    /** Largo minimo de contrasena (app.seguridad.contrasena-minima). El panel lo lee de /api/configuracion. */
+    public int contrasenaMinima() {
+        return contrasenaMinima;
     }
 
     /** Lista de usuarios. soloActivos=true para las listas desplegables del panel. */
@@ -175,12 +187,18 @@ public class UsuarioService {
 
     /* ----------------------------- utilidades ----------------------------- */
 
-    /** Minimo 8 caracteres, con letras y numeros, distinta del nombre de usuario. */
-    public static void validarContrasena(String contrasena, String usuario) {
+    /**
+     * Politica de contrasenas (CTIC): minimo 12 caracteres (configurable con
+     * app.seguridad.contrasena-minima, nunca menos de 12), con letras y
+     * numeros, y distinta del nombre de usuario.
+     * Las contrasenas que ya existian con menos caracteres siguen sirviendo
+     * para entrar; la regla se aplica al crear o cambiar una contrasena.
+     */
+    public void validarContrasena(String contrasena, String usuario) {
         // BCrypt solo usa los primeros 72 BYTES (una letra con tilde ocupa 2)
-        if (contrasena == null || contrasena.length() < 8
-                || contrasena.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
-            throw new BusinessException("La contraseña debe tener entre 8 y 72 caracteres");
+        if (contrasena == null || contrasena.length() < contrasenaMinima
+                || contrasena.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > CONTRASENA_MAXIMA_BYTES) {
+            throw new BusinessException("La contraseña debe tener entre " + contrasenaMinima + " y 72 caracteres");
         }
         boolean letra = contrasena.chars().anyMatch(Character::isLetter);
         boolean digito = contrasena.chars().anyMatch(Character::isDigit);

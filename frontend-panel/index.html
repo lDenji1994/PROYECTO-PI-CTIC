@@ -50,11 +50,12 @@
             <button class="menu-item active" type="button" data-vista="dashboard" id="btn-dashboard">
                 <span class="menu-icon">▦</span> Dashboard
             </button>
-            <button class="menu-item" type="button" data-vista="carga" id="btn-carga">
-                <span class="menu-icon">↑</span> Carga de información
-            </button>
+            <!-- SE PUEDE MODIFICAR: el orden de los botones es el orden del menu -->
             <button class="menu-item" type="button" data-vista="cursos" id="btn-cursos">
                 <span class="menu-icon">▤</span> Contenido de cursos
+            </button>
+            <button class="menu-item" type="button" data-vista="carga" id="btn-carga">
+                <span class="menu-icon">↑</span> Carga de información
             </button>
             <button class="menu-item" type="button" data-vista="certificaciones" id="btn-certificaciones">
                 <span class="menu-icon">▣</span> Certificaciones
@@ -176,7 +177,7 @@
         <section id="vista-carga" class="page-view">
 
             <div class="page-intro">
-                <span class="section-label">MÓDULO 01</span>
+                <span class="section-label">MÓDULO 02</span>
                 <h2>Carga de información</h2>
                 <p>Carga la carta descriptiva o el syllabus de cada asignatura (PDF, Word o Excel) y registra a mano
                     los datos del curso que necesita el certificado. El sistema indica si el formato usado es el
@@ -357,7 +358,7 @@
         <section id="vista-cursos" class="page-view">
 
             <div class="page-intro">
-                <span class="section-label">MÓDULO 02</span>
+                <span class="section-label">MÓDULO 01</span>
                 <h2>Contenido de cursos</h2>
                 <p>Asignaturas identificadas por su <strong>código de materia</strong> y <strong>código de curso</strong>
                     (ej. FION 0001), con sus documentos y el estado de cada formato.</p>
@@ -679,14 +680,14 @@
                         </div>
                         <div class="form-group">
                             <label for="usr-contrasena">Contraseña inicial *</label>
-                            <input id="usr-contrasena" type="password" minlength="8" maxlength="72" required
+                            <input id="usr-contrasena" type="password" minlength="12" maxlength="72" required
                                    autocomplete="new-password">
-                            <small class="field-help">Mínimo 8 caracteres, con letras y números. La auxiliar puede
+                            <small class="field-help">Mínimo 12 caracteres, con letras y números. La auxiliar puede
                                 cambiarla después en «Mi cuenta».</small>
                         </div>
                         <div class="form-group">
                             <label for="usr-contrasena2">Repetir contraseña *</label>
-                            <input id="usr-contrasena2" type="password" minlength="8" maxlength="72" required
+                            <input id="usr-contrasena2" type="password" minlength="12" maxlength="72" required
                                    autocomplete="new-password">
                         </div>
                     </div>
@@ -729,7 +730,7 @@
                     <button class="outline-button" type="button" id="btn-cerrar-contrasena">Cerrar</button>
                 </div>
                 <form id="form-contrasena" class="inline-form" novalidate autocomplete="off">
-                    <input id="contrasena-nueva" type="password" minlength="8" maxlength="72"
+                    <input id="contrasena-nueva" type="password" minlength="12" maxlength="72"
                            placeholder="Contraseña nueva" aria-label="Contraseña nueva" autocomplete="new-password">
                     <button class="primary-button" type="submit">Asignar contraseña</button>
                 </form>
@@ -762,13 +763,13 @@
                         </div>
                         <div class="form-group">
                             <label for="mi-nueva">Contraseña nueva *</label>
-                            <input id="mi-nueva" type="password" minlength="8" maxlength="72" required
+                            <input id="mi-nueva" type="password" minlength="12" maxlength="72" required
                                    autocomplete="new-password">
-                            <small class="field-help">Mínimo 8 caracteres, con letras y números.</small>
+                            <small class="field-help">Mínimo 12 caracteres, con letras y números.</small>
                         </div>
                         <div class="form-group">
                             <label for="mi-nueva2">Repetir contraseña nueva *</label>
-                            <input id="mi-nueva2" type="password" minlength="8" maxlength="72" required
+                            <input id="mi-nueva2" type="password" minlength="12" maxlength="72" required
                                    autocomplete="new-password">
                         </div>
                     </div>

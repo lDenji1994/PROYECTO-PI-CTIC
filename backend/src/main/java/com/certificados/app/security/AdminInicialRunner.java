@@ -26,7 +26,7 @@ import java.util.Locale;
  * ignora) defines:
  *
  *     app.seguridad.admin-inicial.usuario=admin
- *     app.seguridad.admin-inicial.contrasena=LaClaveQueTuElijas1
+ *     app.seguridad.admin-inicial.contrasena=(minimo 12 caracteres, letras y numeros)
  *
  * Al arrancar:
  *   - si ese usuario no existe, se crea con rol ADMINISTRADOR;
@@ -50,6 +50,7 @@ public class AdminInicialRunner implements ApplicationRunner {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UsuarioService usuarioService;
     private final String usuario;
     private final String contrasena;
     private final String nombre;
@@ -59,6 +60,7 @@ public class AdminInicialRunner implements ApplicationRunner {
             UsuarioRepository usuarioRepository,
             RolRepository rolRepository,
             PasswordEncoder passwordEncoder,
+            UsuarioService usuarioService,
             @Value("${app.seguridad.admin-inicial.usuario:admin}") String usuario,
             @Value("${app.seguridad.admin-inicial.contrasena:}") String contrasena,
             @Value("${app.seguridad.admin-inicial.nombre:Administrador CTIC}") String nombre,
@@ -66,6 +68,7 @@ public class AdminInicialRunner implements ApplicationRunner {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
+        this.usuarioService = usuarioService;
         this.usuario = usuario == null ? "" : usuario.trim().toLowerCase(Locale.ROOT);
         this.contrasena = contrasena == null ? "" : contrasena;
         this.nombre = nombre;
@@ -110,7 +113,7 @@ public class AdminInicialRunner implements ApplicationRunner {
             return;
         }
         try {
-            UsuarioService.validarContrasena(contrasena, usuario);
+            usuarioService.validarContrasena(contrasena, usuario);
         } catch (BusinessException e) {
             LOG.warn("LOGIN: la contrasena del administrador inicial no es valida: {}", e.getMessage());
             return;

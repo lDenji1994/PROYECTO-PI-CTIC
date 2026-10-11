@@ -496,6 +496,18 @@ function pintarCatalogos() {
         'Arrastra el archivo aquí o haz clic para buscarlo. Se aceptan: ' +
         extensiones.join(', ').toUpperCase() + ' (máx. ' + estado.configuracion.tamanoMaximoMb + ' MB).';
 
+    /* Largo minimo de contrasena (politica de CTIC, la define el backend) */
+    const minimo = estado.configuracion.contrasenaMinima || 12;
+    ['usr-contrasena', 'usr-contrasena2', 'contrasena-nueva', 'mi-nueva', 'mi-nueva2'].forEach(function (id) {
+        document.getElementById(id).minLength = minimo;
+    });
+    document.querySelectorAll('.field-help').forEach(function (ayuda) {
+        /* Solo los textos de contrasena (los demas pueden tener enlaces) */
+        if (ayuda.children.length === 0 && /Mínimo \d+ caracteres/.test(ayuda.textContent)) {
+            ayuda.textContent = ayuda.textContent.replace(/Mínimo \d+ caracteres/, 'Mínimo ' + minimo + ' caracteres');
+        }
+    });
+
     pintarChecklistAsignaturas();
     pintarProgramas();
 }
@@ -1829,10 +1841,13 @@ async function agregarAsignaturaASolicitud() {
    12. USUARIOS (solo administrador) Y MI CUENTA
    ===================================================================== */
 
-/** Mismas reglas que UsuarioService.validarContrasena del backend. */
+/** Mismas reglas que UsuarioService.validarContrasena del backend.
+ *  El minimo lo define el backend (app.seguridad.contrasena-minima) y llega
+ *  en /api/configuracion; 12 es solo el valor por si no llegara. */
 function errorContrasena(contrasena, repetida) {
-    if (contrasena.length < 8 || contrasena.length > 72) {
-        return 'La contraseña debe tener entre 8 y 72 caracteres.';
+    const minimo = estado.configuracion.contrasenaMinima || 12;
+    if (contrasena.length < minimo || new TextEncoder().encode(contrasena).length > 72) {
+        return 'La contraseña debe tener entre ' + minimo + ' y 72 caracteres.';
     }
     if (!/\p{L}/u.test(contrasena) || !/\d/.test(contrasena)) {
         return 'La contraseña debe incluir letras y números.';
