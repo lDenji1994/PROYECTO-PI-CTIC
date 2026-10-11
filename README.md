@@ -83,7 +83,7 @@ Edita `application-local.properties` con:
 
 ```properties
 app.seguridad.admin-inicial.usuario=admin
-app.seguridad.admin-inicial.contrasena=   ← escribe aquí la tuya (mín. 8, con letras y números)
+app.seguridad.admin-inicial.contrasena=   ← escribe aquí la tuya (mín. 12, con letras y números)
 ```
 
 Ese archivo está en `.gitignore`: **nunca se sube**. `application.properties` (el que sí se
@@ -129,12 +129,14 @@ su contraseña en **Mi cuenta**.
 
 ## 4. Qué hace cada módulo del panel
 
+Colores: paleta del logo UPB (rosado → magenta → morado), definida al inicio de `static/styles.css` (`--color-primario`, `--degradado-upb`). Los errores y botones de eliminar se mantienen en rojo.
+
 | Módulo | Qué hace | API que usa |
 |---|---|---|
 | **Login** | Usuario y contraseña contra la tabla de usuarios (hash BCrypt). Sesión por cookie. | `/api/auth/*` |
 | **Dashboard** | Contadores reales, aviso de formatos desactualizados y **actividad reciente** (la auxiliar ve la suya; el administrador, la de todos). | `/api/actividades`, `/api/documentos-academicos/resumen`, `/api/solicitudes-certificados` |
-| **Carga de información** | Sube el documento (PDF, Word, Excel) y registra **a mano** los datos del curso. Permite corregir los datos o reemplazar el archivo después. | `POST /api/documentos-academicos/cargar`, `/api/versiones-documentos/{id}/datos`, `/api/versiones-documentos/{id}/archivo` |
 | **Contenido de cursos** | Registrar asignaturas (código de **materia** + código de **curso**) y programas (solo administrador). | `/api/asignaturas`, `/api/programas` |
+| **Carga de información** | Sube el documento (PDF, Word, Excel) y registra **a mano** los datos del curso. Permite corregir los datos o reemplazar el archivo después. | `POST /api/documentos-academicos/cargar`, `/api/versiones-documentos/{id}/datos`, `/api/versiones-documentos/{id}/archivo` |
 | **Certificaciones** | Solicitudes con asignaturas, vista previa del contenido, generar y ver **un solo PDF** con todas las asignaturas. | `/api/solicitudes-certificados`, `/api/certificados-generados` |
 | **Usuarios** (solo administrador) | Crear cuentas, activar/desactivar, asignar contraseña. | `/api/usuarios` |
 | **Mi cuenta** | Cambiar la contraseña propia. | `POST /api/auth/cambiar-contrasena` |
@@ -282,7 +284,7 @@ Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responde
 
 * **Sin credenciales en el código ni en el repositorio**: ni la de MySQL ni la del panel.
   Los usuarios `{noop}` que había en `SecurityConfig` se eliminaron.
-* **Contraseñas con hash BCrypt**; nunca se devuelven en la API ni se escriben en consola.
+* **Contraseñas con hash BCrypt**, de mínimo 12 caracteres con letras y números (política de CTIC, `app.seguridad.contrasena-minima`); nunca se devuelven en la API ni se escriben en consola.
 * **Bloqueo por intentos**: 5 fallos seguidos bloquean 5 minutos (`app.seguridad.*`).
 * **Sesión**: cookie `HttpOnly` + `SameSite=Strict`, caduca a los 60 min sin uso; si el
   administrador desactiva a alguien o le cambia la contraseña, su sesión abierta se cierra.

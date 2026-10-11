@@ -50,10 +50,11 @@ public class CertificadoContenidosPdf {
 
     private static final Color GRIS_FRANJA = new Color(236, 239, 243);
     private static final Color GRIS_TEXTO = new Color(90, 98, 112);
-    private static final Color ROJO_UPB = new Color(176, 24, 43);
+    /** Magenta de la paleta UPB (mismo --color-primario del panel). SE PUEDE MODIFICAR. */
+    private static final Color COLOR_UPB = new Color(194, 25, 142);
 
     private static final Font TITULO_ASIGNATURA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f);
-    private static final Font ETIQUETA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, Font.NORMAL, ROJO_UPB);
+    private static final Font ETIQUETA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, Font.NORMAL, COLOR_UPB);
     private static final Font TEXTO = FontFactory.getFont(FontFactory.HELVETICA, 9.5f);
     private static final Font TEXTO_GRIS = FontFactory.getFont(FontFactory.HELVETICA, 9f, Font.NORMAL, GRIS_TEXTO);
 

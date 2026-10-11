@@ -18,7 +18,7 @@ app.auditoria.id-usuario-por-defecto=1
 # ---------------------------------------------------------------------
 # ADMINISTRADOR INICIAL DEL PANEL (login)
 # La primera vez que arranca el servidor se crea / habilita este usuario.
-# Escribe TU propia contrasena despues del "=": minimo 8 caracteres, con
+# Escribe TU propia contrasena despues del "=": minimo 12 caracteres, con
 # letras y numeros. Mientras este vacia nadie puede iniciar sesion.
 # Si el usuario ya tiene contrasena no se cambia (para forzarla, agrega
 # la linea  app.seguridad.admin-inicial.forzar=true  y reinicia).
