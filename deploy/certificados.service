@@ -1,0 +1,34 @@
+# =====================================================================
+#  SERVICIO systemd (Red Hat Enterprise Linux 10 / Ubuntu)
+#  Copiar a /etc/systemd/system/certificados.service y luego:
+#      sudo systemctl daemon-reload
+#      sudo systemctl enable --now certificados
+#      sudo systemctl status certificados
+#
+#  Mantiene la aplicacion encendida, la arranca con el servidor y la
+#  reinicia sola si se cae. Corre con un usuario sin privilegios.
+#  SE PUEDE MODIFICAR: rutas y memoria (-Xmx).
+# =====================================================================
+[Unit]
+Description=Certificados de Cursos Academicos UPB
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=certificados
+Group=certificados
+WorkingDirectory=/opt/certificados
+ExecStart=/usr/bin/java -Xms128m -Xmx512m -jar /opt/certificados/certificados-app.jar --spring.profiles.active=prod
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+
+# Endurecimiento: el servicio no puede escribir fuera de sus carpetas
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/log/certificados
+
+[Install]
+WantedBy=multi-user.target

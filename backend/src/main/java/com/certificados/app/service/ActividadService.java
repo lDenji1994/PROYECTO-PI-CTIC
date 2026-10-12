@@ -72,6 +72,7 @@ public class ActividadService {
     public static final String CARGAR_DOCUMENTO_ANTIGUO = "CARGAR_DOCUMENTO_FORMATO_ANTIGUO";
     public static final String CREAR_SOLICITUD = "CREAR_SOLICITUD_CERTIFICADO";
     public static final String AGREGAR_ASIGNATURA_SOLICITUD = "AGREGAR_ASIGNATURA_SOLICITUD";
+    public static final String ELEGIR_VERSION_SOLICITUD = "ELEGIR_VERSION_SOLICITUD";
     public static final String SOLICITUD_ESPERANDO = "SOLICITUD_ESPERANDO_DOCUMENTOS";
     public static final String SOLICITUD_REALIZADA = "SOLICITUD_REALIZADA";
     public static final String SOLICITUD_ERROR = "SOLICITUD_ERROR";
@@ -98,6 +99,7 @@ public class ActividadService {
             Map.entry(CARGAR_DOCUMENTO_ANTIGUO, "Documento cargado con formato desactualizado"),
             Map.entry(CREAR_SOLICITUD, "Solicitud de certificado creada"),
             Map.entry(AGREGAR_ASIGNATURA_SOLICITUD, "Asignatura agregada a una solicitud"),
+            Map.entry(ELEGIR_VERSION_SOLICITUD, "Versión del documento elegida para un certificado"),
             Map.entry(SOLICITUD_ESPERANDO, "Solicitud en espera de documentos"),
             Map.entry(SOLICITUD_REALIZADA, "Solicitud marcada como realizada"),
             Map.entry(SOLICITUD_ERROR, "Solicitud marcada con error"),

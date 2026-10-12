@@ -46,3 +46,14 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release = 21
 }
+
+// NO MODIFICAR: el JAR que va al servidor nunca debe llevar las credenciales
+// locales de quien lo compilo (application-local.properties esta en la misma
+// carpeta de recursos). Las del servidor se ponen fuera del JAR.
+tasks.named('bootJar') {
+    exclude '**/application-local.properties'
+    archiveFileName = 'certificados-app.jar'
+}
+tasks.named('jar') {
+    exclude '**/application-local.properties'
+}

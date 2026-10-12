@@ -63,10 +63,14 @@ En MySQL Workbench (o consola), ejecutar **en este orden**:
 1. `database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql` (crea la BD y las tablas).
    Si la BD ya existe, sáltalo.
 2. `database/02_datos_iniciales.sql` (se puede correr varias veces sin duplicar).
+3. `database/04_migracion_version_en_solicitud.sql` — **obligatorio si tu base ya existía**
+   antes de esta versión (agrega la columna de la versión elegida en cada solicitud). Se puede
+   correr varias veces. Sin esto el servidor no arranca (`missing column`).
+
+`03_usuario_aplicacion_produccion.sql` es solo para el servidor de producción.
 
 El paso 2 crea el usuario `admin` **sin contraseña**. La contraseña se la asigna el
-servidor la primera vez que arranca (paso 3.2). Esta versión **no cambia el esquema**:
-si ya tenías la base de datos creada no hay que volver a correr nada.
+servidor la primera vez que arranca (paso 3.2). Las bases que ya existían solo necesitan la migración 04.
 
 ### 3.2 Tus credenciales (sin subirlas a GitHub)
 
@@ -223,6 +227,20 @@ separados por coma, espacio o salto de línea, y también filas completas copiad
 (ignora nombres y notas). El texto pegado **no se envía al servidor ni se guarda**.
 Lógica en `static/app.js` → `buscarCodigosEnTexto`.
 
+### Elegir la versión del documento para el certificado
+
+En la vista previa de una solicitud, cada asignatura tiene una lista **Versión**:
+
+* **Automática (recomendada):** el sistema usa la versión más reciente con datos completos y
+  formato vigente.
+* O una versión concreta, por ejemplo la del periodo en que el estudiante cursó la materia.
+
+Se guarda en `DetallesSolicitudesCertificadosS.n_idVersionDocumento` (migración 04). Si esa
+versión se elimina, la solicitud vuelve sola a la automática. Solo se puede cambiar mientras la
+solicitud está *Pendiente* o *Esperando documentos*.
+`PUT /api/solicitudes-certificados/{id}/asignaturas/{idAsignatura}/version` con
+`{"idVersionDocumento": 15}` o `{"idVersionDocumento": null}`.
+
 ### Código de materia + código de curso
 
 En las plantillas institucionales el código de una asignatura tiene dos partes, p. ej.
@@ -286,6 +304,9 @@ Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responde
   Los usuarios `{noop}` que había en `SecurityConfig` se eliminaron.
 * **Contraseñas con hash BCrypt**, de mínimo 12 caracteres con letras y números (política de CTIC, `app.seguridad.contrasena-minima`); nunca se devuelven en la API ni se escriben en consola.
 * **Bloqueo por intentos**: 5 fallos seguidos bloquean 5 minutos (`app.seguridad.*`).
+* **CSRF**: además de la cookie `SameSite=Strict`, cada POST/PUT/PATCH/DELETE debe traer el
+  token de la cookie `XSRF-TOKEN` en la cabecera `X-XSRF-TOKEN` (`app.js` y `login.js` lo hacen
+  solos). Si alguien llama la API desde otra herramienta (Postman, curl) debe enviarlo también.
 * **Sesión**: cookie `HttpOnly` + `SameSite=Strict`, caduca a los 60 min sin uso; si el
   administrador desactiva a alguien o le cambia la contraseña, su sesión abierta se cierra.
 * **Permisos por rol en el backend** (`SecurityConfig`), no solo en el panel.
@@ -297,7 +318,13 @@ Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responde
 
 ---
 
-## 7. Notas importantes para el equipo
+## 7. Producción
+
+Perfil `prod` (`application-prod.properties`), credenciales fuera del JAR
+(`/etc/certificados/certificados.properties`) y plantillas de Nginx, systemd y MySQL en la
+carpeta `deploy/`. Paso a paso para Red Hat 10 en **`deploy/README-despliegue.md`**.
+
+## 8. Notas importantes para el equipo
 
 1. **`application.properties` ya no trae contraseña de MySQL por defecto.** Cada integrante
    debe tener su `application-local.properties` (paso 3.2) o no conectará.
@@ -312,9 +339,9 @@ Todas las rutas `/api/**` (menos login/logout) exigen sesión: sin ella responde
 
 ---
 
-## 8. Próximos pasos sugeridos
+## 9. Próximos pasos sugeridos
 
 * Plantilla institucional del certificado (logo, membrete, firma real).
 * Lectura automática de la carta descriptiva (se descartó en esta entrega por tiempo).
 * Pantalla para administrar plantillas de certificado desde el panel.
-* Token CSRF si el panel llega a servirse desde otro dominio distinto al del backend.
+* Actualizar Spring Boot 3.3 → 3.5 (parches de seguridad) y volver a probar todo.

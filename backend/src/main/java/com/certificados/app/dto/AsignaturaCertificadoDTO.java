@@ -9,6 +9,9 @@ import java.util.List;
  * completo  = true si tiene todo lo necesario para aparecer en el certificado.
  * faltantes = que le falta (documento, descripcion, contenido, creditos...).
  *             El panel lo muestra para que la auxiliar lo complete.
+ * versionElegidaManual  = true si la auxiliar escogio la version a mano;
+ *                         false si la eligio el sistema.
+ * versionesDisponibles  = todas las versiones que se pueden escoger.
  */
 public record AsignaturaCertificadoDTO(
         Integer idAsignatura,
@@ -29,6 +32,8 @@ public record AsignaturaCertificadoDTO(
         String descripcion,
         List<String> contenidos,
         boolean completo,
-        List<String> faltantes
+        List<String> faltantes,
+        boolean versionElegidaManual,
+        List<VersionOpcionDTO> versionesDisponibles
 ) {
 }

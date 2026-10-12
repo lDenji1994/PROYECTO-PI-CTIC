@@ -80,9 +80,15 @@ document.addEventListener('DOMContentLoaded', function () {
         mostrarNota('Verificando…', false);
 
         try {
+            // X-XSRF-TOKEN: token de seguridad que el servidor dejo en la
+            // cookie XSRF-TOKEN al abrir esta pagina (proteccion CSRF)
+            const token = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
             const respuesta = await fetch('/api/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': token ? decodeURIComponent(token[1]) : ''
+                },
                 body: JSON.stringify({ usuario: usuario, contrasena: contrasena })
             });
 

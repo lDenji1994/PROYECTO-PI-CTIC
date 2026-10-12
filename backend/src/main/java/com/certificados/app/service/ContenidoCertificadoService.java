@@ -2,6 +2,10 @@ package com.certificados.app.service;
 
 import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.dto.VersionDatosDTO;
+import com.certificados.app.dto.VersionOpcionDTO;
+import com.certificados.app.dto.VersionResumenDTO;
+import com.certificados.app.model.EstadoSolicitudCertificado;
+import com.certificados.app.model.SolicitudCertificado;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Asignatura;
@@ -34,11 +38,14 @@ import java.util.stream.Collectors;
  * cargados, la version de la que se tomara la informacion y devuelve:
  * creditos, horas, descripcion del curso y contenido (temas).
  *
- * Que version se elige (en este orden):
- *   1. una que tenga los datos del curso completos,
- *   2. con formato VIGENTE antes que uno desactualizado,
- *   3. del periodo mas reciente,
- *   4. la ultima cargada.
+ * Que version se usa:
+ *   - Si la auxiliar escogio una version para esa asignatura en la solicitud
+ *     (elegirVersion), se usa esa.
+ *   - Si no, la elige el sistema en este orden:
+ *       1. una que tenga los datos del curso completos,
+ *       2. con formato VIGENTE antes que uno desactualizado,
+ *       3. del periodo mas reciente,
+ *       4. la ultima cargada.
  *
  * El certificado solo se genera si TODAS las asignaturas estan completas
  * (validarCompleto). Asi no sale un certificado con huecos.
@@ -62,6 +69,7 @@ public class ContenidoCertificadoService {
     private final VersionDocumentoRepository versionRepository;
     private final ContenidoRepository contenidoRepository;
     private final FormatoService formatoService;
+    private final ActividadService actividadService;
 
     public ContenidoCertificadoService(
             SolicitudCertificadoRepository solicitudRepository,
@@ -71,7 +79,9 @@ public class ContenidoCertificadoService {
             TipoDocumentoAcademicoRepository tipoRepository,
             VersionDocumentoRepository versionRepository,
             ContenidoRepository contenidoRepository,
-            FormatoService formatoService) {
+            FormatoService formatoService,
+            ActividadService actividadService) {
+        this.actividadService = actividadService;
         this.solicitudRepository = solicitudRepository;
         this.detalleRepository = detalleRepository;
         this.asignaturaRepository = asignaturaRepository;
@@ -94,7 +104,8 @@ public class ContenidoCertificadoService {
         List<AsignaturaCertificadoDTO> resultado = new ArrayList<>();
         for (DetalleSolicitudCertificado detalle : detalleRepository.findByIdSolicitudCertificado(idSolicitud)) {
             asignaturaRepository.findById(detalle.getIdAsignatura())
-                    .ifPresent(asignatura -> resultado.add(armar(asignatura, tipos)));
+                    .ifPresent(asignatura -> resultado.add(
+                            armar(asignatura, tipos, detalle.getIdVersionDocumento())));
         }
         resultado.sort(Comparator.comparing(AsignaturaCertificadoDTO::codigo, String.CASE_INSENSITIVE_ORDER));
         return resultado;
@@ -123,7 +134,56 @@ public class ContenidoCertificadoService {
 
     /* ------------------------------------------------------------------ */
 
-    private AsignaturaCertificadoDTO armar(Asignatura asignatura, Map<Integer, TipoDocumentoAcademico> tipos) {
+    /**
+     * La auxiliar escoge que version del documento usar para una asignatura
+     * de la solicitud (por ejemplo, la del periodo en que el estudiante la
+     * curso). idVersion = null vuelve a la eleccion automatica.
+     * Solo mientras la solicitud no este cerrada (REALIZADO o ERROR) ni
+     * generandose (PROCESANDO).
+     */
+    @Transactional
+    public void elegirVersion(Integer idSolicitud, Integer idAsignatura, Integer idVersion) {
+        SolicitudCertificado solicitud = solicitudRepository.findById(idSolicitud)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con id " + idSolicitud));
+        EstadoSolicitudCertificado estado = solicitud.getEstado();
+        if (estado != EstadoSolicitudCertificado.PENDIENTE
+                && estado != EstadoSolicitudCertificado.ESPERANDO_DOCUMENTOS) {
+            throw new BusinessException("La solicitud #" + idSolicitud + " ya no se puede modificar (estado "
+                    + estado + ").");
+        }
+
+        DetalleSolicitudCertificado detalle = detalleRepository.findByIdSolicitudCertificado(idSolicitud).stream()
+                .filter(d -> d.getIdAsignatura().equals(idAsignatura))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Esa asignatura no está en la solicitud #" + idSolicitud + "."));
+        Asignatura asignatura = asignaturaRepository.findById(idAsignatura)
+                .orElseThrow(() -> new ResourceNotFoundException("Asignatura no encontrada con id " + idAsignatura));
+
+        String detalleBitacora;
+        if (idVersion == null) {
+            detalleBitacora = "automática";
+        } else {
+            // La version debe ser de un documento de ESA asignatura
+            VersionResumenDTO version = versionRepository.buscarResumen(idVersion)
+                    .orElseThrow(() -> new ResourceNotFoundException("La versión de documento ya no existe."));
+            boolean esDeLaAsignatura = documentoRepository.findById(version.idDocumentoAcademico())
+                    .map(d -> idAsignatura.equals(d.getIdAsignatura()))
+                    .orElse(false);
+            if (!esDeLaAsignatura) {
+                throw new BusinessException("Esa versión no pertenece a la asignatura " + asignatura.getCodigo() + ".");
+            }
+            detalleBitacora = version.nombreArchivo()
+                    + (version.periodo() == null ? "" : " (periodo " + version.periodo() + ")");
+        }
+
+        detalle.setIdVersionDocumento(idVersion);
+        detalleRepository.save(detalle);
+        actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD, ActividadService.ELEGIR_VERSION_SOLICITUD,
+                "Solicitud #" + idSolicitud + ", " + asignatura.getCodigo() + ": " + detalleBitacora);
+    }
+
+    private AsignaturaCertificadoDTO armar(Asignatura asignatura, Map<Integer, TipoDocumentoAcademico> tipos,
+                                           Integer idVersionElegida) {
         String[] codigos = AsignaturaService.separar(asignatura.getCodigo());
 
         Map<Integer, DocumentoAcademico> documentos = documentoRepository
@@ -134,15 +194,22 @@ public class ContenidoCertificadoService {
                 ? List.of()
                 : versionRepository.listarDatosPorDocumentos(documentos.keySet());
 
-        VersionDatosDTO elegida = versiones.stream()
+        // La que escogio la auxiliar (si sigue existiendo) o la automatica
+        VersionDatosDTO manual = idVersionElegida == null ? null : versiones.stream()
+                .filter(v -> v.id().equals(idVersionElegida))
+                .findFirst()
+                .orElse(null);
+        VersionDatosDTO elegida = manual != null ? manual : versiones.stream()
                 .min(orden(documentos))
                 .orElse(null);
+
+        List<VersionOpcionDTO> opciones = opciones(versiones, documentos, tipos);
 
         if (elegida == null) {
             return new AsignaturaCertificadoDTO(asignatura.getId(), codigos[0], codigos[1],
                     asignatura.getCodigo(), asignatura.getNombre(), null, null, null, false, null,
                     null, null, null, null, null, null, List.of(), false,
-                    List.of("sin documento cargado"));
+                    List.of("sin documento cargado"), false, opciones);
         }
 
         DocumentoAcademico documento = documentos.get(elegida.idDocumentoAcademico());
@@ -163,7 +230,29 @@ public class ContenidoCertificadoService {
                 elegida.periodo(),
                 elegida.creditos(), elegida.horasTeoricas(), elegida.horasPracticas(),
                 elegida.horasLaboratorio(), elegida.horasIndependientes(),
-                elegida.descripcion(), contenidos, faltantes.isEmpty(), faltantes);
+                elegida.descripcion(), contenidos, faltantes.isEmpty(), faltantes,
+                manual != null, opciones);
+    }
+
+    /** Versiones que se pueden escoger, de la mas reciente a la mas antigua. */
+    private List<VersionOpcionDTO> opciones(List<VersionDatosDTO> versiones,
+                                            Map<Integer, DocumentoAcademico> documentos,
+                                            Map<Integer, TipoDocumentoAcademico> tipos) {
+        return versiones.stream()
+                .sorted(Comparator
+                        .comparing((VersionDatosDTO v) -> v.periodo() == null ? "" : v.periodo(), Comparator.reverseOrder())
+                        .thenComparing(v -> v.fechaCarga() == null ? LocalDateTime.MIN : v.fechaCarga(), Comparator.reverseOrder())
+                        .thenComparing(VersionDatosDTO::id, Comparator.reverseOrder()))
+                .map(v -> {
+                    DocumentoAcademico d = documentos.get(v.idDocumentoAcademico());
+                    TipoDocumentoAcademico tipo = tipos.get(d.getIdTipoDocumentoAcademico());
+                    return new VersionOpcionDTO(v.id(), v.periodo(),
+                            tipo == null ? null : tipo.getNombre(),
+                            d.getCodigoFormato() + " v" + d.getVersionFormato(),
+                            formatoService.esVigente(d.getCodigoFormato(), d.getVersionFormato()),
+                            v.fechaCarga(), tieneDatos(v));
+                })
+                .toList();
     }
 
     /** Menor = mejor candidata (ver el comentario de la clase). */

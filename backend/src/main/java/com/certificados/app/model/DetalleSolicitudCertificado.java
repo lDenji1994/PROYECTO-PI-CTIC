@@ -17,6 +17,14 @@ public class DetalleSolicitudCertificado {
     @Column(name = "n_idAsignatura")
     private Integer idAsignatura;
 
+    /**
+     * Version del documento elegida para el certificado de esta asignatura.
+     * null = la elige el sistema (ContenidoCertificadoService).
+     * Columna agregada en database/04_migracion_version_en_solicitud.sql.
+     */
+    @Column(name = "n_idVersionDocumento")
+    private Integer idVersionDocumento;
+
     public DetalleSolicitudCertificado() {
     }
 
@@ -42,5 +50,13 @@ public class DetalleSolicitudCertificado {
 
     public void setIdAsignatura(Integer idAsignatura) {
         this.idAsignatura = idAsignatura;
+    }
+
+    public Integer getIdVersionDocumento() {
+        return idVersionDocumento;
+    }
+
+    public void setIdVersionDocumento(Integer idVersionDocumento) {
+        this.idVersionDocumento = idVersionDocumento;
     }
 }
