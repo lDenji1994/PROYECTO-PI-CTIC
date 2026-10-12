@@ -47,9 +47,10 @@ PROYECTO-PI-CTIC/
 
 | Herramienta | Versión |
 |---|---|
-| JDK | **21** (lo exige `build.gradle`) |
-| Gradle | 8.x (o el wrapper `gradlew` del proyecto) |
-| MySQL | 8.x |
+| JDK | **21 a 25** (se compila para Java 21) |
+| Spring Boot | **4.1.1** (Spring Framework 7, Security 7, Hibernate 7, Jackson 3, Tomcat 11) |
+| Gradle | 9.1 — no hay que instalarlo: `gradlew` lo descarga solo la primera vez |
+| MySQL | 8.x (recomendado 8.4) |
 | IDE sugerido | IntelliJ IDEA o VS Code con Extension Pack for Java |
 
 ---
@@ -344,4 +345,3 @@ carpeta `deploy/`. Paso a paso para Red Hat 10 en **`deploy/README-despliegue.md
 * Plantilla institucional del certificado (logo, membrete, firma real).
 * Lectura automática de la carta descriptiva (se descartó en esta entrega por tiempo).
 * Pantalla para administrar plantillas de certificado desde el panel.
-* Actualizar Spring Boot 3.3 → 3.5 (parches de seguridad) y volver a probar todo.

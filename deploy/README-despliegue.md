@@ -79,7 +79,7 @@ sudo chown certificados:certificados /var/log/certificados
 | `server.address=127.0.0.1` | Solo Nginx puede hablar con la aplicación |
 | `server.forward-headers-strategy=native` | IP real del usuario (bloqueo por intentos y bitácora) y detección de HTTPS |
 | `server.servlet.session.cookie.secure=true` | Cookies de sesión y CSRF solo por HTTPS |
-| `server.error.include-message=never` | No mostrar detalles internos en errores |
+| `spring.web.error.include-message=never` | No mostrar detalles internos en errores |
 | Actuator solo `health` | No exponer información del servidor |
 | Logs en `/var/log/certificados` con rotación | Que los logs no llenen el disco |
 
