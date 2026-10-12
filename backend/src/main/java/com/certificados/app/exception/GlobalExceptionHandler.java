@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiError> handleMaxUpload(MaxUploadSizeExceededException ex) {
-        return responder(HttpStatus.PAYLOAD_TOO_LARGE, "Archivo muy pesado",
+        return responder(HttpStatus.CONTENT_TOO_LARGE, "Archivo muy pesado",
                 List.of("El archivo supera el tamano maximo permitido (20 MB)."));
     }
 

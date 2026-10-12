@@ -1,7 +1,11 @@
+// Spring Boot 4.1 (Spring Framework 7, Spring Security 7, Hibernate 7,
+// Jackson 3, Tomcat 11). Requiere Java 17+ (se compila para 21) y
+// Gradle 8.14+ o 9.x: el wrapper (gradlew) descarga solo la version correcta.
+// Antes: 3.3.2, que dejo de recibir parches de seguridad gratuitos.
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.2'
-    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.certificados'
@@ -20,7 +24,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // En Spring Boot 4 el starter "web" se llama "webmvc"
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -28,7 +33,8 @@ dependencies {
 
     runtimeOnly 'com.mysql:mysql-connector-j'
 
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    // Jackson 3 (Spring Boot 4) ya trae soporte de fechas (LocalDateTime):
+    // ya no hace falta jackson-datatype-jsr310.
 
     implementation 'com.github.librepdf:openpdf:1.3.39'
 
