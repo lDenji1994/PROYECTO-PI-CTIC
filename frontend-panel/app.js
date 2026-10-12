@@ -180,10 +180,30 @@ async function leerMensajeError(respuesta) {
  * Lanza Error con el mensaje del servidor si la respuesta no es 2xx.
  * Si la sesion se vencio (401) envia al login.
  */
+/**
+ * Token CSRF que el servidor deja en la cookie XSRF-TOKEN. Se devuelve en la
+ * cabecera X-XSRF-TOKEN en cada POST/PUT/PATCH/DELETE para demostrar que la
+ * peticion sale de este panel y no de otra pagina. NO MODIFICAR.
+ */
+function tokenCsrf() {
+    const coincidencia = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return coincidencia ? decodeURIComponent(coincidencia[1]) : '';
+}
+
+/** Agrega la cabecera CSRF a las peticiones que cambian datos. */
+function conCsrf(opciones) {
+    const resultado = Object.assign({}, opciones);
+    const metodo = (resultado.method || 'GET').toUpperCase();
+    if (metodo !== 'GET' && metodo !== 'HEAD') {
+        resultado.headers = Object.assign({}, resultado.headers, { 'X-XSRF-TOKEN': tokenCsrf() });
+    }
+    return resultado;
+}
+
 async function api(ruta, opciones) {
     let respuesta;
     try {
-        respuesta = await fetch(API_BASE + ruta, opciones);
+        respuesta = await fetch(API_BASE + ruta, conCsrf(opciones));
     } catch (e) {
         marcarServidor(false);
         throw new Error('No se pudo conectar con el servidor. Revisa tu conexión y que el backend esté encendido.');
@@ -378,7 +398,7 @@ async function cargarSesion() {
 
 async function cerrarSesion() {
     try {
-        await fetch(API_BASE + '/auth/logout', { method: 'POST' });
+        await fetch(API_BASE + '/auth/logout', conCsrf({ method: 'POST' }));
     } catch (e) {
         /* aunque falle la red, se sale al login */
     }
@@ -1794,12 +1814,14 @@ async function verDetalleSolicitud(id) {
         }
 
         tbody.innerHTML = asignaturas.map(function (a) {
-            const contenido = a.completo || a.descripcion
+            const contenido = selectorVersion(solicitud, a, editable) + (a.completo || a.descripcion
                 ? '<strong>' + escaparTexto(a.tipoDocumento || '') + ' ' + escaparTexto(a.formato || '') + '</strong> ' +
                   (a.formato ? badgeFormato(a.formatoVigente) : '') +
+                  (a.periodo ? '<small class="cell-help">Periodo ' + escaparTexto(a.periodo) +
+                      (a.versionElegidaManual ? ' · elegido a mano' : ' · elegido automáticamente') + '</small>' : '') +
                   '<small class="cell-help">' + escaparTexto(recortar(a.descripcion, 180)) + '</small>' +
                   '<small class="cell-help">' + a.contenidos.length + ' tema(s) de contenido</small>'
-                : '<span class="cell-help">Sin información registrada</span>';
+                : '<span class="cell-help">Sin información registrada</span>');
             const estadoFila = a.completo
                 ? '<span class="badge success">Completa</span>'
                 : '<span class="badge warning">Falta: ' + escaparTexto(a.faltantes.join(', ')) + '</span>' +
@@ -1818,6 +1840,53 @@ async function verDetalleSolicitud(id) {
     } catch (e) {
         filaVacia(tbody, 6, e.message);
     }
+}
+
+/* ---------------------------------------------------------------------
+   SELECTOR DE VERSION: que version del documento (periodo) usa el
+   certificado para cada asignatura. Por defecto la elige el sistema
+   (la mas reciente con datos completos y formato vigente); la auxiliar
+   puede escoger otra, por ejemplo la del semestre en que el estudiante
+   curso la materia.
+   --------------------------------------------------------------------- */
+
+function textoOpcionVersion(v) {
+    return (v.periodo || 'Sin periodo') + ' · ' + (v.tipoDocumento || 'Documento') + ' ' + (v.formato || '') +
+        (v.formatoVigente ? '' : ' (formato desactualizado)') +
+        (v.datosCompletos ? '' : ' — sin datos del curso');
+}
+
+function selectorVersion(solicitud, a, editable) {
+    const versiones = a.versionesDisponibles || [];
+    if (!editable || versiones.length === 0) {
+        return '';
+    }
+    const opciones = ['<option value=""' + (a.versionElegidaManual ? '' : ' selected') +
+        '>Automática (recomendada)</option>'];
+    versiones.forEach(function (v) {
+        const elegida = a.versionElegidaManual && v.idVersionDocumento === a.idVersionDocumento;
+        opciones.push('<option value="' + idSeguro(v.idVersionDocumento) + '"' + (elegida ? ' selected' : '') + '>' +
+            escaparTexto(textoOpcionVersion(v)) + '</option>');
+    });
+    return '<select class="version-select" aria-label="Versión del documento para el certificado"' +
+        ' data-version-solicitud="' + idSeguro(solicitud.id) + '" data-version-asignatura="' +
+        idSeguro(a.idAsignatura) + '">' + opciones.join('') + '</select>';
+}
+
+async function elegirVersion(select) {
+    const idSolicitud = Number(select.dataset.versionSolicitud);
+    const idAsignatura = Number(select.dataset.versionAsignatura);
+    const idVersion = select.value ? idSeguro(select.value) : null;
+    select.disabled = true;
+    try {
+        await apiJson('/solicitudes-certificados/' + idSeguro(idSolicitud) + '/asignaturas/' + idSeguro(idAsignatura) +
+            '/version', 'PUT', { idVersionDocumento: idVersion });
+        mostrarMensaje(idVersion ? 'Versión del documento actualizada.' : 'Se usará la versión automática.', 'success');
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    verDetalleSolicitud(idSolicitud);
 }
 
 async function agregarAsignaturaASolicitud() {
@@ -2084,6 +2153,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
 
     document.getElementById('btn-cerrar-sesion').addEventListener('click', cerrarSesion);
+
+    /* Selector de version en la vista previa de la solicitud */
+    document.addEventListener('change', function (e) {
+        const select = e.target.closest('select[data-version-solicitud]');
+        if (select) {
+            elegirVersion(select);
+        }
+    });
 
     /* Dashboard */
     document.getElementById('filtro-actividad').addEventListener('change', cargarActividad);

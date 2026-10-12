@@ -1,11 +1,13 @@
 package com.certificados.app.config;
 
 import com.certificados.app.repository.UsuarioRepository;
+import com.certificados.app.security.CsrfCookieFilter;
 import com.certificados.app.security.SesionVigenteFilter;
 import com.certificados.app.security.UsuarioSesion;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +21,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfException;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.io.IOException;
@@ -51,6 +57,18 @@ public class SecurityConfig {
 
     private static final String ADMIN = UsuarioSesion.ROL_ADMINISTRADOR;
 
+    /** true en produccion (HTTPS): las cookies solo viajan cifradas. */
+    private final boolean cookieSegura;
+    /** SE PUEDE MODIFICAR solo para depurar: false desactiva la verificacion CSRF. */
+    private final boolean csrfActivo;
+
+    public SecurityConfig(
+            @Value("${server.servlet.session.cookie.secure:false}") boolean cookieSegura,
+            @Value("${app.seguridad.csrf-activo:true}") boolean csrfActivo) {
+        this.cookieSegura = cookieSegura;
+        this.csrfActivo = csrfActivo;
+    }
+
     /** Rutas de configuracion de las plantillas de certificado. */
     private static final String[] PLANTILLAS = {
         "/api/tipos-certificados/**", "/api/plantillas-certificados/**", "/api/versiones-plantilla/**",
@@ -61,11 +79,27 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            SecurityContextRepository repositorioContexto,
                                            UsuarioRepository usuarioRepository) throws Exception {
+        // PROTECCION CSRF (que otra pagina no pueda enviar acciones a nombre
+        // de un usuario con sesion abierta). Ademas de la cookie de sesion
+        // SameSite=Strict, cada POST/PUT/PATCH/DELETE debe traer en la
+        // cabecera X-XSRF-TOKEN el valor de la cookie XSRF-TOKEN (app.js y
+        // login.js lo hacen solos). Esto cubre tambien a otros sitios del
+        // mismo dominio (*.upb.edu.co), que SameSite no bloquea.
+        // NO MODIFICAR salvo para depurar (app.seguridad.csrf-activo=false).
+        if (csrfActivo) {
+            CookieCsrfTokenRepository repositorioCsrf = CookieCsrfTokenRepository.withHttpOnlyFalse();
+            repositorioCsrf.setCookiePath("/");
+            repositorioCsrf.setCookieCustomizer(cookie -> cookie.sameSite("Strict").secure(cookieSegura));
+            http.csrf(csrf -> csrf
+                    .csrfTokenRepository(repositorioCsrf)
+                    // Token "plano": el panel lo copia tal cual de la cookie
+                    .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class);
+        } else {
+            http.csrf(csrf -> csrf.disable());
+        }
+
         http
-            // La API se usa solo desde el propio panel (mismo origen) y la
-            // cookie de sesion es SameSite=Strict (application.properties),
-            // que es la proteccion contra CSRF de esta aplicacion.
-            .csrf(csrf -> csrf.disable())
             .cors(cors -> {})
             .securityContext(contexto -> contexto.securityContextRepository(repositorioContexto))
             // Cierra la sesion de un usuario desactivado o con contrasena cambiada
@@ -114,9 +148,16 @@ public class SecurityConfig {
                     }
                 })
                 // Con sesion pero sin permiso
-                .accessDeniedHandler((request, response, ex) ->
+                // (si falta o no coincide el token CSRF tambien llega aqui)
+                .accessDeniedHandler((request, response, ex) -> {
+                    if (ex instanceof CsrfException) {
+                        responderJson(response, HttpServletResponse.SC_FORBIDDEN, "Token de seguridad",
+                                "La página perdió su token de seguridad. Recárgala (F5) e inténtalo de nuevo.");
+                    } else {
                         responderJson(response, HttpServletResponse.SC_FORBIDDEN,
-                                "Acceso denegado", "Tu usuario no tiene permiso para realizar esta acción."))
+                                "Acceso denegado", "Tu usuario no tiene permiso para realizar esta acción.");
+                    }
+                })
             )
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

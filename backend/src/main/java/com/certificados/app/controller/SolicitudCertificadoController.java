@@ -1,6 +1,7 @@
 package com.certificados.app.controller;
 
 import com.certificados.app.dto.AsignaturaCertificadoDTO;
+import com.certificados.app.dto.ElegirVersionDTO;
 import com.certificados.app.dto.AsignaturaDTO;
 import com.certificados.app.service.ContenidoCertificadoService;
 import com.certificados.app.service.AsignaturaService;
@@ -139,6 +140,19 @@ public class SolicitudCertificadoController {
      * descripcion y contenido) y que le falta a cada una. El panel lo usa
      * para la vista previa antes de generar el PDF.
      */
+    /**
+     * Escoger que version del documento usar para una asignatura de la
+     * solicitud. Cuerpo: { "idVersionDocumento": 15 } o { "idVersionDocumento": null }
+     * (null = automatica).
+     */
+    @PutMapping("/{id}/asignaturas/{idAsignatura}/version")
+    public ResponseEntity<Void> elegirVersion(@PathVariable Integer id,
+                                              @PathVariable Integer idAsignatura,
+                                              @RequestBody ElegirVersionDTO datos) {
+        contenidoCertificadoService.elegirVersion(id, idAsignatura, datos.idVersionDocumento());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/contenido")
     public List<AsignaturaCertificadoDTO> contenidoCertificado(
             @PathVariable Integer id) {

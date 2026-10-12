@@ -2428,3 +2428,18 @@ button.stat-card {
     padding: 0 2px;
 }
 .chip-remove:hover { color: var(--color-error-oscuro); }
+
+/* Selector de version del documento en la vista previa de la solicitud */
+.version-select {
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 7px;
+    background: var(--blanco);
+    font: inherit;
+    font-size: 12px;
+}
+.version-select:focus { border-color: var(--color-primario); outline: none; }

@@ -509,6 +509,9 @@ CREATE TABLE CertificadosCursosAcademicosUPB_SolicitudesCertificadosS (
 CREATE TABLE CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS (
     n_idSolicitudCertificado INT NOT NULL,
     n_idAsignatura INT NOT NULL,
+    -- Version del documento elegida para el certificado (NULL = automatica).
+    -- Agregada en la migracion 04.
+    n_idVersionDocumento INT NULL,
     PRIMARY KEY (n_idSolicitudCertificado, n_idAsignatura),
 
     CONSTRAINT fk_Solicitudes_DetallesSolicitudes
@@ -517,7 +520,11 @@ CREATE TABLE CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS (
 
     CONSTRAINT fk_Asignaturas_DetallesSolicitudes
         FOREIGN KEY (n_idAsignatura) REFERENCES CertificadosCursosAcademicosUPB_AsignaturasS(n_idAsignatura)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_VersionesDocumentos_DetallesSolicitudes
+        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
+        ON DELETE SET NULL
 );
 
 CREATE TABLE CertificadosCursosAcademicosUPB_CertificadosGeneradosS (

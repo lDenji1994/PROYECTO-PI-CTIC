@@ -1,0 +1,29 @@
+# =====================================================================
+#  CREDENCIALES DEL SERVIDOR (produccion)
+#
+#  Copia este archivo en el servidor de APLICACION como:
+#      /etc/certificados/certificados.properties
+#  y protegelo para que solo lo lea el usuario del servicio:
+#      sudo chown root:certificados /etc/certificados/certificados.properties
+#      sudo chmod 640 /etc/certificados/certificados.properties
+#
+#  NUNCA subir el archivo real a GitHub ni enviarlo por chat.
+# =====================================================================
+
+# --- Base de datos (servidor de BD, conexion cifrada) ---
+spring.datasource.url=jdbc:mysql://IP_SERVIDOR_BD:3306/CertificadosCursosAcademicosUPB?sslMode=REQUIRED&serverTimezone=America/Bogota&characterEncoding=UTF-8
+# Usuario creado con database/03_usuario_aplicacion_produccion.sql (no usar root)
+spring.datasource.username=certificados_app
+spring.datasource.password=
+
+# --- Administrador inicial del panel ---
+# Solo se usa la primera vez que arranca. Minimo 12 caracteres, con letras
+# y numeros. Despues de entrar, cambiarla en "Mi cuenta" y borrar esta linea.
+app.seguridad.admin-inicial.usuario=admin
+app.seguridad.admin-inicial.contrasena=
+
+# Usuario (id) a nombre de quien se registra la bitacora si no hay sesion
+app.auditoria.id-usuario-por-defecto=1
+
+# Dominio con el que se entra a la web (para CORS)
+app.cors.allowed-origins=https://DOMINIO_DE_LA_WEB

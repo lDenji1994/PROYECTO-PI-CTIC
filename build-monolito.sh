@@ -12,5 +12,6 @@ cd backend
 
 echo "== Listo =="
 echo "JAR generado en backend/build/libs/"
-echo "Ejecuta con: java -jar backend/build/libs/certificados-app-0.0.1-SNAPSHOT.jar"
+echo "Ejecuta con: java -jar backend/build/libs/certificados-app.jar"
+echo "En el servidor: java -jar certificados-app.jar --spring.profiles.active=prod (ver deploy/README-despliegue.md)"
 echo "La app completa (frontend + API) queda en http://localhost:8080"
