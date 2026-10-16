@@ -1,99 +1,21 @@
--- ============================================================
---        NORMAS Y CONVENCIONES DE LA BASE DE DATOS
---        CERTIFICADOS DE CURSOS ACADÉMICOS UPB
--- ============================================================
---
--- 1. NOMBRE DE LA APLICACIÓN
---    Nombre funcional: CERTIFICADOS DE CURSOS ACADÉMICOS UPB
---
---    Nombre utilizado en SQL: CertificadosCursosAcademicosUPB
---
---
--- 2. CONVENCIÓN PARA NOMBRES DE TABLAS
---    En español, en minúscula y con guion bajo entre palabras,
---    para que se entiendan a simple vista.
---    Ej.: asignaturas, planes_estudio, solicitud_asignaturas.
---    (Antes de la migración 06 se llamaban
---     CertificadosCursosAcademicosUPB_NombreTablaS.)
---
---
--- 3. CONVENCIÓN PARA IDENTIFICADORES
---    Todo identificador de tabla debe:
---      - comenzar con "n_"
---      - ser de tipo INT
---      - ser AUTO_INCREMENT
---      - funcionar como PRIMARY KEY
---
---
--- 4. PREFIJOS PARA ATRIBUTOS
---
---    n_  = valor numérico / identificador
---    t_  = texto
---    c_  = código
---    b_  = booleano
---    d_  = fecha
---    dt_ = fecha y hora
---    bi_ = información binaria
---
---
--- 5. CLAVES FORÁNEAS
---    Las claves foráneas deben utilizar la siguiente sintaxis:
---
---    fk_NombreTablaPrincipal_NombreTablaForanea
---
---
--- 6. AUDITORÍA
---    La base de datos debe contar siempre con una tabla LOG
---    para registrar las operaciones realizadas dentro del
---    sistema.
---
---    La tabla LOG debe almacenar como mínimo:
---
---      - n_idLog       : identificador de la operación
---      - t_ip          : dirección IP desde la cual se realizó
---                       la operación
---      - n_idUsuario   : identificador del usuario que realizó
---                       la operación
---      - t_nombreTabla : nombre de la tabla afectada
---      - t_nombreProceso : nombre del proceso ejecutado
---      - dt_fechaInicio : fecha y hora de inicio
---      - dt_fechaFin    : fecha y hora de finalización
---
--- ============================================================
 CREATE DATABASE CertificadosCursosAcademicosUPB
 CHARACTER SET utf8mb4
 COLLATE UTF8MB4_UNICODE_CI;
 
 USE CertificadosCursosAcademicosUPB;
 
--- ========================================================================================================================
---                     1. MÓDULO ACADÉMICO
--- ========================================================================================================================
-
-
--- ============================================================
---                     ASIGNATURAS
--- ============================================================
 CREATE TABLE asignaturas (
     n_idAsignatura INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(20) UNIQUE NOT NULL,
     t_nombre VARCHAR(150) NOT NULL
 );
 
-
--- ============================================================
---              TIPOS DE DOCUMENTOS ACADÉMICOS
--- ============================================================
 CREATE TABLE tipos_documento (
     n_idTipoDocumentoAcademico INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NOT NULL,
     t_nombre VARCHAR(150) UNIQUE NOT NULL
 );
 
-
--- ============================================================
---                DOCUMENTOS ACADÉMICOS
--- ============================================================
 CREATE TABLE documentos (
     n_idDocumentoAcademico INT AUTO_INCREMENT PRIMARY KEY,
     c_codigoFormato VARCHAR(50) NULL,
@@ -109,61 +31,31 @@ CREATE TABLE documentos (
         FOREIGN KEY (n_idTipoDocumentoAcademico) REFERENCES tipos_documento(n_idTipoDocumentoAcademico)
         ON DELETE RESTRICT,
 
-    -- Una asignatura puede tener varios documentos, incluso del mismo tipo
-    -- (migracion 05: ya no existe la unicidad asignatura + tipo).
     INDEX idx_DocumentosAcademicos_Asignatura (n_idAsignatura)
 );
 
-
--- ============================================================
---                         PROGRAMAS
--- ============================================================
 CREATE TABLE programas (
     n_idPrograma INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NULL,
     t_nombre VARCHAR(200) NOT NULL
 );
 
-
--- ============================================================
---                  VERSIONES DOCUMENTOS
--- ============================================================
 CREATE TABLE versiones_documento (
     n_idVersionDocumento INT AUTO_INCREMENT PRIMARY KEY,
     n_idDocumentoAcademico INT NOT NULL,
     c_periodo VARCHAR(20) NULL,
-    
-    -- ========================================================
-    -- Archivo original
-    -- ========================================================
-    
+
     t_nombreArchivo VARCHAR(255) NOT NULL,
     bi_archivo LONGBLOB NOT NULL,
-
-    -- ========================================================
-    -- Identificación académica
-    -- ========================================================
 
     t_escuela VARCHAR(150) NULL,
     t_facultad VARCHAR(150) NULL,
 
-    -- ========================================================
-    -- Clasificación académica
-    -- ========================================================
-
     c_clasificacionCINE VARCHAR(100) NULL,
     t_nucleoBasicoConocimiento TEXT NULL,
 
-    -- ========================================================
-    -- Formación
-    -- ========================================================
-
     c_ciclo VARCHAR(100) NULL,
     c_nivelFormacion VARCHAR(100) NULL,
-
-    -- ========================================================
-    -- Intensidad horaria
-    -- ========================================================
 
     n_horasTeoricas DECIMAL(6,2) NULL,
     n_horasPracticas DECIMAL(6,2) NULL,
@@ -172,43 +64,21 @@ CREATE TABLE versiones_documento (
 
     n_creditos DECIMAL(5,2) NULL,
 
-    -- ========================================================
-    -- Información académica general
-    -- ========================================================
-
     t_requisitos TEXT NULL,
     t_justificacion TEXT NULL,
     t_descripcion TEXT NULL,
     t_proposito TEXT NULL,
 
-    -- ========================================================
-    -- Información propia de Carta Descriptiva
-    -- ========================================================
-
     c_modoCalificacion VARCHAR(100) NULL,
     t_modalidades TEXT NULL,
-
-    -- ========================================================
-    -- Información administrativa
-    -- ========================================================
 
     t_actaAprobacion TEXT NULL,
     t_actaModificacion TEXT NULL,
     t_observaciones TEXT NULL,
 
-    -- ========================================================
-    -- Programa que diseña el curso
-    -- ========================================================
-
     n_idProgramaDisena INT NULL,
 
-    -- Parrafo breve para el certificado RESUMIDO (migracion 05).
-    -- Si esta vacio se usa la descripcion del curso.
     t_resumen TEXT NULL,
-
-    -- ========================================================
-    -- Control de carga
-    -- ========================================================
 
     dt_fechaCarga DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -221,10 +91,6 @@ CREATE TABLE versiones_documento (
         ON DELETE RESTRICT
 );
 
-
--- ============================================================
---                        CONTENIDOS
--- ============================================================
 CREATE TABLE contenidos (
     n_idContenido INT AUTO_INCREMENT PRIMARY KEY,
     n_semana INT NULL,
@@ -245,10 +111,6 @@ CREATE TABLE contenidos (
         CHECK (n_orden IS NULL OR n_orden > 0)
 );
 
-
--- ========================================================================================================================
---             2. MÓDULO DE ROLES Y USUARIOS
--- ========================================================================================================================
 CREATE TABLE roles (
     n_idRol INT AUTO_INCREMENT PRIMARY KEY,
     c_nombre VARCHAR(50) UNIQUE NOT NULL,
@@ -260,7 +122,7 @@ CREATE TABLE usuarios (
     t_nombreCompleto VARCHAR(150) NOT NULL,
     t_usuario VARCHAR(100) UNIQUE NOT NULL,
     t_correo VARCHAR(150) UNIQUE NULL,
-    t_contrasena VARCHAR(255) NOT NULL,   #la contraseña no se almacenara en texto plano, se almacenara el resultado despues de aplicar hash
+    t_contrasena VARCHAR(255) NOT NULL,
     b_activo BOOLEAN NOT NULL DEFAULT TRUE,
     n_idRol INT NOT NULL,
 
@@ -276,16 +138,12 @@ VALUES
     ('AUXILIAR',
      'Usuario encargado de gestionar solicitudes y certificados');
 
-
--- ========================================================================================================================
---            3. MÓDULO DE CERTIFICADOS Y TEMPLATES
--- ========================================================================================================================
-CREATE TABLE tipos_certificado (   
+CREATE TABLE tipos_certificado (
     n_idTipoCertificado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombre VARCHAR(150) UNIQUE NOT NULL
 );
 
-CREATE TABLE plantillas (   
+CREATE TABLE plantillas (
     n_idPlantillaCertificado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombre VARCHAR(150) UNIQUE NOT NULL,
     n_idTipoCertificado INT NOT NULL,
@@ -295,7 +153,7 @@ CREATE TABLE plantillas (
         ON DELETE RESTRICT
 );
 
-CREATE TABLE versiones_plantilla (   
+CREATE TABLE versiones_plantilla (
     n_idVersionPlantilla INT AUTO_INCREMENT PRIMARY KEY,
     c_versionFormato VARCHAR(20) NOT NULL,
     dt_fechaCarga DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -309,7 +167,7 @@ CREATE TABLE versiones_plantilla (
         UNIQUE (n_idPlantillaCertificado, c_versionFormato)
 );
 
-CREATE TABLE campos_plantilla (   
+CREATE TABLE campos_plantilla (
     n_idCampoPlantilla INT AUTO_INCREMENT PRIMARY KEY,
     c_codigoCampo VARCHAR(100) NOT NULL,
     t_nombreCampo VARCHAR(150) NOT NULL,
@@ -323,7 +181,7 @@ CREATE TABLE campos_plantilla (
     CONSTRAINT fk_VersionesPlantillas_CamposPlantilla
         FOREIGN KEY (n_idVersionPlantilla) REFERENCES versiones_plantilla(n_idVersionPlantilla)
         ON DELETE RESTRICT,
-        
+
     CONSTRAINT uq_VersionPlantilla_CodigoCampo
         UNIQUE (n_idVersionPlantilla, c_codigoCampo)
 );
@@ -350,19 +208,14 @@ CREATE TABLE elementos_plantilla (
     CONSTRAINT fk_CamposPlantilla_ElementosPlantilla
         FOREIGN KEY (n_idCampoPlantilla) REFERENCES campos_plantilla(n_idCampoPlantilla)
         ON DELETE RESTRICT,
-        
+
     CONSTRAINT chk_ElementosPlantilla_Orden
     CHECK (n_orden IS NULL OR n_orden > 0),
-    
+
     CONSTRAINT chk_ElementosPlantilla_Campo
     CHECK (c_tipoElemento <> 'CAMPO' OR n_idCampoPlantilla IS NOT NULL)
 );
 
--- ============================================================
---       PLAN DE ESTUDIOS: semestre de cada asignatura en cada programa
---       (migracion 05). Con el se arma una solicitud por semestre(s)
---       o por programa completo.
--- ============================================================
 CREATE TABLE planes_estudio (
     n_idPrograma INT NOT NULL,
     n_idAsignatura INT NOT NULL,
@@ -381,10 +234,6 @@ CREATE TABLE planes_estudio (
         CHECK (n_semestre BETWEEN 1 AND 20)
 );
 
-
--- ========================================================================================================================
---            4. MÓDULO DE SOLICITUDES Y GENERACIÓN
--- ========================================================================================================================
 CREATE TABLE solicitudes (
     n_idSolicitudCertificado INT AUTO_INCREMENT PRIMARY KEY,
     n_idEstudiante INT NOT NULL,
@@ -394,13 +243,12 @@ CREATE TABLE solicitudes (
     dt_fechaFinalizacion DATETIME NULL,
     n_idTipoCertificado INT NOT NULL,
     n_idUsuarioEncargado INT NOT NULL,
-    -- Agregadas en la migracion 05:
-    t_nombreEstudiante VARCHAR(150) NULL,                 -- nombre del estudiante (ademas del ID)
-    dt_fechaEntrega DATETIME NULL,                        -- cuando se entrego el certificado
+    t_nombreEstudiante VARCHAR(150) NULL,
+    dt_fechaEntrega DATETIME NULL,
     c_tipoContenido ENUM('RESUMIDO', 'COMPLETO') NOT NULL DEFAULT 'RESUMIDO',
     c_alcance ENUM('ASIGNATURAS', 'SEMESTRES', 'PROGRAMA') NOT NULL DEFAULT 'ASIGNATURAS',
-    n_idPrograma INT NULL,                                -- programa (alcance SEMESTRES o PROGRAMA)
-    t_semestres VARCHAR(100) NULL,                        -- semestres pedidos, ej. "1,2,5"
+    n_idPrograma INT NULL,
+    t_semestres VARCHAR(100) NULL,
 
     CONSTRAINT fk_Programas_SolicitudesCertificados
         FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
@@ -418,8 +266,6 @@ CREATE TABLE solicitudes (
 CREATE TABLE solicitud_asignaturas (
     n_idSolicitudCertificado INT NOT NULL,
     n_idAsignatura INT NOT NULL,
-    -- Version del documento elegida para el certificado (NULL = automatica).
-    -- Agregada en la migracion 04.
     n_idVersionDocumento INT NULL,
     PRIMARY KEY (n_idSolicitudCertificado, n_idAsignatura),
 
@@ -447,17 +293,13 @@ CREATE TABLE certificados_generados (
     CONSTRAINT fk_SolicitudesCertificados_CertificadosGenerados
         FOREIGN KEY (n_idSolicitudCertificado) REFERENCES solicitudes(n_idSolicitudCertificado)
         ON DELETE RESTRICT,
-        
+
     CONSTRAINT fk_VersionesPlantillas_CertificadosGenerados
         FOREIGN KEY (n_idVersionPlantilla) REFERENCES versiones_plantilla(n_idVersionPlantilla)
         ON DELETE RESTRICT
 );
 
-
--- ========================================================================================================================
---            5. MÓDULO DE AUDITORIA
--- ========================================================================================================================
-CREATE TABLE bitacora (   #tabla que registra al usuario, ip y las operaciones que realiza en la aplicacion
+CREATE TABLE bitacora (
     n_idLog INT AUTO_INCREMENT PRIMARY KEY,
     t_ip VARCHAR(45) NOT NULL,
     t_nombreTabla VARCHAR(150) NOT NULL,
@@ -470,6 +312,3 @@ CREATE TABLE bitacora (   #tabla que registra al usuario, ip y las operaciones q
         FOREIGN KEY (n_idUsuario) REFERENCES usuarios(n_idUsuario)
         ON DELETE RESTRICT
 );
-
--- Los datos iniciales (roles ya incluidos arriba, tipos de documento,
--- plantilla del certificado y usuario admin) estan en 02_datos_iniciales.sql
