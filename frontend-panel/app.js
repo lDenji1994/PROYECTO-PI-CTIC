@@ -646,15 +646,6 @@ function pintarKpis() {
         realizadas.length + ' sin entregar · ' + entregadas.length + ' entregadas';
     document.getElementById('kpi-pendientes').textContent = pendientes.length + desactualizados.length;
 
-    const alerta = document.getElementById('alerta-formatos');
-    if (desactualizados.length) {
-        document.getElementById('alerta-formatos-texto').textContent =
-            desactualizados.length + ' documento(s) usan un formato que ya no es el vigente. ' +
-            'Carga la versión actualizada de la carta descriptiva.';
-        alerta.hidden = false;
-    } else {
-        alerta.hidden = true;
-    }
 }
 
 const ICONOS_NIVEL = { success: '✓', warning: '!', danger: '✕', info: 'i' };
