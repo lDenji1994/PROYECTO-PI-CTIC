@@ -33,9 +33,8 @@ import java.util.function.Function;
  *               UN parrafo breve (el "resumen" de los datos del curso o, si
  *               no se escribio, la descripcion del curso).
  *   - COMPLETO: por asignatura, todo lo registrado: descripcion, proposito,
- *               justificacion, requisitos, objetivos, competencias, contenido
- *               tema por tema, metodologia, evaluacion y modalidades. Puede
- *               ocupar varias paginas por asignatura.
+ *               justificacion, requisitos, contenido tema por tema y
+ *               modalidades. Puede ocupar varias paginas por asignatura.
  *
  * Si la solicitud es por semestres o por programa completo, las asignaturas
  * salen agrupadas bajo un titulo "Semestre N".
@@ -172,18 +171,6 @@ public class CertificadoContenidosPdf {
         seccionTexto(document, "Propósito de formación", d.proposito());
         seccionTexto(document, "Justificación", d.justificacion());
         seccionTexto(document, "Requisitos / saberes previos", d.requisitos());
-        seccionLista(document, "Objetivos", d.objetivos());
-
-        if (!d.competencias().isEmpty()) {
-            document.add(etiqueta("Competencias"));
-            for (DetalleCompletoDTO.CompetenciaDetalle c : d.competencias()) {
-                document.add(item(c.descripcion(), 12f));
-                for (String criterio : c.criterios()) {
-                    document.add(item(criterio, 26f));
-                }
-            }
-        }
-
         // Contenido tema por tema (con semana / unidad / tema si se registraron)
         document.add(etiqueta("Contenido"));
         if (d.contenidos().isEmpty()) {
@@ -207,18 +194,6 @@ public class CertificadoContenidosPdf {
             }
         }
 
-        seccionLista(document, "Metodología", d.metodologias());
-
-        if (!d.evaluaciones().isEmpty()) {
-            document.add(etiqueta("Evaluación"));
-            for (DetalleCompletoDTO.EvaluacionDetalle e : d.evaluaciones()) {
-                String linea = (e.tipo() == null || e.tipo().isBlank() ? "" : e.tipo().trim() + ": ")
-                        + e.descripcion().trim()
-                        + (e.porcentaje() == null ? "" : " (" + numero(e.porcentaje()) + " %)");
-                document.add(item(linea, 12f));
-            }
-        }
-
         seccionTexto(document, "Modalidades", d.modalidades());
     }
 
@@ -231,16 +206,6 @@ public class CertificadoContenidosPdf {
         p.setAlignment(Element.ALIGN_JUSTIFIED);
         p.setSpacingAfter(4f);
         document.add(p);
-    }
-
-    private void seccionLista(Document document, String titulo, List<String> lineas) throws DocumentException {
-        if (lineas == null || lineas.isEmpty()) {
-            return;
-        }
-        document.add(etiqueta(titulo));
-        for (String linea : lineas) {
-            document.add(item(linea, 12f));
-        }
     }
 
     private static Paragraph etiqueta(String titulo) {

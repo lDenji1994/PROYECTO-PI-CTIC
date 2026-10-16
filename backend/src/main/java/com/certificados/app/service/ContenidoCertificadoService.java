@@ -4,17 +4,7 @@ import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.dto.DetalleCompletoDTO;
 import com.certificados.app.dto.VersionTextosDTO;
 import com.certificados.app.model.AlcanceSolicitud;
-import com.certificados.app.model.Competencia;
-import com.certificados.app.model.CriterioCompetencia;
-import com.certificados.app.model.Evaluacion;
-import com.certificados.app.model.Metodologia;
-import com.certificados.app.model.Objetivo;
 import com.certificados.app.model.PlanEstudio;
-import com.certificados.app.repository.CompetenciaRepository;
-import com.certificados.app.repository.CriterioCompetenciaRepository;
-import com.certificados.app.repository.EvaluacionRepository;
-import com.certificados.app.repository.MetodologiaRepository;
-import com.certificados.app.repository.ObjetivoRepository;
 import com.certificados.app.repository.PlanEstudioRepository;
 import com.certificados.app.dto.VersionDatosDTO;
 import com.certificados.app.dto.VersionOpcionDTO;
@@ -86,11 +76,6 @@ public class ContenidoCertificadoService {
     private final FormatoService formatoService;
     private final ActividadService actividadService;
     private final PlanEstudioRepository planRepository;
-    private final ObjetivoRepository objetivoRepository;
-    private final CompetenciaRepository competenciaRepository;
-    private final CriterioCompetenciaRepository criterioRepository;
-    private final MetodologiaRepository metodologiaRepository;
-    private final EvaluacionRepository evaluacionRepository;
 
     public ContenidoCertificadoService(
             SolicitudCertificadoRepository solicitudRepository,
@@ -102,19 +87,9 @@ public class ContenidoCertificadoService {
             ContenidoRepository contenidoRepository,
             FormatoService formatoService,
             ActividadService actividadService,
-            PlanEstudioRepository planRepository,
-            ObjetivoRepository objetivoRepository,
-            CompetenciaRepository competenciaRepository,
-            CriterioCompetenciaRepository criterioRepository,
-            MetodologiaRepository metodologiaRepository,
-            EvaluacionRepository evaluacionRepository) {
+            PlanEstudioRepository planRepository) {
         this.actividadService = actividadService;
         this.planRepository = planRepository;
-        this.objetivoRepository = objetivoRepository;
-        this.competenciaRepository = competenciaRepository;
-        this.criterioRepository = criterioRepository;
-        this.metodologiaRepository = metodologiaRepository;
-        this.evaluacionRepository = evaluacionRepository;
         this.solicitudRepository = solicitudRepository;
         this.detalleRepository = detalleRepository;
         this.asignaturaRepository = asignaturaRepository;
@@ -282,9 +257,8 @@ public class ContenidoCertificadoService {
 
     /**
      * Todo lo registrado de una version para el certificado COMPLETO:
-     * proposito, justificacion, requisitos, objetivos, competencias (con
-     * criterios), contenido tema por tema, metodologia y evaluacion.
-     * Lo que no este registrado llega vacio y el PDF no lo muestra.
+     * proposito, justificacion, requisitos, modalidades y el contenido tema
+     * por tema. Lo que no este registrado llega vacio y el PDF no lo muestra.
      */
     // noRollbackFor RuntimeException: se llama durante la generacion del PDF;
     // si fallara una lectura, la solicitud debe poder quedar en ERROR.
@@ -293,48 +267,14 @@ public class ContenidoCertificadoService {
         VersionTextosDTO textos = versionRepository.buscarTextos(idVersion)
                 .orElse(new VersionTextosDTO(idVersion, null, null, null, null));
 
-        List<String> objetivos = objetivoRepository.findByIdVersionDocumento(idVersion).stream()
-                .sorted(Comparator.comparing(Objetivo::getId))
-                .map(Objetivo::getDescripcion)
-                .filter(ContenidoCertificadoService::tieneTexto)
-                .toList();
-
-        List<DetalleCompletoDTO.CompetenciaDetalle> competencias = competenciaRepository
-                .findByIdVersionDocumento(idVersion).stream()
-                .sorted(Comparator.comparing(Competencia::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Competencia::getId))
-                .filter(c -> tieneTexto(c.getDescripcion()))
-                .map(c -> new DetalleCompletoDTO.CompetenciaDetalle(c.getDescripcion(),
-                        criterioRepository.findByIdCompetencia(c.getId()).stream()
-                                .sorted(Comparator.comparing(CriterioCompetencia::getId))
-                                .map(CriterioCompetencia::getDescripcion)
-                                .filter(ContenidoCertificadoService::tieneTexto)
-                                .toList()))
-                .toList();
-
         List<DetalleCompletoDTO.TemaDetalle> contenidos = contenidoRepository
                 .findByIdVersionDocumentoOrderByOrdenAscIdAsc(idVersion).stream()
                 .filter(c -> tieneTexto(c.getDescripcion()))
                 .map(c -> new DetalleCompletoDTO.TemaDetalle(c.getSemana(), c.getUnidad(), c.getTema(), c.getDescripcion()))
                 .toList();
 
-        List<String> metodologias = metodologiaRepository.findByIdVersionDocumento(idVersion).stream()
-                .sorted(Comparator.comparing(Metodologia::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Metodologia::getId))
-                .map(Metodologia::getDescripcion)
-                .filter(ContenidoCertificadoService::tieneTexto)
-                .toList();
-
-        List<DetalleCompletoDTO.EvaluacionDetalle> evaluaciones = evaluacionRepository
-                .findByIdVersionDocumento(idVersion).stream()
-                .sorted(Comparator.comparing(Evaluacion::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(Evaluacion::getId))
-                .filter(e -> tieneTexto(e.getDescripcion()))
-                .map(e -> new DetalleCompletoDTO.EvaluacionDetalle(e.getTipo(), e.getDescripcion(), e.getPorcentaje()))
-                .toList();
-
         return new DetalleCompletoDTO(textos.proposito(), textos.justificacion(), textos.requisitos(),
-                textos.modalidades(), objetivos, competencias, contenidos, metodologias, evaluaciones);
+                textos.modalidades(), contenidos);
     }
 
     private static boolean tieneTexto(String texto) {

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS"
+        name = "solicitud_asignaturas"
 )
 @IdClass(DetalleSolicitudCertificadoId.class)
 public class DetalleSolicitudCertificado {

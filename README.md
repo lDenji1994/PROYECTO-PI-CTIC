@@ -59,23 +59,38 @@ PROYECTO-PI-CTIC/
 
 ### 3.1 Base de datos
 
-En MySQL Workbench (o consola), ejecutar **en este orden**:
+**Base nueva** (no existe todavía): en MySQL Workbench (o consola), ejecutar en este orden:
 
-1. `database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql` (crea la BD y las tablas).
-   Si la BD ya existe, sáltalo.
+1. `database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql` (crea la BD y las tablas, ya con los
+   nombres nuevos).
 2. `database/02_datos_iniciales.sql` (se puede correr varias veces sin duplicar).
-3. `database/04_migracion_version_en_solicitud.sql` — **obligatorio si tu base ya existía**
-   antes de esta versión (agrega la columna de la versión elegida en cada solicitud). Se puede
-   correr varias veces. Sin esto el servidor no arranca (`missing column`).
-4. `database/05_migracion_entrega_alcance_contenido.sql` — **obligatorio si tu base ya existía**
-   (estado ENTREGADO, nombre del estudiante, certificado resumido/completo, solicitudes por
-   semestre o programa, plan de estudios y varios documentos por asignatura). Se puede correr
-   varias veces. Sin esto el servidor no arranca (`missing column` / `missing table`).
 
+**Base que ya existía** (o importada de un respaldo `.sql`): ejecutar las migraciones que le
+falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no arranca
+(`missing column` / `missing table`):
+
+- `database/04_migracion_version_en_solicitud.sql` — versión elegida en cada solicitud.
+- `database/05_migracion_entrega_alcance_contenido.sql` — estado ENTREGADO, nombre del
+  estudiante, certificado resumido/completo, solicitudes por semestre o programa, plan de
+  estudios y varios documentos por asignatura.
+- `database/06_migracion_nombres_tablas.sql` — nombres de tablas fáciles de leer
+  (`asignaturas`, `solicitudes`, `bitacora`…) y quita 7 tablas que no se usaban.
+
+Tablas de la base (18):
+
+| Módulo | Tablas |
+|---|---|
+| Académico | `asignaturas`, `programas`, `planes_estudio`, `tipos_documento`, `documentos`, `versiones_documento` (archivo + datos del curso), `contenidos` (temas) |
+| Usuarios | `roles`, `usuarios` |
+| Plantilla del certificado | `tipos_certificado`, `plantillas`, `versiones_plantilla`, `campos_plantilla`, `elementos_plantilla` |
+| Solicitudes | `solicitudes`, `solicitud_asignaturas`, `certificados_generados` |
+| Auditoría | `bitacora` |
+
+`99_vaciar_datos_de_prueba.sql` deja la base en blanco (conserva usuarios y plantilla).
 `03_usuario_aplicacion_produccion.sql` es solo para el servidor de producción.
 
 El paso 2 crea el usuario `admin` **sin contraseña**. La contraseña se la asigna el
-servidor la primera vez que arranca (paso 3.2). Las bases que ya existían solo necesitan las migraciones 04 y 05.
+servidor la primera vez que arranca (paso 3.2).
 
 ### 3.2 Tus credenciales (sin subirlas a GitHub)
 
@@ -240,7 +255,7 @@ En la vista previa de una solicitud, cada asignatura tiene una lista **Versión*
   formato vigente.
 * O una versión concreta, por ejemplo la del periodo en que el estudiante cursó la materia.
 
-Se guarda en `DetallesSolicitudesCertificadosS.n_idVersionDocumento` (migración 04). Si esa
+Se guarda en `solicitud_asignaturas.n_idVersionDocumento` (migración 04). Si esa
 versión se elimina, la solicitud vuelve sola a la automática. Solo se puede cambiar mientras la
 solicitud está *Pendiente* o *Esperando documentos*.
 `PUT /api/solicitudes-certificados/{id}/asignaturas/{idAsignatura}/version` con
@@ -268,7 +283,7 @@ la anterior a `ANTIGUO`.
 
 ### Actividad reciente (bitácora)
 
-Se guarda en la tabla `..._LogS` (IP, usuario, tabla, proceso, fechas), **a nombre de quien
+Se guarda en la tabla `bitacora` (IP, usuario, tabla, proceso, fechas), **a nombre de quien
 tiene la sesión iniciada**. Ver `service/ActividadService.java`.
 
 ---

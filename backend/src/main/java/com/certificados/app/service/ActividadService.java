@@ -54,15 +54,15 @@ public class ActividadService {
     private static final int MAX_POR_CONSULTA = 200;
 
     /* ---------- Tablas (valor que se guarda en t_nombreTabla) ---------- */
-    public static final String TABLA_PROGRAMAS = "ProgramasS";
-    public static final String TABLA_ASIGNATURAS = "AsignaturasS";
-    public static final String TABLA_DOCUMENTOS = "DocumentosAcademicosS";
-    public static final String TABLA_VERSIONES = "VersionesDocumentosS";
-    public static final String TABLA_SOLICITUDES = "SolicitudesCertificadosS";
-    public static final String TABLA_DETALLE_SOLICITUD = "DetallesSolicitudesCertificadosS";
-    public static final String TABLA_CERTIFICADOS = "CertificadosGeneradosS";
-    public static final String TABLA_USUARIOS = "UsuariosS";
-    public static final String TABLA_PLANES = "PlanesEstudioS";
+    public static final String TABLA_PROGRAMAS = "programas";
+    public static final String TABLA_ASIGNATURAS = "asignaturas";
+    public static final String TABLA_DOCUMENTOS = "documentos";
+    public static final String TABLA_VERSIONES = "versiones_documento";
+    public static final String TABLA_SOLICITUDES = "solicitudes";
+    public static final String TABLA_DETALLE_SOLICITUD = "solicitud_asignaturas";
+    public static final String TABLA_CERTIFICADOS = "certificados_generados";
+    public static final String TABLA_USUARIOS = "usuarios";
+    public static final String TABLA_PLANES = "planes_estudio";
 
     /* ---------- Procesos (primera parte de t_nombreProceso) ---------- */
     public static final String CREAR_PROGRAMA = "CREAR_PROGRAMA";

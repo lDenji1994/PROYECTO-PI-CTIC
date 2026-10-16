@@ -4,7 +4,6 @@ import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.CampoPlantilla;
 import com.certificados.app.repository.CampoPlantillaRepository;
-import com.certificados.app.repository.SeccionPlantillaRepository;
 import com.certificados.app.repository.VersionPlantillaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,18 +16,14 @@ public class CampoPlantillaService {
 
     private final CampoPlantillaRepository repository;
     private final VersionPlantillaRepository versionPlantillaRepository;
-    private final SeccionPlantillaRepository seccionPlantillaRepository;
 
     public CampoPlantillaService(
             CampoPlantillaRepository repository,
-            VersionPlantillaRepository versionPlantillaRepository,
-            SeccionPlantillaRepository seccionPlantillaRepository) {
+            VersionPlantillaRepository versionPlantillaRepository) {
 
         this.repository = repository;
         this.versionPlantillaRepository =
                 versionPlantillaRepository;
-        this.seccionPlantillaRepository =
-                seccionPlantillaRepository;
     }
 
     public List<CampoPlantilla> listarTodos() {
@@ -54,23 +49,6 @@ public class CampoPlantillaService {
         );
     }
 
-    public List<CampoPlantilla> listarPorSeccionPlantilla(
-            Integer idSeccionPlantilla) {
-
-        if (!seccionPlantillaRepository.existsById(
-                idSeccionPlantilla)) {
-
-            throw new ResourceNotFoundException(
-                    "Sección de plantilla no encontrada con id "
-                            + idSeccionPlantilla
-            );
-        }
-
-        return repository.findByIdSeccionPlantilla(
-                idSeccionPlantilla
-        );
-    }
-
     public CampoPlantilla crear(
             String codigoCampo,
             String nombreCampo,
@@ -79,8 +57,7 @@ public class CampoPlantillaService {
             CampoPlantilla.MetodoObtencion metodoObtencion,
             Boolean repetible,
             String reglaObtencion,
-            Integer idVersionPlantilla,
-            Integer idSeccionPlantilla) {
+            Integer idVersionPlantilla) {
 
         if (codigoCampo == null || codigoCampo.isBlank()) {
             throw new BusinessException(
@@ -120,26 +97,6 @@ public class CampoPlantillaService {
 
         validarVersion(idVersionPlantilla);
 
-        if (idSeccionPlantilla != null) {
-
-            var seccion = seccionPlantillaRepository
-                    .findById(idSeccionPlantilla)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException(
-                                    "Sección de plantilla no encontrada con id "
-                                            + idSeccionPlantilla
-                            ));
-
-            if (!seccion.getIdVersionPlantilla()
-                    .equals(idVersionPlantilla)) {
-
-                throw new BusinessException(
-                        "La sección no pertenece a la versión "
-                                + "de plantilla indicada"
-                );
-            }
-        }
-
         if (repository
                 .findByIdVersionPlantillaAndCodigoCampo(
                         idVersionPlantilla,
@@ -168,9 +125,6 @@ public class CampoPlantillaService {
         campo.setReglaObtencion(reglaObtencion);
         campo.setIdVersionPlantilla(
                 idVersionPlantilla
-        );
-        campo.setIdSeccionPlantilla(
-                idSeccionPlantilla
         );
 
         return repository.save(campo);

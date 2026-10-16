@@ -26,30 +26,24 @@ USE CertificadosCursosAcademicosUPB;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Certificados y solicitudes
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_CertificadosGeneradosS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_SolicitudesCertificadosS;
+TRUNCATE TABLE certificados_generados;
+TRUNCATE TABLE solicitud_asignaturas;
+TRUNCATE TABLE solicitudes;
 
--- Datos del curso de cada documento cargado
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_CriteriosCompetenciaS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_CompetenciasS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_ObjetivosS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_ContenidosS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_MetodologiasS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_EvaluacionesS;
+-- Contenido (tema por tema) de cada documento cargado
+TRUNCATE TABLE contenidos;
 
 -- Documentos cargados (con sus archivos)
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosProgramasS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_DocumentosAcademicosS;
+TRUNCATE TABLE versiones_documento;
+TRUNCATE TABLE documentos;
 
 -- Asignaturas, programas y plan de estudios
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_PlanesEstudioS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_AsignaturasS;
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_ProgramasS;
+TRUNCATE TABLE planes_estudio;
+TRUNCATE TABLE asignaturas;
+TRUNCATE TABLE programas;
 
 -- Bitacora de actividad
-TRUNCATE TABLE CertificadosCursosAcademicosUPB_LogS;
+TRUNCATE TABLE bitacora;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -58,14 +52,14 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- administradores. Para usarlo, quitar los dos guiones (--) del inicio
 -- de la linea DELETE y volver a ejecutar solo esa linea.
 -- ---------------------------------------------------------------------
--- DELETE u FROM CertificadosCursosAcademicosUPB_UsuariosS u JOIN CertificadosCursosAcademicosUPB_RolesS r ON r.n_idRol = u.n_idRol WHERE r.c_nombre <> 'ADMINISTRADOR';
+-- DELETE u FROM usuarios u JOIN roles r ON r.n_idRol = u.n_idRol WHERE r.c_nombre <> 'ADMINISTRADOR';
 
 -- Comprobacion: todo en 0 excepto usuarios, tipos y plantillas
 SELECT
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_AsignaturasS)               AS asignaturas,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_ProgramasS)                 AS programas,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_VersionesDocumentosS)       AS documentos_cargados,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_SolicitudesCertificadosS)   AS solicitudes,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_LogS)                       AS actividad,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_UsuariosS)                  AS usuarios_conservados,
-    (SELECT COUNT(*) FROM CertificadosCursosAcademicosUPB_ElementosPlantillaS)        AS elementos_plantilla;
+    (SELECT COUNT(*) FROM asignaturas)               AS asignaturas,
+    (SELECT COUNT(*) FROM programas)                 AS programas,
+    (SELECT COUNT(*) FROM versiones_documento)       AS documentos_cargados,
+    (SELECT COUNT(*) FROM solicitudes)   AS solicitudes,
+    (SELECT COUNT(*) FROM bitacora)                       AS actividad,
+    (SELECT COUNT(*) FROM usuarios)                  AS usuarios_conservados,
+    (SELECT COUNT(*) FROM elementos_plantilla)        AS elementos_plantilla;

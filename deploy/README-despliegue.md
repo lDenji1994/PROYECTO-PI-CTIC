@@ -25,8 +25,6 @@ require_secure_transport = ON       # solo conexiones cifradas
 sudo systemctl enable --now mysqld
 mysql -u root -p < database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql
 mysql -u root -p < database/02_datos_iniciales.sql
-mysql -u root -p < database/04_migracion_version_en_solicitud.sql
-mysql -u root -p < database/05_migracion_entrega_alcance_contenido.sql
 # Editar IP_SERVIDOR_APP y la contraseña en una COPIA de este archivo y ejecutarla:
 mysql -u root -p < 03_usuario_aplicacion_produccion.sql
 

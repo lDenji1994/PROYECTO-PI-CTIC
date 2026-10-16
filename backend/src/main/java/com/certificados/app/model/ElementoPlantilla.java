@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_ElementosPlantillas")
+@Table(name = "elementos_plantilla")
 public class ElementoPlantilla {
 
     public enum TipoElemento {
@@ -54,9 +54,6 @@ public class ElementoPlantilla {
 
     @Column(name = "n_idVersionPlantilla", nullable = false)
     private Integer idVersionPlantilla;
-
-    @Column(name = "n_idSeccionPlantilla")
-    private Integer idSeccionPlantilla;
 
     @Column(name = "n_idCampoPlantilla")
     private Integer idCampoPlantilla;
@@ -158,14 +155,6 @@ public class ElementoPlantilla {
 
     public void setIdVersionPlantilla(Integer idVersionPlantilla) {
         this.idVersionPlantilla = idVersionPlantilla;
-    }
-
-    public Integer getIdSeccionPlantilla() {
-        return idSeccionPlantilla;
-    }
-
-    public void setIdSeccionPlantilla(Integer idSeccionPlantilla) {
-        this.idSeccionPlantilla = idSeccionPlantilla;
     }
 
     public Integer getIdCampoPlantilla() {

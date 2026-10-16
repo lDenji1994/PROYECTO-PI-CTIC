@@ -10,9 +10,11 @@
 --
 --
 -- 2. CONVENCIÓN PARA NOMBRES DE TABLAS
---    Formato:   NombreDeLaApp_NombreDeLaTablaS
---
---    La letra "S" al final indica que se trata de una tabla.
+--    En español, en minúscula y con guion bajo entre palabras,
+--    para que se entiendan a simple vista.
+--    Ej.: asignaturas, planes_estudio, solicitud_asignaturas.
+--    (Antes de la migración 06 se llamaban
+--     CertificadosCursosAcademicosUPB_NombreTablaS.)
 --
 --
 -- 3. CONVENCIÓN PARA IDENTIFICADORES
@@ -72,7 +74,7 @@ USE CertificadosCursosAcademicosUPB;
 -- ============================================================
 --                     ASIGNATURAS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_AsignaturasS (
+CREATE TABLE asignaturas (
     n_idAsignatura INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(20) UNIQUE NOT NULL,
     t_nombre VARCHAR(150) NOT NULL
@@ -82,7 +84,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_AsignaturasS (
 -- ============================================================
 --              TIPOS DE DOCUMENTOS ACADÉMICOS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS (
+CREATE TABLE tipos_documento (
     n_idTipoDocumentoAcademico INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NOT NULL,
     t_nombre VARCHAR(150) UNIQUE NOT NULL
@@ -92,7 +94,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS (
 -- ============================================================
 --                DOCUMENTOS ACADÉMICOS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_DocumentosAcademicosS (
+CREATE TABLE documentos (
     n_idDocumentoAcademico INT AUTO_INCREMENT PRIMARY KEY,
     c_codigoFormato VARCHAR(50) NULL,
     c_versionFormato VARCHAR(20) NULL,
@@ -100,11 +102,11 @@ CREATE TABLE CertificadosCursosAcademicosUPB_DocumentosAcademicosS (
     n_idTipoDocumentoAcademico INT NOT NULL,
 
     CONSTRAINT fk_Asignaturas_DocumentosAcademicos
-        FOREIGN KEY (n_idAsignatura) REFERENCES CertificadosCursosAcademicosUPB_AsignaturasS(n_idAsignatura)
+        FOREIGN KEY (n_idAsignatura) REFERENCES asignaturas(n_idAsignatura)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_TiposDocumentosAcademicos_DocumentosAcademicos
-        FOREIGN KEY (n_idTipoDocumentoAcademico) REFERENCES CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS(n_idTipoDocumentoAcademico)
+        FOREIGN KEY (n_idTipoDocumentoAcademico) REFERENCES tipos_documento(n_idTipoDocumentoAcademico)
         ON DELETE RESTRICT,
 
     -- Una asignatura puede tener varios documentos, incluso del mismo tipo
@@ -116,7 +118,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_DocumentosAcademicosS (
 -- ============================================================
 --                         PROGRAMAS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_ProgramasS (
+CREATE TABLE programas (
     n_idPrograma INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NULL,
     t_nombre VARCHAR(200) NOT NULL
@@ -126,7 +128,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ProgramasS (
 -- ============================================================
 --                  VERSIONES DOCUMENTOS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosS (
+CREATE TABLE versiones_documento (
     n_idVersionDocumento INT AUTO_INCREMENT PRIMARY KEY,
     n_idDocumentoAcademico INT NOT NULL,
     c_periodo VARCHAR(20) NULL,
@@ -211,43 +213,11 @@ CREATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosS (
     dt_fechaCarga DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_DocumentosAcademicos_VersionesDocumentos
-        FOREIGN KEY (n_idDocumentoAcademico) REFERENCES CertificadosCursosAcademicosUPB_DocumentosAcademicosS(n_idDocumentoAcademico)
+        FOREIGN KEY (n_idDocumentoAcademico) REFERENCES documentos(n_idDocumentoAcademico)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_VersionesDocumentos_ProgramaDisena
-        FOREIGN KEY (n_idProgramaDisena) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
-        ON DELETE RESTRICT
-);
-
-
--- ============================================================
---       PROGRAMAS QUE PUEDEN TOMAR EL CURSO
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosProgramasS (
-    n_idVersionDocumento INT NOT NULL,
-    n_idPrograma INT NOT NULL,
-    PRIMARY KEY (n_idVersionDocumento, n_idPrograma),
-
-    CONSTRAINT fk_VersionesDocumentosProgramas_Version
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT fk_VersionesDocumentosProgramas_Programa
-        FOREIGN KEY (n_idPrograma) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
-        ON DELETE RESTRICT
-);
-
-
--- ============================================================
---                         OBJETIVOS
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_ObjetivosS (
-    n_idObjetivo INT AUTO_INCREMENT PRIMARY KEY,
-    t_descripcion TEXT NOT NULL,
-    n_idVersionDocumento INT NOT NULL,
-
-    CONSTRAINT fk_VersionesDocumentos_Objetivos
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
+        FOREIGN KEY (n_idProgramaDisena) REFERENCES programas(n_idPrograma)
         ON DELETE RESTRICT
 );
 
@@ -255,7 +225,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ObjetivosS (
 -- ============================================================
 --                        CONTENIDOS
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_ContenidosS (
+CREATE TABLE contenidos (
     n_idContenido INT AUTO_INCREMENT PRIMARY KEY,
     n_semana INT NULL,
     t_unidad VARCHAR(150) NULL,
@@ -265,7 +235,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ContenidosS (
     n_idVersionDocumento INT NOT NULL,
 
     CONSTRAINT fk_VersionesDocumentos_Contenidos
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
+        FOREIGN KEY (n_idVersionDocumento) REFERENCES versiones_documento(n_idVersionDocumento)
         ON DELETE RESTRICT,
 
     CONSTRAINT chk_Contenidos_Semana
@@ -276,88 +246,16 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ContenidosS (
 );
 
 
--- ============================================================
---                       COMPETENCIAS
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_CompetenciasS (
-    n_idCompetencia INT AUTO_INCREMENT PRIMARY KEY,
-    t_descripcion TEXT NOT NULL,
-    n_orden INT NULL,
-    n_idVersionDocumento INT NOT NULL,
-
-    CONSTRAINT fk_VersionesDocumentos_Competencias
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT chk_Competencias_Orden
-        CHECK (n_orden IS NULL OR n_orden > 0)
-);
-
-
--- ============================================================
---                 CRITERIOS DE COMPETENCIA
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_CriteriosCompetenciaS (
-    n_idCriterioCompetencia INT AUTO_INCREMENT PRIMARY KEY,
-    t_descripcion TEXT NOT NULL,
-    n_idCompetencia INT NOT NULL,
-
-    CONSTRAINT fk_Competencias_CriteriosCompetencia
-        FOREIGN KEY (n_idCompetencia) REFERENCES CertificadosCursosAcademicosUPB_CompetenciasS(n_idCompetencia)
-        ON DELETE RESTRICT
-);
-
-
--- ============================================================
---                       METODOLOGÍAS
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_MetodologiasS (
-    n_idMetodologia INT AUTO_INCREMENT PRIMARY KEY,
-    t_descripcion TEXT NOT NULL,
-    n_orden INT NULL,
-    n_idVersionDocumento INT NOT NULL,
-
-    CONSTRAINT fk_VersionesDocumentos_Metodologias
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT chk_Metodologias_Orden
-        CHECK (n_orden IS NULL OR n_orden > 0)
-);
-
-
--- ============================================================
---                       EVALUACIONES
--- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_EvaluacionesS (
-    n_idEvaluacion INT AUTO_INCREMENT PRIMARY KEY,
-    t_tipo VARCHAR(100) NULL,
-    t_descripcion TEXT NOT NULL,
-    n_porcentaje DECIMAL(5,2) NULL,
-    n_orden INT NULL,
-    n_idVersionDocumento INT NOT NULL,
-
-    CONSTRAINT fk_VersionesDocumentos_Evaluaciones
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT chk_Evaluaciones_Porcentaje
-        CHECK (n_porcentaje IS NULL OR (n_porcentaje >= 0 AND n_porcentaje <= 100)),
-
-    CONSTRAINT chk_Evaluaciones_Orden
-        CHECK (n_orden IS NULL OR n_orden > 0)
-);
-
 -- ========================================================================================================================
 --             2. MÓDULO DE ROLES Y USUARIOS
 -- ========================================================================================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_RolesS (
+CREATE TABLE roles (
     n_idRol INT AUTO_INCREMENT PRIMARY KEY,
     c_nombre VARCHAR(50) UNIQUE NOT NULL,
     t_descripcion VARCHAR(150) NULL
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_UsuariosS (
+CREATE TABLE usuarios (
     n_idUsuario INT AUTO_INCREMENT PRIMARY KEY,
     t_nombreCompleto VARCHAR(150) NOT NULL,
     t_usuario VARCHAR(100) UNIQUE NOT NULL,
@@ -367,11 +265,11 @@ CREATE TABLE CertificadosCursosAcademicosUPB_UsuariosS (
     n_idRol INT NOT NULL,
 
     CONSTRAINT fk_Roles_Usuarios
-        FOREIGN KEY (n_idRol) REFERENCES CertificadosCursosAcademicosUPB_RolesS(n_idRol)
+        FOREIGN KEY (n_idRol) REFERENCES roles(n_idRol)
         ON DELETE RESTRICT
 );
 
-INSERT INTO CertificadosCursosAcademicosUPB_RolesS (c_nombre, t_descripcion)
+INSERT INTO roles (c_nombre, t_descripcion)
 VALUES
     ('ADMINISTRADOR',
      'Administrador de la aplicación perteneciente a CTIC UPB'),
@@ -382,55 +280,36 @@ VALUES
 -- ========================================================================================================================
 --            3. MÓDULO DE CERTIFICADOS Y TEMPLATES
 -- ========================================================================================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_TiposCertificadosS (   
+CREATE TABLE tipos_certificado (   
     n_idTipoCertificado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombre VARCHAR(150) UNIQUE NOT NULL
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_PlantillasCertificadosS (   
+CREATE TABLE plantillas (   
     n_idPlantillaCertificado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombre VARCHAR(150) UNIQUE NOT NULL,
     n_idTipoCertificado INT NOT NULL,
 
     CONSTRAINT fk_TiposCertificados_PlantillasCertificados
-        FOREIGN KEY (n_idTipoCertificado) REFERENCES CertificadosCursosAcademicosUPB_TiposCertificadosS(n_idTipoCertificado)
+        FOREIGN KEY (n_idTipoCertificado) REFERENCES tipos_certificado(n_idTipoCertificado)
         ON DELETE RESTRICT
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_VersionesPlantillasS (   
+CREATE TABLE versiones_plantilla (   
     n_idVersionPlantilla INT AUTO_INCREMENT PRIMARY KEY,
     c_versionFormato VARCHAR(20) NOT NULL,
     dt_fechaCarga DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     n_idPlantillaCertificado INT NOT NULL,
 
     CONSTRAINT fk_PlantillasCertificados_VersionesPlantillas
-        FOREIGN KEY (n_idPlantillaCertificado) REFERENCES CertificadosCursosAcademicosUPB_PlantillasCertificadosS(n_idPlantillaCertificado)
+        FOREIGN KEY (n_idPlantillaCertificado) REFERENCES plantillas(n_idPlantillaCertificado)
         ON DELETE RESTRICT,
 
     CONSTRAINT uq_Plantilla_Version
         UNIQUE (n_idPlantillaCertificado, c_versionFormato)
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_SeccionesPlantillaS (   
-    n_idSeccionPlantilla INT AUTO_INCREMENT PRIMARY KEY,
-    c_codigoSeccion VARCHAR(100) NOT NULL,
-    t_nombreSeccion VARCHAR(150) NOT NULL,
-    b_repetible BOOLEAN NOT NULL DEFAULT FALSE,
-    n_orden INT NULL,
-    n_idVersionPlantilla INT NOT NULL,
-
-    CONSTRAINT fk_VersionesPlantillas_SeccionesPlantilla
-        FOREIGN KEY (n_idVersionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_VersionesPlantillasS(n_idVersionPlantilla)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT uq_VersionPlantilla_CodigoSeccion
-        UNIQUE (n_idVersionPlantilla, c_codigoSeccion),
-
-    CONSTRAINT chk_SeccionesPlantilla_Orden
-        CHECK (n_orden IS NULL OR n_orden > 0)
-);
-
-CREATE TABLE CertificadosCursosAcademicosUPB_CamposPlantillaS (   
+CREATE TABLE campos_plantilla (   
     n_idCampoPlantilla INT AUTO_INCREMENT PRIMARY KEY,
     c_codigoCampo VARCHAR(100) NOT NULL,
     t_nombreCampo VARCHAR(150) NOT NULL,
@@ -440,21 +319,16 @@ CREATE TABLE CertificadosCursosAcademicosUPB_CamposPlantillaS (
     b_repetible BOOLEAN NOT NULL DEFAULT FALSE,
     t_reglaObtencion TEXT NULL,
     n_idVersionPlantilla INT NOT NULL,
-    n_idSeccionPlantilla INT NULL,
 
     CONSTRAINT fk_VersionesPlantillas_CamposPlantilla
-        FOREIGN KEY (n_idVersionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_VersionesPlantillasS(n_idVersionPlantilla)
+        FOREIGN KEY (n_idVersionPlantilla) REFERENCES versiones_plantilla(n_idVersionPlantilla)
         ON DELETE RESTRICT,
         
-    CONSTRAINT fk_SeccionesPlantilla_CamposPlantilla
-        FOREIGN KEY (n_idSeccionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_SeccionesPlantillaS(n_idSeccionPlantilla)
-        ON DELETE RESTRICT,
-
     CONSTRAINT uq_VersionPlantilla_CodigoCampo
         UNIQUE (n_idVersionPlantilla, c_codigoCampo)
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_ElementosPlantillaS (
+CREATE TABLE elementos_plantilla (
     n_idElementoPlantilla INT AUTO_INCREMENT PRIMARY KEY,
     c_tipoElemento ENUM('TEXTO', 'IMAGEN', 'CAMPO', 'LINEA', 'FIRMA', 'TABLA') NOT NULL,
     t_contenido TEXT NULL,
@@ -467,19 +341,14 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ElementosPlantillaS (
     c_alineacion VARCHAR(20) NULL,
     n_orden INT NULL,
     n_idVersionPlantilla INT NOT NULL,
-    n_idSeccionPlantilla INT NULL,
     n_idCampoPlantilla INT NULL,
 
     CONSTRAINT fk_VersionesPlantillas_ElementosPlantilla
-        FOREIGN KEY (n_idVersionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_VersionesPlantillasS(n_idVersionPlantilla)
+        FOREIGN KEY (n_idVersionPlantilla) REFERENCES versiones_plantilla(n_idVersionPlantilla)
         ON DELETE RESTRICT,
 
-    CONSTRAINT fk_SeccionesPlantilla_ElementosPlantilla
-        FOREIGN KEY (n_idSeccionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_SeccionesPlantillaS(n_idSeccionPlantilla)
-        ON DELETE RESTRICT,
-        
     CONSTRAINT fk_CamposPlantilla_ElementosPlantilla
-        FOREIGN KEY (n_idCampoPlantilla) REFERENCES CertificadosCursosAcademicosUPB_CamposPlantillaS(n_idCampoPlantilla)
+        FOREIGN KEY (n_idCampoPlantilla) REFERENCES campos_plantilla(n_idCampoPlantilla)
         ON DELETE RESTRICT,
         
     CONSTRAINT chk_ElementosPlantilla_Orden
@@ -494,18 +363,18 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ElementosPlantillaS (
 --       (migracion 05). Con el se arma una solicitud por semestre(s)
 --       o por programa completo.
 -- ============================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_PlanesEstudioS (
+CREATE TABLE planes_estudio (
     n_idPrograma INT NOT NULL,
     n_idAsignatura INT NOT NULL,
     n_semestre INT NOT NULL,
     PRIMARY KEY (n_idPrograma, n_idAsignatura),
 
     CONSTRAINT fk_Programas_PlanesEstudio
-        FOREIGN KEY (n_idPrograma) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
+        FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_Asignaturas_PlanesEstudio
-        FOREIGN KEY (n_idAsignatura) REFERENCES CertificadosCursosAcademicosUPB_AsignaturasS(n_idAsignatura)
+        FOREIGN KEY (n_idAsignatura) REFERENCES asignaturas(n_idAsignatura)
         ON DELETE CASCADE,
 
     CONSTRAINT chk_PlanesEstudio_semestre
@@ -516,7 +385,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_PlanesEstudioS (
 -- ========================================================================================================================
 --            4. MÓDULO DE SOLICITUDES Y GENERACIÓN
 -- ========================================================================================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_SolicitudesCertificadosS (
+CREATE TABLE solicitudes (
     n_idSolicitudCertificado INT AUTO_INCREMENT PRIMARY KEY,
     n_idEstudiante INT NOT NULL,
     dt_fechaSolicitud DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -534,19 +403,19 @@ CREATE TABLE CertificadosCursosAcademicosUPB_SolicitudesCertificadosS (
     t_semestres VARCHAR(100) NULL,                        -- semestres pedidos, ej. "1,2,5"
 
     CONSTRAINT fk_Programas_SolicitudesCertificados
-        FOREIGN KEY (n_idPrograma) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
+        FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
         ON DELETE SET NULL,
 
     CONSTRAINT fk_TiposCertificados_SolicitudesCertificados
-        FOREIGN KEY (n_idTipoCertificado) REFERENCES CertificadosCursosAcademicosUPB_TiposCertificadosS(n_idTipoCertificado)
+        FOREIGN KEY (n_idTipoCertificado) REFERENCES tipos_certificado(n_idTipoCertificado)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_Usuarios_SolicitudesCertificados
-        FOREIGN KEY (n_idUsuarioEncargado) REFERENCES CertificadosCursosAcademicosUPB_UsuariosS(n_idUsuario)
+        FOREIGN KEY (n_idUsuarioEncargado) REFERENCES usuarios(n_idUsuario)
         ON DELETE RESTRICT
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS (
+CREATE TABLE solicitud_asignaturas (
     n_idSolicitudCertificado INT NOT NULL,
     n_idAsignatura INT NOT NULL,
     -- Version del documento elegida para el certificado (NULL = automatica).
@@ -555,19 +424,19 @@ CREATE TABLE CertificadosCursosAcademicosUPB_DetallesSolicitudesCertificadosS (
     PRIMARY KEY (n_idSolicitudCertificado, n_idAsignatura),
 
     CONSTRAINT fk_Solicitudes_DetallesSolicitudes
-        FOREIGN KEY (n_idSolicitudCertificado) REFERENCES CertificadosCursosAcademicosUPB_SolicitudesCertificadosS(n_idSolicitudCertificado)
+        FOREIGN KEY (n_idSolicitudCertificado) REFERENCES solicitudes(n_idSolicitudCertificado)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_Asignaturas_DetallesSolicitudes
-        FOREIGN KEY (n_idAsignatura) REFERENCES CertificadosCursosAcademicosUPB_AsignaturasS(n_idAsignatura)
+        FOREIGN KEY (n_idAsignatura) REFERENCES asignaturas(n_idAsignatura)
         ON DELETE RESTRICT,
 
     CONSTRAINT fk_VersionesDocumentos_DetallesSolicitudes
-        FOREIGN KEY (n_idVersionDocumento) REFERENCES CertificadosCursosAcademicosUPB_VersionesDocumentosS(n_idVersionDocumento)
+        FOREIGN KEY (n_idVersionDocumento) REFERENCES versiones_documento(n_idVersionDocumento)
         ON DELETE SET NULL
 );
 
-CREATE TABLE CertificadosCursosAcademicosUPB_CertificadosGeneradosS (
+CREATE TABLE certificados_generados (
     n_idCertificadoGenerado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombreArchivo VARCHAR(255) NOT NULL,
     bi_archivo LONGBLOB NOT NULL,
@@ -576,11 +445,11 @@ CREATE TABLE CertificadosCursosAcademicosUPB_CertificadosGeneradosS (
     n_idVersionPlantilla INT NOT NULL,
 
     CONSTRAINT fk_SolicitudesCertificados_CertificadosGenerados
-        FOREIGN KEY (n_idSolicitudCertificado) REFERENCES CertificadosCursosAcademicosUPB_SolicitudesCertificadosS(n_idSolicitudCertificado)
+        FOREIGN KEY (n_idSolicitudCertificado) REFERENCES solicitudes(n_idSolicitudCertificado)
         ON DELETE RESTRICT,
         
     CONSTRAINT fk_VersionesPlantillas_CertificadosGenerados
-        FOREIGN KEY (n_idVersionPlantilla) REFERENCES CertificadosCursosAcademicosUPB_VersionesPlantillasS(n_idVersionPlantilla)
+        FOREIGN KEY (n_idVersionPlantilla) REFERENCES versiones_plantilla(n_idVersionPlantilla)
         ON DELETE RESTRICT
 );
 
@@ -588,7 +457,7 @@ CREATE TABLE CertificadosCursosAcademicosUPB_CertificadosGeneradosS (
 -- ========================================================================================================================
 --            5. MÓDULO DE AUDITORIA
 -- ========================================================================================================================
-CREATE TABLE CertificadosCursosAcademicosUPB_LogS (   #tabla que registra al usuario, ip y las operaciones que realiza en la aplicacion
+CREATE TABLE bitacora (   #tabla que registra al usuario, ip y las operaciones que realiza en la aplicacion
     n_idLog INT AUTO_INCREMENT PRIMARY KEY,
     t_ip VARCHAR(45) NOT NULL,
     t_nombreTabla VARCHAR(150) NOT NULL,
@@ -598,32 +467,9 @@ CREATE TABLE CertificadosCursosAcademicosUPB_LogS (   #tabla que registra al usu
     n_idUsuario INT NOT NULL,
 
     CONSTRAINT fk_Usuarios_Log
-        FOREIGN KEY (n_idUsuario) REFERENCES CertificadosCursosAcademicosUPB_UsuariosS(n_idUsuario)
+        FOREIGN KEY (n_idUsuario) REFERENCES usuarios(n_idUsuario)
         ON DELETE RESTRICT
 );
 
-
-
--- ========================================================================================================================
---            TRABAJO PARA CORREGIR EL BACKEND Y PROBAR
--- ========================================================================================================================
-INSERT INTO CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS
-(c_codigo, t_nombre)
-VALUES
-('SYLLABUS', 'Syllabus'),
-('CARTA_DESCRIPTIVA', 'Carta Descriptiva');
-
-SELECT
-    n_idTipoDocumentoAcademico,
-    c_codigo,
-    t_nombre
-FROM certificadoscursosacademicosupb_tiposdocumentosacademicoss;
-
-SELECT
-    n_idVersionDocumento,
-    n_idDocumentoAcademico,
-    c_periodo,
-    t_nombreArchivo,
-    OCTET_LENGTH(bi_archivo) AS bytes_archivo,
-    dt_fechaCarga
-FROM CertificadosCursosAcademicosUPB_VersionesDocumentosS;
+-- Los datos iniciales (roles ya incluidos arriba, tipos de documento,
+-- plantilla del certificado y usuario admin) estan en 02_datos_iniciales.sql

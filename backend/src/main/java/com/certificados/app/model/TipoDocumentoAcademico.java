@@ -3,7 +3,7 @@ package com.certificados.app.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS")
+@Table(name = "tipos_documento")
 public class TipoDocumentoAcademico {
 
     @Id

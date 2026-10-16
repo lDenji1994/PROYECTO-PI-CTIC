@@ -49,18 +49,6 @@ public class ElementoPlantillaController {
         );
     }
 
-    @GetMapping("/seccion-plantilla/{idSeccionPlantilla}")
-    public ResponseEntity<List<ElementoPlantilla>>
-    listarPorSeccionPlantilla(
-            @PathVariable Integer idSeccionPlantilla) {
-
-        return ResponseEntity.ok(
-                service.listarPorSeccionPlantilla(
-                        idSeccionPlantilla
-                )
-        );
-    }
-
     @GetMapping("/campo-plantilla/{idCampoPlantilla}")
     public ResponseEntity<List<ElementoPlantilla>>
     listarPorCampoPlantilla(
@@ -86,7 +74,6 @@ public class ElementoPlantillaController {
             @RequestParam(required = false) String alineacion,
             @RequestParam(required = false) Integer orden,
             @RequestParam Integer idVersionPlantilla,
-            @RequestParam(required = false) Integer idSeccionPlantilla,
             @RequestParam(required = false) Integer idCampoPlantilla) {
 
         return ResponseEntity.ok(
@@ -102,7 +89,6 @@ public class ElementoPlantillaController {
                         alineacion,
                         orden,
                         idVersionPlantilla,
-                        idSeccionPlantilla,
                         idCampoPlantilla
                 )
         );

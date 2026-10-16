@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_VersionesPlantillasS",
+        name = "versiones_plantilla",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uq_Plantilla_Version",

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_RolesS",
+        name = "roles",
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "c_nombre",

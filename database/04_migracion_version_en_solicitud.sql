@@ -1,4 +1,6 @@
 -- =====================================================================
+--  NOTA: solo para bases creadas ANTES de la migracion 06 (usa los
+--  nombres de tabla viejos). Las bases nuevas no la necesitan.
 --  MIGRACION 04: version del documento elegida en cada solicitud
 --
 --  Agrega a la tabla de detalle de solicitudes la columna

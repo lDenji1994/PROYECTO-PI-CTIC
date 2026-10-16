@@ -1,4 +1,6 @@
 -- =====================================================================
+--  NOTA: solo para bases creadas ANTES de la migracion 06 (usa los
+--  nombres de tabla viejos). Las bases nuevas no la necesitan.
 --  MIGRACION 05: entrega del certificado, nombre del estudiante,
 --  tipo de contenido (resumido / completo), alcance de la solicitud
 --  (asignaturas, semestres o programa) y plan de estudios.
