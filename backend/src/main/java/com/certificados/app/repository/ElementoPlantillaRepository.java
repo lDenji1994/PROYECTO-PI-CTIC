@@ -13,9 +13,6 @@ public interface ElementoPlantillaRepository
     List<ElementoPlantilla> findByIdVersionPlantilla(
             Integer idVersionPlantilla);
 
-    List<ElementoPlantilla> findByIdSeccionPlantilla(
-            Integer idSeccionPlantilla);
-
     List<ElementoPlantilla> findByIdCampoPlantilla(
             Integer idCampoPlantilla);
 }

@@ -12,10 +12,10 @@ import java.util.Objects;
  * de documentos académicos mediante VersionesDocumentosProgramasS.
  *
  * La entidad se encuentra alineada con la tabla:
- * CertificadosCursosAcademicosUPB_ProgramasS
+ * programas
  */
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_ProgramasS")
+@Table(name = "programas")
 public class Programa {
 
     @Id

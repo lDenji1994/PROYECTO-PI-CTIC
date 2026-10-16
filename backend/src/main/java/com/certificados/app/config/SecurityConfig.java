@@ -73,7 +73,7 @@ public class SecurityConfig {
     /** Rutas de configuracion de las plantillas de certificado. */
     private static final String[] PLANTILLAS = {
         "/api/tipos-certificados/**", "/api/plantillas-certificados/**", "/api/versiones-plantilla/**",
-        "/api/secciones-plantilla/**", "/api/campos-plantilla/**", "/api/elementos-plantilla/**"
+        "/api/campos-plantilla/**", "/api/elementos-plantilla/**"
     };
 
     @Bean

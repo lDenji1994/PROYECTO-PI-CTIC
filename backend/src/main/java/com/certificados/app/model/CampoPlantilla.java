@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(
-    name = "CertificadosCursosAcademicosUPB_CamposPlantillas",
+    name = "campos_plantilla",
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uq_VersionPlantilla_CodigoCampo",
@@ -57,9 +57,6 @@ public class CampoPlantilla {
 
     @Column(name = "n_idVersionPlantilla", nullable = false)
     private Integer idVersionPlantilla;
-
-    @Column(name = "n_idSeccionPlantilla")
-    private Integer idSeccionPlantilla;
 
     public CampoPlantilla() {
     }
@@ -134,13 +131,5 @@ public class CampoPlantilla {
 
     public void setIdVersionPlantilla(Integer idVersionPlantilla) {
         this.idVersionPlantilla = idVersionPlantilla;
-    }
-
-    public Integer getIdSeccionPlantilla() {
-        return idSeccionPlantilla;
-    }
-
-    public void setIdSeccionPlantilla(Integer idSeccionPlantilla) {
-        this.idSeccionPlantilla = idSeccionPlantilla;
     }
 }

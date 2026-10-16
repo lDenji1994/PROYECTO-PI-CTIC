@@ -48,18 +48,6 @@ public class CampoPlantillaController {
         );
     }
 
-    @GetMapping("/seccion-plantilla/{idSeccionPlantilla}")
-    public ResponseEntity<List<CampoPlantilla>>
-    listarPorSeccionPlantilla(
-            @PathVariable Integer idSeccionPlantilla) {
-
-        return ResponseEntity.ok(
-                service.listarPorSeccionPlantilla(
-                        idSeccionPlantilla
-                )
-        );
-    }
-
     @PostMapping
     public ResponseEntity<CampoPlantilla> crear(
             @RequestParam String codigoCampo,
@@ -69,8 +57,7 @@ public class CampoPlantillaController {
             @RequestParam CampoPlantilla.MetodoObtencion metodoObtencion,
             @RequestParam(required = false) Boolean repetible,
             @RequestParam(required = false) String reglaObtencion,
-            @RequestParam Integer idVersionPlantilla,
-            @RequestParam(required = false) Integer idSeccionPlantilla) {
+            @RequestParam Integer idVersionPlantilla) {
 
         return ResponseEntity.ok(
                 service.crear(
@@ -81,8 +68,7 @@ public class CampoPlantillaController {
                         metodoObtencion,
                         repetible,
                         reglaObtencion,
-                        idVersionPlantilla,
-                        idSeccionPlantilla
+                        idVersionPlantilla
                 )
         );
     }

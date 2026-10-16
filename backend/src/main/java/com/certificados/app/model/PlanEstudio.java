@@ -14,7 +14,7 @@ import jakarta.persistence.*;
  * NO MODIFICAR los nombres de columnas (deben coincidir con la base de datos).
  */
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_PlanesEstudioS")
+@Table(name = "planes_estudio")
 @IdClass(PlanEstudioId.class)
 public class PlanEstudio {
 

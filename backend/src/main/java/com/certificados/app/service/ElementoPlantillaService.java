@@ -4,10 +4,8 @@ import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.CampoPlantilla;
 import com.certificados.app.model.ElementoPlantilla;
-import com.certificados.app.model.SeccionPlantilla;
 import com.certificados.app.repository.CampoPlantillaRepository;
 import com.certificados.app.repository.ElementoPlantillaRepository;
-import com.certificados.app.repository.SeccionPlantillaRepository;
 import com.certificados.app.repository.VersionPlantillaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,20 +18,16 @@ public class ElementoPlantillaService {
 
     private final ElementoPlantillaRepository repository;
     private final VersionPlantillaRepository versionPlantillaRepository;
-    private final SeccionPlantillaRepository seccionPlantillaRepository;
     private final CampoPlantillaRepository campoPlantillaRepository;
 
     public ElementoPlantillaService(
             ElementoPlantillaRepository repository,
             VersionPlantillaRepository versionPlantillaRepository,
-            SeccionPlantillaRepository seccionPlantillaRepository,
             CampoPlantillaRepository campoPlantillaRepository) {
 
         this.repository = repository;
         this.versionPlantillaRepository =
                 versionPlantillaRepository;
-        this.seccionPlantillaRepository =
-                seccionPlantillaRepository;
         this.campoPlantillaRepository =
                 campoPlantillaRepository;
     }
@@ -58,23 +52,6 @@ public class ElementoPlantillaService {
 
         return repository.findByIdVersionPlantilla(
                 idVersionPlantilla
-        );
-    }
-
-    public List<ElementoPlantilla> listarPorSeccionPlantilla(
-            Integer idSeccionPlantilla) {
-
-        if (!seccionPlantillaRepository.existsById(
-                idSeccionPlantilla)) {
-
-            throw new ResourceNotFoundException(
-                    "Sección de plantilla no encontrada con id "
-                            + idSeccionPlantilla
-            );
-        }
-
-        return repository.findByIdSeccionPlantilla(
-                idSeccionPlantilla
         );
     }
 
@@ -107,7 +84,6 @@ public class ElementoPlantillaService {
             String alineacion,
             Integer orden,
             Integer idVersionPlantilla,
-            Integer idSeccionPlantilla,
             Integer idCampoPlantilla) {
 
         if (tipoElemento == null) {
@@ -123,28 +99,6 @@ public class ElementoPlantillaService {
         }
 
         validarVersion(idVersionPlantilla);
-
-        SeccionPlantilla seccion = null;
-
-        if (idSeccionPlantilla != null) {
-
-            seccion = seccionPlantillaRepository
-                    .findById(idSeccionPlantilla)
-                    .orElseThrow(() ->
-                            new ResourceNotFoundException(
-                                    "Sección de plantilla no encontrada con id "
-                                            + idSeccionPlantilla
-                            ));
-
-            if (!seccion.getIdVersionPlantilla()
-                    .equals(idVersionPlantilla)) {
-
-                throw new BusinessException(
-                        "La sección no pertenece a la versión "
-                                + "de plantilla indicada"
-                );
-            }
-        }
 
         CampoPlantilla campo = null;
 
@@ -168,18 +122,6 @@ public class ElementoPlantillaService {
             }
         }
 
-        if (seccion != null && campo != null) {
-
-            if (campo.getIdSeccionPlantilla() == null
-                    || !campo.getIdSeccionPlantilla()
-                    .equals(idSeccionPlantilla)) {
-
-                throw new BusinessException(
-                        "El campo no pertenece a la sección indicada"
-                );
-            }
-        }
-
         ElementoPlantilla elemento =
                 new ElementoPlantilla();
 
@@ -195,9 +137,6 @@ public class ElementoPlantillaService {
         elemento.setOrden(orden);
         elemento.setIdVersionPlantilla(
                 idVersionPlantilla
-        );
-        elemento.setIdSeccionPlantilla(
-                idSeccionPlantilla
         );
         elemento.setIdCampoPlantilla(
                 idCampoPlantilla

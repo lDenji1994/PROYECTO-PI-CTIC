@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_AsignaturasS")
+@Table(name = "asignaturas")
 public class Asignatura {
 
     @Id

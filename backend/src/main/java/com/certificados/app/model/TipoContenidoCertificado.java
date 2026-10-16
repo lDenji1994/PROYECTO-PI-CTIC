@@ -6,8 +6,8 @@ package com.certificados.app.model;
  *   RESUMIDO: un parrafo breve por asignatura (el "resumen" de los datos del
  *             curso o, si esta vacio, la descripcion del curso).
  *   COMPLETO: todo el contenido registrado (descripcion, proposito,
- *             justificacion, requisitos, objetivos, competencias, contenido
- *             tema por tema, metodologia y evaluacion). Puede ocupar varias
+ *             justificacion, requisitos, contenido tema por tema y
+ *             modalidades). Puede ocupar varias
  *             paginas por asignatura.
  *
  * NO MODIFICAR los nombres: son los valores de la columna c_tipoContenido.

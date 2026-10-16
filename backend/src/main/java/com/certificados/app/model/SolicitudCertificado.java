@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_SolicitudesCertificadosS")
+@Table(name = "solicitudes")
 public class SolicitudCertificado {
 
     @Id

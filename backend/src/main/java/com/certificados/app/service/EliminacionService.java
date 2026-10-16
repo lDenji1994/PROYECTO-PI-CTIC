@@ -4,17 +4,12 @@ import com.certificados.app.dto.VersionResumenDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Asignatura;
-import com.certificados.app.model.Competencia;
 import com.certificados.app.model.DocumentoAcademico;
 import com.certificados.app.repository.AsignaturaRepository;
-import com.certificados.app.repository.CompetenciaRepository;
 import com.certificados.app.repository.ContenidoRepository;
-import com.certificados.app.repository.CriterioCompetenciaRepository;
 import com.certificados.app.repository.DetalleSolicitudCertificadoRepository;
 import com.certificados.app.repository.DocumentoAcademicoRepository;
-import com.certificados.app.repository.EvaluacionRepository;
 import com.certificados.app.repository.LogRepository;
-import com.certificados.app.repository.MetodologiaRepository;
 import com.certificados.app.repository.ProgramaRepository;
 import com.certificados.app.repository.SolicitudCertificadoRepository;
 import com.certificados.app.repository.CertificadoGeneradoRepository;
@@ -25,8 +20,6 @@ import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.model.Programa;
 import com.certificados.app.model.SolicitudCertificado;
 import com.certificados.app.model.Usuario;
-import com.certificados.app.repository.ObjetivoRepository;
-import com.certificados.app.repository.VersionDocumentoProgramaRepository;
 import com.certificados.app.repository.VersionDocumentoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,12 +63,6 @@ public class EliminacionService {
     private final DocumentoAcademicoRepository documentoRepository;
     private final AsignaturaRepository asignaturaRepository;
     private final ContenidoRepository contenidoRepository;
-    private final ObjetivoRepository objetivoRepository;
-    private final CompetenciaRepository competenciaRepository;
-    private final CriterioCompetenciaRepository criterioRepository;
-    private final MetodologiaRepository metodologiaRepository;
-    private final EvaluacionRepository evaluacionRepository;
-    private final VersionDocumentoProgramaRepository versionProgramaRepository;
     private final DetalleSolicitudCertificadoRepository detalleSolicitudRepository;
     private final ProgramaRepository programaRepository;
     private final SolicitudCertificadoRepository solicitudRepository;
@@ -89,12 +76,6 @@ public class EliminacionService {
             DocumentoAcademicoRepository documentoRepository,
             AsignaturaRepository asignaturaRepository,
             ContenidoRepository contenidoRepository,
-            ObjetivoRepository objetivoRepository,
-            CompetenciaRepository competenciaRepository,
-            CriterioCompetenciaRepository criterioRepository,
-            MetodologiaRepository metodologiaRepository,
-            EvaluacionRepository evaluacionRepository,
-            VersionDocumentoProgramaRepository versionProgramaRepository,
             DetalleSolicitudCertificadoRepository detalleSolicitudRepository,
             ProgramaRepository programaRepository,
             SolicitudCertificadoRepository solicitudRepository,
@@ -111,12 +92,6 @@ public class EliminacionService {
         this.documentoRepository = documentoRepository;
         this.asignaturaRepository = asignaturaRepository;
         this.contenidoRepository = contenidoRepository;
-        this.objetivoRepository = objetivoRepository;
-        this.competenciaRepository = competenciaRepository;
-        this.criterioRepository = criterioRepository;
-        this.metodologiaRepository = metodologiaRepository;
-        this.evaluacionRepository = evaluacionRepository;
-        this.versionProgramaRepository = versionProgramaRepository;
         this.detalleSolicitudRepository = detalleSolicitudRepository;
         this.actividadService = actividadService;
     }
@@ -127,21 +102,12 @@ public class EliminacionService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "El documento ya no existe (id " + idVersion + "). Actualiza la página."));
 
-        // 1. Lo que depende de la version
+        // 1. Lo que depende de la version (el contenido, tema por tema)
         contenidoRepository.deleteByIdVersionDocumento(idVersion);
-        objetivoRepository.deleteByIdVersionDocumento(idVersion);
-        metodologiaRepository.deleteByIdVersionDocumento(idVersion);
-        evaluacionRepository.deleteByIdVersionDocumento(idVersion);
-        versionProgramaRepository.deleteByIdVersionDocumento(idVersion);
-        for (Competencia competencia : competenciaRepository.findByIdVersionDocumento(idVersion)) {
-            criterioRepository.deleteByIdCompetencia(competencia.getId());
-        }
-        criterioRepository.flush();
-        competenciaRepository.deleteByIdVersionDocumento(idVersion);
-        // flush(): envia YA a la base de datos todos los borrados anteriores.
+        // flush(): envia YA a la base de datos el borrado anterior.
         // Sin esto, el borrado de la version (paso 2) se ejecutaria primero y
         // la base de datos lo rechazaria por las filas que aun dependen de ella.
-        competenciaRepository.flush();
+        contenidoRepository.flush();
 
         // 2. La version (archivo + datos del curso)
         versionRepository.eliminarPorId(idVersion);
@@ -188,8 +154,7 @@ public class EliminacionService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "El programa ya no existe (id " + idPrograma + "). Actualiza la página."));
 
-        if (versionRepository.existsByIdProgramaDisena(idPrograma)
-                || !versionProgramaRepository.findByIdPrograma(idPrograma).isEmpty()) {
+        if (versionRepository.existsByIdProgramaDisena(idPrograma)) {
             throw new BusinessException("El programa " + programa.getCodigo()
                     + " está asociado a documentos cargados y no se puede eliminar.");
         }

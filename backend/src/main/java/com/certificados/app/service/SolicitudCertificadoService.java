@@ -279,7 +279,7 @@ public class SolicitudCertificadoService {
         Log log = new Log();
 
         log.setIp(actividadService.ipActual());
-        log.setNombreTabla("CertificadosGeneradosS");
+        log.setNombreTabla(ActividadService.TABLA_CERTIFICADOS);
         log.setNombreProceso("GENERAR_CERTIFICADO");
 
         // A nombre de quien pulsa "Generar PDF" (si no hay sesion, el encargado)

@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "CertificadosCursosAcademicosUPB_CertificadosGeneradosS"
+        name = "certificados_generados"
 )
 public class CertificadoGenerado {
 

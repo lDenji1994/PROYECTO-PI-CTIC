@@ -15,10 +15,6 @@ public interface CampoPlantillaRepository
             Integer idVersionPlantilla
     );
 
-    List<CampoPlantilla> findByIdSeccionPlantilla(
-            Integer idSeccionPlantilla
-    );
-
     Optional<CampoPlantilla>
     findByIdVersionPlantillaAndCodigoCampo(
             Integer idVersionPlantilla,

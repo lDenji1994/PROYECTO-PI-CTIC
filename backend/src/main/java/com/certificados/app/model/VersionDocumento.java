@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "CertificadosCursosAcademicosUPB_VersionesDocumentosS")
+@Table(name = "versiones_documento")
 public class VersionDocumento {
 
     @Id

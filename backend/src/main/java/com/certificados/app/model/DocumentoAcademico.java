@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
  * cada archivo que se monta queda como su propio documento, con su tipo y
  * su formato. Por eso ya no existe la unicidad asignatura + tipo.
  */
-@Table(name = "CertificadosCursosAcademicosUPB_DocumentosAcademicosS")
+@Table(name = "documentos")
 public class DocumentoAcademico {
 
     @Id
