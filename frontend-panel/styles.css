@@ -2482,3 +2482,52 @@ input[type="search"] + select { margin-top: 6px; }
 @media (min-width: 1001px) {
     .certification-stats { grid-template-columns: repeat(5, 1fr); }
 }
+
+/* Datos del curso dentro del detalle de la asignatura */
+.fila-datos td {
+    background: var(--gris-fondo);
+    padding: 14px 18px;
+}
+.datos-version .datos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px 18px;
+    margin: 0;
+}
+.datos-grid > div {
+    min-width: 0;
+}
+.datos-grid .datos-ancho {
+    grid-column: 1 / -1;
+}
+.datos-grid dt {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--gris-texto);
+}
+.datos-grid dd {
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--gris-oscuro);
+    overflow-wrap: anywhere;
+}
+.datos-temas {
+    margin-top: 14px;
+}
+.datos-temas summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--color-primario);
+}
+.datos-temas ol {
+    margin: 8px 0 0 20px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.datos-temas li {
+    margin-bottom: 4px;
+}
