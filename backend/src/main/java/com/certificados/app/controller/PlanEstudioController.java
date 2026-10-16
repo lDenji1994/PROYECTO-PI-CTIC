@@ -15,8 +15,8 @@ import java.util.Map;
  *   PUT    /api/programas/{id}/plan/{idAsignatura}     cuerpo { "semestre": 3 } (agrega o cambia)
  *   DELETE /api/programas/{id}/plan/{idAsignatura}     la quita del plan
  *
- * Permisos (SecurityConfig): consultar cualquier usuario con sesion;
- * cambiar el plan solo el ADMINISTRADOR (igual que crear programas).
+ * Permisos (SecurityConfig): cualquier usuario con sesion (auxiliar o
+ * administrador) puede consultarlo y cambiarlo.
  */
 @RestController
 @RequestMapping("/api/programas/{idPrograma}/plan")
