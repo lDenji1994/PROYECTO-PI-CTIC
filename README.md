@@ -67,11 +67,15 @@ En MySQL Workbench (o consola), ejecutar **en este orden**:
 3. `database/04_migracion_version_en_solicitud.sql` — **obligatorio si tu base ya existía**
    antes de esta versión (agrega la columna de la versión elegida en cada solicitud). Se puede
    correr varias veces. Sin esto el servidor no arranca (`missing column`).
+4. `database/05_migracion_entrega_alcance_contenido.sql` — **obligatorio si tu base ya existía**
+   (estado ENTREGADO, nombre del estudiante, certificado resumido/completo, solicitudes por
+   semestre o programa, plan de estudios y varios documentos por asignatura). Se puede correr
+   varias veces. Sin esto el servidor no arranca (`missing column` / `missing table`).
 
 `03_usuario_aplicacion_produccion.sql` es solo para el servidor de producción.
 
 El paso 2 crea el usuario `admin` **sin contraseña**. La contraseña se la asigna el
-servidor la primera vez que arranca (paso 3.2). Las bases que ya existían solo necesitan la migración 04.
+servidor la primera vez que arranca (paso 3.2). Las bases que ya existían solo necesitan las migraciones 04 y 05.
 
 ### 3.2 Tus credenciales (sin subirlas a GitHub)
 

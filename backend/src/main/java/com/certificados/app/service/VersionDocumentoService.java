@@ -241,6 +241,8 @@ public class VersionDocumentoService {
         version.setRequisitos(texto(d.getRequisitos(), 4000, "Los requisitos"));
         version.setJustificacion(texto(d.getJustificacion(), 6000, "La justificación"));
         version.setProposito(texto(d.getProposito(), 6000, "El propósito"));
+        // SE PUEDE MODIFICAR: largo maximo del resumen (un parrafo breve)
+        version.setResumen(texto(d.getResumen(), 1500, "El resumen para el certificado resumido"));
         version.setModoCalificacion(texto(d.getModoCalificacion(), 100, "El modo de calificación"));
         version.setModalidades(texto(d.getModalidades(), 2000, "Las modalidades"));
         version.setObservaciones(texto(d.getObservaciones(), 4000, "Las observaciones"));
@@ -265,6 +267,7 @@ public class VersionDocumentoService {
         d.setRequisitos(v.getRequisitos());
         d.setJustificacion(v.getJustificacion());
         d.setProposito(v.getProposito());
+        d.setResumen(v.getResumen());
         d.setModoCalificacion(v.getModoCalificacion());
         d.setModalidades(v.getModalidades());
         d.setObservaciones(v.getObservaciones());

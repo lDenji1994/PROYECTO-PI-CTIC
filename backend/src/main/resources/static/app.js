@@ -47,8 +47,17 @@ const ESTADOS_SOLICITUD = {
     PENDIENTE: { texto: 'Pendiente', clase: 'warning' },
     PROCESANDO: { texto: 'Procesando', clase: 'processing' },
     ESPERANDO_DOCUMENTOS: { texto: 'Esperando documentos', clase: 'warning' },
-    REALIZADO: { texto: 'Realizado', clase: 'success' },
+    REALIZADO: { texto: 'Realizado (sin entregar)', clase: 'success' },
+    ENTREGADO: { texto: 'Entregado', clase: 'delivered' },
     ERROR: { texto: 'Error', clase: 'danger' }
+};
+
+/* Contenido del certificado y alcance de la solicitud (enums del backend). SE PUEDE MODIFICAR: textos. */
+const TIPOS_CONTENIDO = { RESUMIDO: 'Resumido', COMPLETO: 'Completo' };
+const ALCANCES = {
+    ASIGNATURAS: 'Asignaturas',
+    SEMESTRES: 'Semestres',
+    PROGRAMA: 'Programa completo'
 };
 
 const TITULOS_VISTA = {
@@ -98,6 +107,8 @@ const CAMPOS_CURSO = {
         { id: 'horasIndependientes', etiqueta: 'Horas de trabajo independiente', tipo: 'numero', opcional: true, ejemplo: 'Ej. 6' }
     ],
     opcionales: [
+        { id: 'resumen', etiqueta: 'Resumen para el certificado resumido', tipo: 'area', filas: 3, maximo: 1500, ancho: true,
+          ayuda: 'Un párrafo breve sobre la asignatura. Si lo dejas vacío, el certificado resumido usa la descripción del curso.' },
         { id: 'escuela', etiqueta: 'Escuela', tipo: 'texto', maximo: 150 },
         { id: 'facultad', etiqueta: 'Facultad', tipo: 'texto', maximo: 150 },
         { id: 'clasificacionCINE', etiqueta: 'Clasificación CINE', tipo: 'texto', maximo: 100 },
@@ -127,7 +138,9 @@ const estado = {
     solicitudes: [],
     solicitudSeleccionada: null,
     versionEnEdicion: null,
-    usuarioContrasena: null
+    usuarioContrasena: null,
+    planPrograma: [],            // plan de estudios del programa elegido en "Contenido de cursos"
+    planSolicitud: []            // plan de estudios del programa elegido en la solicitud
 };
 
 /* =====================================================================
@@ -384,6 +397,7 @@ async function cargarSesion() {
     /* Lo marcado con data-solo-admin solo se muestra al administrador */
     document.querySelectorAll('[data-solo-admin]').forEach(function (el) { el.hidden = !esAdmin(); });
     document.getElementById('programas-solo-admin').hidden = esAdmin();
+    document.getElementById('plan-solo-admin').hidden = esAdmin();
     /* El administrador tambien puede filtrar la actividad del modulo de usuarios */
     const filtro = document.getElementById('filtro-actividad');
     if (esAdmin() && !filtro.querySelector('option[value="usuarios"]')) {
@@ -473,9 +487,72 @@ function textoAsignatura(a) {
     return a.codigoMateria + ' ' + (a.codigoCurso || '') + ' — ' + a.nombre;
 }
 
+/* ---------------------------------------------------------------------
+   BUSCAR ASIGNATURA POR CODIGO: las listas de asignaturas tienen un
+   cuadro de busqueda encima. Se puede escribir el codigo de materia, el de
+   curso, los dos juntos o separados ("FION 0001", "fion0001") o el nombre.
+   --------------------------------------------------------------------- */
+
+function coincideAsignatura(a, texto) {
+    const t = String(texto || '').trim().toLowerCase();
+    if (!t) {
+        return true;
+    }
+    const clave = claveCodigo(t);
+    return textoAsignatura(a).toLowerCase().includes(t) ||
+        (clave.length > 0 && claveCodigo((a.codigoMateria || '') + (a.codigoCurso || '')).includes(clave));
+}
+
+/** Llena la lista con las asignaturas que coinciden con el buscador (la elegida siempre se conserva). */
+function filtrarSelectAsignaturas(idSelect, idBuscar) {
+    const select = document.getElementById(idSelect);
+    const texto = document.getElementById(idBuscar).value;
+    const actual = select.value;
+    const coincidencias = estado.asignaturas.filter(function (a) { return coincideAsignatura(a, texto); });
+    /* La que ya estaba escogida se conserva en la lista aunque no coincida */
+    const lista = coincidencias.slice();
+    const elegida = estado.asignaturas.find(function (a) { return String(a.id) === actual; });
+    if (elegida && lista.indexOf(elegida) < 0) {
+        lista.push(elegida);
+    }
+    llenarSelect(select, lista, function (a) { return a.id; }, textoAsignatura,
+        texto.trim() ? coincidencias.length + ' coincidencia(s) — seleccione una' : 'Seleccione una asignatura');
+    if (texto.trim() && !coincidencias.length) {
+        select.options[0].textContent = 'Ninguna asignatura coincide con «' + texto.trim() + '»';
+    }
+    /* Si solo una coincide, se escoge sola */
+    if (texto.trim() && coincidencias.length === 1 && select.value !== String(coincidencias[0].id)) {
+        select.value = String(coincidencias[0].id);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+function textoPrograma(p) {
+    return (p.codigo ? p.codigo + ' - ' : '') + p.nombre;
+}
+
+function nombrePrograma(id) {
+    const programa = estado.programas.find(function (p) { return p.id === id; });
+    return programa ? textoPrograma(programa) : 'Programa #' + id;
+}
+
 function pintarCatalogos() {
-    llenarSelect(document.getElementById('carga-asignatura'), estado.asignaturas,
-        function (a) { return a.id; }, textoAsignatura, 'Seleccione una asignatura');
+    filtrarSelectAsignaturas('carga-asignatura', 'carga-buscar-asignatura');
+    filtrarSelectAsignaturas('ident-asignatura', 'ident-buscar-asignatura');
+    filtrarSelectAsignaturas('plan-asignatura', 'plan-buscar-asignatura');
+
+    llenarSelect(document.getElementById('ident-tipo'), estado.tipos,
+        function (t) { return t.id; }, function (t) { return t.nombre; }, 'Seleccione un tipo de documento');
+    llenarSelect(document.getElementById('ident-programa'), estado.programas,
+        function (p) { return p.id; }, textoPrograma, '(Sin programa)');
+    llenarSelect(document.getElementById('plan-programa'), estado.programas,
+        function (p) { return p.id; }, textoPrograma, 'Seleccione un programa');
+    llenarSelect(document.getElementById('sol-programa'), estado.programas,
+        function (p) { return p.id; }, textoPrograma, 'Seleccione un programa');
+    /* Codigos de formato conocidos, como sugerencias al corregir una carga */
+    document.getElementById('ident-formatos').innerHTML = estado.formatos.map(function (f) {
+        return '<option value="' + escaparTexto(f.codigo) + '">' + escaparTexto(f.nombre + ' (v' + f.version + ')') + '</option>';
+    }).join('');
 
     llenarSelect(document.getElementById('carga-tipo'), estado.tipos,
         function (t) { return t.id; }, function (t) { return t.nombre; }, 'Seleccione un tipo de documento');
@@ -560,13 +637,15 @@ function pintarKpis() {
         return s.estado === 'PENDIENTE' || s.estado === 'ESPERANDO_DOCUMENTOS';
     });
     const realizadas = estado.solicitudes.filter(function (s) { return s.estado === 'REALIZADO'; });
+    const entregadas = estado.solicitudes.filter(function (s) { return s.estado === 'ENTREGADO'; });
 
     document.getElementById('kpi-documentos').textContent = docs.length;
     document.getElementById('kpi-documentos-detalle').textContent =
         (docs.length - desactualizados.length) + ' vigentes · ' + desactualizados.length + ' desactualizados';
     document.getElementById('kpi-asignaturas').textContent = estado.asignaturas.length;
     document.getElementById('kpi-solicitudes').textContent = estado.solicitudes.length;
-    document.getElementById('kpi-solicitudes-detalle').textContent = realizadas.length + ' realizadas';
+    document.getElementById('kpi-solicitudes-detalle').textContent =
+        realizadas.length + ' sin entregar · ' + entregadas.length + ' entregadas';
     document.getElementById('kpi-pendientes').textContent = pendientes.length + desactualizados.length;
 
     const alerta = document.getElementById('alerta-formatos');
@@ -775,35 +854,58 @@ async function cargarDocumentos() {
         mostrarMensaje(e.message, 'error');
     }
     pintarDocumentos();
+    pintarExistentesCarga();
     pintarCursos();
+}
+
+/**
+ * Todos los archivos cargados (uno por fila), del mas reciente al mas antiguo.
+ * Cada fila: { documento, version }.
+ */
+function archivosCargados(idAsignatura) {
+    const filas = [];
+    estado.documentos.forEach(function (d) {
+        if (idAsignatura && d.idAsignatura !== idAsignatura) {
+            return;
+        }
+        d.versiones.forEach(function (v) { filas.push({ documento: d, version: v }); });
+    });
+    filas.sort(function (a, b) {
+        return String(b.version.fechaCarga || '').localeCompare(String(a.version.fechaCarga || '')) ||
+            b.version.id - a.version.id;
+    });
+    return filas;
 }
 
 function pintarDocumentos() {
     const tbody = document.getElementById('tabla-documentos');
     const texto = document.getElementById('buscar-documentos').value.trim().toLowerCase();
+    const clave = claveCodigo(texto);
     const filtro = document.getElementById('filtro-formato').value;
+    const todas = archivosCargados(null);
 
-    const lista = estado.documentos.filter(function (d) {
-        const coincideTexto = !texto || [d.codigoMateria, d.codigoCurso, d.nombreAsignatura, d.tipoDocumento]
-            .join(' ').toLowerCase().includes(texto);
+    /* Una fila por ARCHIVO cargado: asi se ven todos los documentos de cada asignatura */
+    const lista = todas.filter(function (f) {
+        const d = f.documento;
+        const v = f.version;
+        const coincideTexto = !texto ||
+            [d.codigoMateria, d.codigoCurso, d.nombreAsignatura, d.tipoDocumento, v.periodo, v.nombreArchivo]
+                .join(' ').toLowerCase().includes(texto) ||
+            (clave.length > 0 && claveCodigo((d.codigoMateria || '') + (d.codigoCurso || '')).includes(clave));
         const coincideFiltro = filtro === 'TODOS' || d.estadoFormato === filtro;
         return coincideTexto && coincideFiltro;
     });
 
     if (!lista.length) {
-        filaVacia(tbody, 10, estado.documentos.length
+        filaVacia(tbody, 10, todas.length
             ? 'Ningún documento coincide con la búsqueda.'
             : 'Aún no hay documentos cargados. Usa el formulario de arriba.');
         return;
     }
 
-    tbody.innerHTML = lista.map(function (d) {
-        const ultima = d.ultimaVersion;
-        const acciones = ultima
-            ? '<div class="table-actions">' + enlaceArchivo(ultima) +
-              '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(ultima.id) +
-              '">Corregir</button>' + botonEliminarVersion(ultima.id) + '</div>'
-            : '—';
+    tbody.innerHTML = lista.map(function (f) {
+        const d = f.documento;
+        const v = f.version;
         return '<tr>' +
             '<td><span class="code-chip">' + escaparTexto(d.codigoMateria) + '</span></td>' +
             '<td><span class="code-chip course">' + escaparTexto(d.codigoCurso || '—') + '</span></td>' +
@@ -812,14 +914,40 @@ function pintarDocumentos() {
             '<td>' + escaparTexto(d.codigoFormato) + ' v' + escaparTexto(d.versionFormato) +
             '<small class="cell-help">' + escaparTexto(d.nombreFormato) + '</small></td>' +
             '<td>' + badgeFormato(d.vigente) + '</td>' +
-            '<td>' + (ultima ? badgeDatos(ultima) : '—') + '</td>' +
-            '<td>' + escaparTexto(d.totalVersiones) + '</td>' +
-            '<td>' + escaparTexto(ultima ? formatearFecha(ultima.fechaCarga) : '—') +
-            (ultima && ultima.periodo ? '<small class="cell-help">Periodo ' + escaparTexto(ultima.periodo) + '</small>' : '') +
-            '</td>' +
-            '<td>' + acciones + '</td>' +
+            '<td>' + badgeDatos(v) + '</td>' +
+            '<td>' + escaparTexto(v.periodo || '—') + '</td>' +
+            '<td>' + escaparTexto(v.nombreArchivo) +
+            '<small class="cell-help">' + escaparTexto(formatearFecha(v.fechaCarga)) + '</small></td>' +
+            '<td><div class="table-actions">' + enlaceArchivo(v) +
+            '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(v.id) +
+            '">Corregir</button>' + botonEliminarVersion(v.id) + '</div></td>' +
             '</tr>';
     }).join('');
+}
+
+/** Debajo del formulario de carga: lo que ya tiene cargado la asignatura escogida. */
+function pintarExistentesCarga() {
+    const caja = document.getElementById('carga-existentes');
+    const idAsignatura = Number(document.getElementById('carga-asignatura').value);
+    if (!idAsignatura) {
+        caja.hidden = true;
+        return;
+    }
+    const filas = archivosCargados(idAsignatura);
+    caja.hidden = false;
+    if (!filas.length) {
+        caja.innerHTML = '<strong>Esta asignatura aún no tiene documentos cargados.</strong>';
+        return;
+    }
+    caja.innerHTML = '<strong>Ya cargado para esta asignatura (' + filas.length + '):</strong><ul>' +
+        filas.map(function (f) {
+            return '<li>' + escaparTexto(f.documento.tipoDocumento) + ' · ' +
+                escaparTexto(f.documento.codigoFormato) + ' v' + escaparTexto(f.documento.versionFormato) + ' ' +
+                badgeFormato(f.documento.vigente) + ' · periodo ' + escaparTexto(f.version.periodo || '—') + ' · ' +
+                escaparTexto(f.version.nombreArchivo) + ' ' + enlaceArchivo(f.version) +
+                '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(f.version.id) +
+                '">Corregir</button></li>';
+        }).join('') + '</ul>';
 }
 
 /** Codigo y version del formato elegido (del catalogo o escritos a mano). */
@@ -1081,6 +1209,17 @@ async function abrirEditor(idVersion) {
         d.tipoDocumento + ' · archivo: ' + encontrado.version.nombreArchivo +
         (encontrado.version.periodo ? ' · periodo ' + encontrado.version.periodo : '');
 
+    /* Identificacion del archivo (asignatura, tipo, formato, periodo, programa) */
+    document.getElementById('ident-buscar-asignatura').value = '';
+    filtrarSelectAsignaturas('ident-asignatura', 'ident-buscar-asignatura');
+    document.getElementById('ident-asignatura').value = String(d.idAsignatura);
+    document.getElementById('ident-tipo').value = String(d.idTipoDocumento);
+    document.getElementById('ident-formato-codigo').value = d.codigoFormato || '';
+    document.getElementById('ident-formato-version').value = d.versionFormato || '';
+    document.getElementById('ident-periodo').value = encontrado.version.periodo || '';
+    document.getElementById('ident-programa').value =
+        encontrado.version.idProgramaDisena ? String(encontrado.version.idProgramaDisena) : '';
+
     const panel = document.getElementById('panel-editar');
     panel.hidden = false;
     ponerCamposCurso('editar', null);
@@ -1089,6 +1228,48 @@ async function abrirEditor(idVersion) {
 
     try {
         ponerCamposCurso('editar', await api('/versiones-documentos/' + idSeguro(idVersion) + '/datos'));
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+/** Guarda asignatura, tipo, formato, periodo y programa del archivo en edicion. */
+async function guardarIdentificacion(evento) {
+    evento.preventDefault();
+    if (!estado.versionEnEdicion) {
+        return;
+    }
+    const idAsignatura = document.getElementById('ident-asignatura').value;
+    const idTipo = document.getElementById('ident-tipo').value;
+    if (!idAsignatura || !idTipo) {
+        mostrarMensaje('Seleccione la asignatura y el tipo de documento.', 'error');
+        return;
+    }
+    const datos = {
+        idAsignatura: idSeguro(idAsignatura),
+        idTipoDocumentoAcademico: idSeguro(idTipo),
+        codigoFormato: document.getElementById('ident-formato-codigo').value.trim().toUpperCase(),
+        versionFormato: document.getElementById('ident-formato-version').value.trim(),
+        periodo: document.getElementById('ident-periodo').value.trim() || null,
+        idPrograma: document.getElementById('ident-programa').value
+            ? idSeguro(document.getElementById('ident-programa').value) : null
+    };
+    const errores = [];
+    if (!datos.idAsignatura) { errores.push('Seleccione la asignatura.'); }
+    if (!datos.idTipoDocumentoAcademico) { errores.push('Seleccione el tipo de documento.'); }
+    if (!datos.codigoFormato || !datos.versionFormato) { errores.push('Indique el código y la versión del formato.'); }
+    if (datos.periodo && !/^\d{4}-\d{1,2}$/.test(datos.periodo)) { errores.push('El periodo debe ser AAAA-N (ej. 2026-2).'); }
+    if (errores.length) {
+        mostrarMensaje(errores.join(' '), 'error');
+        return;
+    }
+    try {
+        await apiJson('/documentos-academicos/cargas/' + idSeguro(estado.versionEnEdicion), 'PUT', datos);
+        mostrarMensaje('Identificación del documento corregida.', 'success');
+        const idVersion = estado.versionEnEdicion;
+        await cargarDocumentos();
+        cargarActividad();
+        abrirEditor(idVersion);
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
@@ -1244,7 +1425,7 @@ async function eliminarSolicitud(idSolicitud) {
     if (!solicitud) {
         return;
     }
-    const conCertificado = solicitud.estado === 'REALIZADO';
+    const conCertificado = solicitud.estado === 'REALIZADO' || solicitud.estado === 'ENTREGADO';
     if (!window.confirm('¿Eliminar la solicitud #' + idSolicitud + ' del estudiante ' +
         formatearIdEstudiante(solicitud.idEstudiante) + '?\n\n' +
         (conCertificado
@@ -1308,7 +1489,7 @@ function pintarCursos() {
     const lista = estado.asignaturas.map(function (a) {
         return Object.assign({ resumen: estadoAsignatura(a.id) }, a);
     }).filter(function (a) {
-        const coincideTexto = !texto || [a.codigoMateria, a.codigoCurso, a.nombre].join(' ').toLowerCase().includes(texto);
+        const coincideTexto = coincideAsignatura(a, texto);
         return coincideTexto && (filtro === 'TODOS' || a.resumen.estado === filtro);
     });
 
@@ -1326,16 +1507,19 @@ function pintarCursos() {
     };
 
     grid.innerHTML = lista.map(function (a) {
-        const docs = a.resumen.docs.map(function (d) {
-            return '<li>' + escaparTexto(d.tipoDocumento) + ' · ' + escaparTexto(d.codigoFormato) + ' v' +
-                escaparTexto(d.versionFormato) + ' ' + badgeFormato(d.vigente) + '</li>';
+        /* Todo lo cargado de la asignatura: un renglon por archivo, con su tipo y periodo */
+        const docs = archivosCargados(a.id).map(function (f) {
+            return '<li>' + escaparTexto(f.documento.tipoDocumento) + ' · ' + escaparTexto(f.documento.codigoFormato) +
+                ' v' + escaparTexto(f.documento.versionFormato) +
+                (f.version.periodo ? ' · ' + escaparTexto(f.version.periodo) : '') + ' ' +
+                badgeFormato(f.documento.vigente) + '</li>';
         }).join('');
         return '<div class="course-card">' +
             '<div class="course-header"><span>' + codigoAsignatura(a) + '</span>' + badges[a.resumen.estado] + '</div>' +
             '<h3>' + escaparTexto(a.nombre) + '</h3>' +
             (docs ? '<ul class="course-docs">' + docs + '</ul>' : '<p>Sin documentos cargados.</p>') +
             '<div class="table-actions">' +
-            '<button class="outline-button" type="button" data-ver-curso="' + idSeguro(a.id) + '">Ver versiones →</button>' +
+            '<button class="outline-button" type="button" data-ver-curso="' + idSeguro(a.id) + '">Ver documentos →</button>' +
             '<button class="danger-button small" type="button" data-eliminar-asignatura="' + idSeguro(a.id) + '">Eliminar</button>' +
             '</div></div>';
     }).join('');
@@ -1346,30 +1530,30 @@ function verDetalleCurso(idAsignatura) {
     if (!asignatura) {
         return;
     }
-    const docs = estado.documentos.filter(function (d) { return d.idAsignatura === idAsignatura; });
+    const archivos = archivosCargados(idAsignatura);
     document.getElementById('detalle-curso-titulo').textContent = asignatura.nombre;
     document.getElementById('detalle-curso-codigos').innerHTML =
         '<div><strong>Código de materia</strong><span>' + escaparTexto(asignatura.codigoMateria) + '</span></div>' +
         '<div><strong>Código de curso</strong><span>' + escaparTexto(asignatura.codigoCurso || '—') + '</span></div>' +
-        '<div><strong>Documentos</strong><span>' + docs.length + '</span></div>';
+        '<div><strong>Documentos cargados</strong><span>' + archivos.length + '</span></div>';
 
     const tbody = document.getElementById('detalle-curso-versiones');
     const filas = [];
-    docs.forEach(function (d) {
-        d.versiones.forEach(function (v, indice) {
-            filas.push('<tr>' +
-                '<td>' + escaparTexto(d.tipoDocumento) + (indice === 0 ? ' <span class="badge processing">Última</span>' : '') + '</td>' +
-                '<td>' + escaparTexto(d.codigoFormato) + ' v' + escaparTexto(d.versionFormato) + '</td>' +
-                '<td>' + badgeFormato(d.vigente) + '</td>' +
-                '<td>' + escaparTexto(v.periodo || '—') + '</td>' +
-                '<td>' + escaparTexto(v.nombreArchivo) + '<small class="cell-help">Datos: ' +
-                (versionTieneDatos(v) ? 'completos' : 'por completar') + '</small></td>' +
-                '<td>' + escaparTexto(formatearFecha(v.fechaCarga)) + '</td>' +
-                '<td><div class="table-actions">' + enlaceArchivo(v) +
-                '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(v.id) +
-                '">Corregir</button>' + botonEliminarVersion(v.id) + '</div></td>' +
-                '</tr>');
-        });
+    archivos.forEach(function (f) {
+        const d = f.documento;
+        const v = f.version;
+        filas.push('<tr>' +
+            '<td>' + escaparTexto(d.tipoDocumento) + '</td>' +
+            '<td>' + escaparTexto(d.codigoFormato) + ' v' + escaparTexto(d.versionFormato) + '</td>' +
+            '<td>' + badgeFormato(d.vigente) + '</td>' +
+            '<td>' + escaparTexto(v.periodo || '—') + '</td>' +
+            '<td>' + escaparTexto(v.nombreArchivo) + '<small class="cell-help">Datos: ' +
+            (versionTieneDatos(v) ? 'completos' : 'por completar') + '</small></td>' +
+            '<td>' + escaparTexto(formatearFecha(v.fechaCarga)) + '</td>' +
+            '<td><div class="table-actions">' + enlaceArchivo(v) +
+            '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(v.id) +
+            '">Corregir</button>' + botonEliminarVersion(v.id) + '</div></td>' +
+            '</tr>');
     });
     if (filas.length) {
         tbody.innerHTML = filas.join('');
@@ -1447,6 +1631,126 @@ async function registrarPrograma(evento) {
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
+}
+
+/* ---------------------------------------------------------------------
+   PLAN DE ESTUDIOS (US-09): en que semestre de cada programa va cada
+   asignatura. Lo usan las solicitudes por semestres o por programa.
+   Consultarlo: cualquier usuario. Cambiarlo: solo el administrador.
+   --------------------------------------------------------------------- */
+
+/** Agrupa filas del plan por semestre: { 1: [filas], 2: [filas] ... } */
+function agruparPorSemestre(filas) {
+    const grupos = {};
+    filas.forEach(function (f) {
+        (grupos[f.semestre] = grupos[f.semestre] || []).push(f);
+    });
+    return grupos;
+}
+
+async function cargarPlanPrograma() {
+    const idPrograma = document.getElementById('plan-programa').value;
+    const contenedor = document.getElementById('plan-contenido');
+    if (!idPrograma) {
+        estado.planPrograma = [];
+        contenedor.innerHTML = '<p class="empty-state">Seleccione un programa para ver su plan de estudios.</p>';
+        return;
+    }
+    let filas = [];
+    try {
+        filas = await api('/programas/' + idSeguro(idPrograma) + '/plan') || [];
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    /* Si mientras tanto se escogio otro programa, esta respuesta ya no sirve */
+    if (document.getElementById('plan-programa').value !== idPrograma) {
+        return;
+    }
+    estado.planPrograma = filas;
+    pintarPlanPrograma();
+}
+
+function pintarPlanPrograma() {
+    const contenedor = document.getElementById('plan-contenido');
+    const idPrograma = Number(document.getElementById('plan-programa').value);
+    if (!estado.planPrograma.length) {
+        contenedor.innerHTML = '<p class="empty-state">Este programa aún no tiene asignaturas en su plan de estudios.</p>';
+        return;
+    }
+    const grupos = agruparPorSemestre(estado.planPrograma);
+    contenedor.innerHTML = Object.keys(grupos).map(Number).sort(function (a, b) { return a - b; }).map(function (semestre) {
+        return '<div class="plan-semestre"><h4>Semestre ' + escaparTexto(semestre) + ' <span class="badge neutral">' +
+            grupos[semestre].length + '</span></h4><ul class="chip-list">' +
+            grupos[semestre].map(function (f) {
+                return '<li class="chip">' + escaparTexto(f.codigoMateria + ' ' + (f.codigoCurso || '')) + ' · ' +
+                    escaparTexto(f.nombre) +
+                    (esAdmin() ? '<button type="button" class="chip-remove" data-quitar-plan="' + idSeguro(f.idAsignatura) +
+                        '" data-programa="' + idSeguro(idPrograma) + '" title="Quitar del plan" aria-label="Quitar del plan">×</button>' : '') +
+                    '</li>';
+            }).join('') + '</ul></div>';
+    }).join('');
+}
+
+async function agregarAlPlan(evento) {
+    evento.preventDefault();
+    const idPrograma = document.getElementById('plan-programa').value;
+    const semestre = Number(document.getElementById('plan-semestre').value);
+    const idAsignatura = document.getElementById('plan-asignatura').value;
+    const textoCodigos = document.getElementById('plan-codigos').value;
+
+    if (!idPrograma) {
+        mostrarMensaje('Seleccione el programa académico.', 'error');
+        return;
+    }
+    if (!Number.isInteger(semestre) || semestre < 1 || semestre > 20) {
+        mostrarMensaje('El semestre debe ser un número entre 1 y 20.', 'error');
+        return;
+    }
+    /* Asignaturas a agregar: la escogida en la lista + las de los codigos pegados */
+    const ids = new Set();
+    if (idAsignatura) { ids.add(idSeguro(idAsignatura)); }
+    let noEncontrados = [];
+    if (textoCodigos.trim()) {
+        const resultado = buscarCodigosEnTexto(textoCodigos);
+        resultado.encontradas.forEach(function (a) { ids.add(a.id); });
+        noEncontrados = resultado.desconocidos;
+    }
+    if (!ids.size) {
+        mostrarMensaje('Escoja una asignatura o pegue códigos registrados.', 'error');
+        return;
+    }
+    let agregadas = 0;
+    try {
+        for (const id of ids) {
+            await apiJson('/programas/' + idSeguro(idPrograma) + '/plan/' + idSeguro(id), 'PUT', { semestre: semestre });
+            agregadas++;
+        }
+        mostrarMensaje(agregadas + ' asignatura(s) en el semestre ' + semestre + '.' +
+            (noEncontrados.length ? ' No se encontraron: ' + noEncontrados.join(', ') + '.' : ''),
+            noEncontrados.length ? 'warning' : 'success');
+        document.getElementById('plan-codigos').value = '';
+        document.getElementById('plan-asignatura').value = '';
+        document.getElementById('plan-buscar-asignatura').value = '';
+        filtrarSelectAsignaturas('plan-asignatura', 'plan-buscar-asignatura');
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    cargarPlanPrograma();
+}
+
+async function quitarDelPlan(idPrograma, idAsignatura) {
+    if (!window.confirm('¿Quitar la asignatura del plan de estudios? La asignatura no se borra.')) {
+        return;
+    }
+    try {
+        await api('/programas/' + idSeguro(idPrograma) + '/plan/' + idSeguro(idAsignatura), { method: 'DELETE' });
+        mostrarMensaje('Asignatura quitada del plan de estudios.', 'success');
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    cargarPlanPrograma();
 }
 
 /* =====================================================================
@@ -1585,6 +1889,78 @@ function desmarcarAsignaturas() {
     document.getElementById('sol-codigos-resultado').hidden = true;
 }
 
+/* ---------------------------------------------------------------------
+   ALCANCE DE LA SOLICITUD: asignaturas sueltas, uno o varios semestres de
+   un programa, o el programa completo. En semestres / programa las
+   asignaturas salen del plan de estudios (no se marcan a mano).
+   --------------------------------------------------------------------- */
+
+function alcanceElegido() {
+    return document.getElementById('sol-alcance').value || 'ASIGNATURAS';
+}
+
+function cambiarAlcanceSolicitud() {
+    const alcance = alcanceElegido();
+    const porPlan = alcance !== 'ASIGNATURAS';
+    document.getElementById('grupo-sol-programa').hidden = !porPlan;
+    document.getElementById('grupo-sol-semestres').hidden = alcance !== 'SEMESTRES';
+    document.getElementById('grupo-sol-plan').hidden = !porPlan;
+    document.getElementById('grupo-sol-kardex').hidden = porPlan;
+    document.getElementById('grupo-sol-asignaturas').hidden = porPlan;
+    if (porPlan) {
+        cargarPlanSolicitud();
+    }
+}
+
+async function cargarPlanSolicitud() {
+    const idPrograma = document.getElementById('sol-programa').value;
+    let filas = [];
+    if (idPrograma) {
+        try {
+            filas = await api('/programas/' + idSeguro(idPrograma) + '/plan') || [];
+        } catch (e) {
+            mostrarMensaje(e.message, 'error');
+        }
+    }
+    /* Si mientras tanto se escogio otro programa, esta respuesta ya no sirve */
+    if (document.getElementById('sol-programa').value !== idPrograma) {
+        return;
+    }
+    estado.planSolicitud = filas;
+    /* Casillas: solo los semestres que tienen asignaturas en el plan */
+    const grupos = agruparPorSemestre(estado.planSolicitud);
+    const semestres = Object.keys(grupos).map(Number).sort(function (a, b) { return a - b; });
+    document.getElementById('sol-semestres').innerHTML = semestres.length ? semestres.map(function (n) {
+        return '<label><input type="checkbox" value="' + idSeguro(n) + '"> Semestre ' + escaparTexto(n) +
+            ' <small class="cell-help">(' + grupos[n].length + ')</small></label>';
+    }).join('') : '<p class="empty-state">' + (idPrograma
+        ? 'Este programa no tiene plan de estudios. Regístralo en «Contenido de cursos».'
+        : 'Seleccione un programa.') + '</p>';
+    actualizarResumenPlan();
+}
+
+function semestresElegidos() {
+    return Array.from(document.querySelectorAll('#sol-semestres input:checked')).map(function (i) { return Number(i.value); });
+}
+
+/** "Se incluirán 12 asignaturas: FION 0001, ..." (lo que pondra el backend en la solicitud). */
+function actualizarResumenPlan() {
+    const caja = document.getElementById('sol-plan-resumen');
+    const alcance = alcanceElegido();
+    if (alcance === 'ASIGNATURAS') {
+        return;
+    }
+    const semestres = semestresElegidos();
+    const filas = estado.planSolicitud.filter(function (f) {
+        return alcance === 'PROGRAMA' || semestres.indexOf(f.semestre) >= 0;
+    });
+    caja.className = 'paste-result' + (filas.length ? '' : ' warning');
+    caja.innerHTML = filas.length
+        ? '<strong>Se incluirán ' + filas.length + ' asignatura(s):</strong>' +
+          escaparTexto(filas.map(function (f) { return f.codigoMateria + ' ' + (f.codigoCurso || ''); }).join(', '))
+        : '<strong>' + (alcance === 'SEMESTRES' ? 'Marque al menos un semestre.' : 'El programa no tiene asignaturas en su plan.') + '</strong>';
+}
+
 async function cargarSolicitudes() {
     try {
         estado.solicitudes = await api('/solicitudes-certificados') || [];
@@ -1616,6 +1992,12 @@ function accionesSolicitud(s) {
             '" data-id="' + id + '">' + texto + '</button>';
     };
     const acciones = [boton('ver', 'Ver')];
+    if (s.estado === 'REALIZADO') {
+        acciones.push(boton('entregar', 'Marcar entregado', 'primary-button'));
+    }
+    if (s.estado === 'ENTREGADO') {
+        acciones.push(boton('deshacer-entrega', 'Deshacer entrega'));
+    }
     if (s.estado === 'PENDIENTE' || s.estado === 'ESPERANDO_DOCUMENTOS') {
         acciones.push(boton('procesar', 'Generar PDF', 'primary-button'));
     }
@@ -1626,15 +2008,15 @@ function accionesSolicitud(s) {
         acciones.push(boton('esperar', 'Esperar documentos'));
         acciones.push(boton('realizar', 'Marcar realizada'));
     }
-    if (s.estado !== 'REALIZADO' && s.estado !== 'ERROR') {
+    if (s.estado !== 'REALIZADO' && s.estado !== 'ENTREGADO' && s.estado !== 'ERROR') {
         acciones.push(boton('error', 'Marcar error', 'danger-button'));
     }
-    if (s.estado === 'REALIZADO') {
+    if (s.estado === 'REALIZADO' || s.estado === 'ENTREGADO') {
         acciones.push('<a class="link-button" target="_blank" rel="noopener" href="' + API_BASE +
             '/certificados-generados/solicitud/' + id + '/archivo">Ver PDF</a>');
     }
     /* Eliminar: una solicitud con certificado ya generado solo la borra el administrador */
-    if (esAdmin() || s.estado !== 'REALIZADO') {
+    if (esAdmin() || (s.estado !== 'REALIZADO' && s.estado !== 'ENTREGADO')) {
         acciones.push('<button type="button" class="danger-button small" data-eliminar-solicitud="' + id +
             '">Eliminar</button>');
     }
@@ -1652,6 +2034,7 @@ function pintarSolicitudes() {
         return s.estado === 'PENDIENTE' || s.estado === 'ESPERANDO_DOCUMENTOS' || s.estado === 'PROCESANDO';
     }).length;
     document.getElementById('stat-realizadas').textContent = todas.filter(function (s) { return s.estado === 'REALIZADO'; }).length;
+    document.getElementById('stat-entregadas').textContent = todas.filter(function (s) { return s.estado === 'ENTREGADO'; }).length;
     document.getElementById('stat-error').textContent = todas.filter(function (s) { return s.estado === 'ERROR'; }).length;
 
     if (!lista.length) {
@@ -1661,11 +2044,15 @@ function pintarSolicitudes() {
     tbody.innerHTML = lista.map(function (s) {
         return '<tr>' +
             '<td>#' + escaparTexto(s.id) + '</td>' +
-            '<td>' + escaparTexto(formatearIdEstudiante(s.idEstudiante)) + '</td>' +
-            '<td>' + escaparTexto(nombreTipoCertificado(s.idTipoCertificado)) + '</td>' +
+            '<td>' + escaparTexto(s.nombreEstudiante || 'Sin nombre') +
+            '<small class="cell-help">ID ' + escaparTexto(formatearIdEstudiante(s.idEstudiante)) + '</small></td>' +
+            '<td>' + escaparTexto(nombreTipoCertificado(s.idTipoCertificado)) +
+            '<small class="cell-help">' + escaparTexto(textoContenidoAlcance(s)) + '</small></td>' +
             '<td>' + escaparTexto(nombreUsuario(s.idUsuarioEncargado)) + '</td>' +
             '<td>' + escaparTexto(formatearFecha(s.fechaSolicitud)) + '</td>' +
-            '<td>' + badgeSolicitud(s.estado) + '</td>' +
+            '<td>' + badgeSolicitud(s.estado) +
+            (s.estado === 'ENTREGADO' && s.fechaEntrega
+                ? '<small class="cell-help">' + escaparTexto(formatearFecha(s.fechaEntrega)) + '</small>' : '') + '</td>' +
             '<td>' + accionesSolicitud(s) + '</td>' +
             '</tr>';
     }).join('');
@@ -1674,6 +2061,11 @@ function pintarSolicitudes() {
 async function crearSolicitud(evento) {
     evento.preventDefault();
     const estudiante = document.getElementById('sol-estudiante').value.trim();
+    const nombre = document.getElementById('sol-nombre').value.trim().replace(/\s+/g, ' ');
+    const tipoContenido = document.getElementById('sol-tipo-contenido').value;
+    const alcance = alcanceElegido();
+    const idPrograma = document.getElementById('sol-programa').value;
+    const semestres = semestresElegidos();
     const idTipo = document.getElementById('sol-tipo').value;
     /* El administrador elige el encargado; la auxiliar es siempre ella misma */
     const idEncargado = esAdmin() ? document.getElementById('sol-encargado').value : String(estado.usuario.id);
@@ -1684,25 +2076,47 @@ async function crearSolicitud(evento) {
         mostrarMensaje('El ID del estudiante debe ser numérico (ej. 000269307).', 'error');
         return;
     }
+    /* Mismas reglas que SolicitudCertificadoService.normalizarNombre */
+    if (!/^[\p{L}][\p{L} .'-]{1,149}$/u.test(nombre)) {
+        mostrarMensaje('Escriba el nombre del estudiante (solo letras, espacios, punto, guion y apóstrofe).', 'error');
+        return;
+    }
     if (!idTipo || !idEncargado) {
         mostrarMensaje('Seleccione el tipo de certificado y el usuario encargado.', 'error');
         return;
     }
-    if (!asignaturas.length) {
+    if (alcance === 'ASIGNATURAS' && !asignaturas.length) {
         mostrarMensaje('Marque al menos una asignatura para el certificado.', 'error');
+        return;
+    }
+    if (alcance !== 'ASIGNATURAS' && !idPrograma) {
+        mostrarMensaje('Seleccione el programa académico.', 'error');
+        return;
+    }
+    if (alcance === 'SEMESTRES' && !semestres.length) {
+        mostrarMensaje('Marque al menos un semestre.', 'error');
         return;
     }
     try {
         const creada = await apiJson('/solicitudes-certificados', 'POST', {
             idEstudiante: Number(estudiante),
             idTipoCertificado: idSeguro(idTipo),
-            idUsuarioEncargado: idSeguro(idEncargado)
+            idUsuarioEncargado: idSeguro(idEncargado),
+            nombreEstudiante: nombre,
+            tipoContenido: tipoContenido,
+            alcance: alcance,
+            idPrograma: alcance === 'ASIGNATURAS' ? null : idSeguro(idPrograma),
+            semestres: alcance === 'SEMESTRES' ? semestres : null
         });
-        for (const idAsignatura of asignaturas) {
-            await api('/solicitudes-certificados/' + idSeguro(creada.id) + '/asignaturas/' + idAsignatura, { method: 'POST' });
+        /* Por semestres / programa las asignaturas ya las agrego el backend desde el plan */
+        if (alcance === 'ASIGNATURAS') {
+            for (const idAsignatura of asignaturas) {
+                await api('/solicitudes-certificados/' + idSeguro(creada.id) + '/asignaturas/' + idAsignatura, { method: 'POST' });
+            }
         }
-        mostrarMensaje('Solicitud #' + creada.id + ' creada con ' + asignaturas.length + ' asignatura(s).', 'success');
+        mostrarMensaje('Solicitud #' + creada.id + ' creada (' + textoContenidoAlcance(creada) + ').', 'success');
         document.getElementById('form-solicitud').reset();
+        cambiarAlcanceSolicitud();
         document.getElementById('sol-encargado').value = String(estado.usuario.id);
         document.getElementById('sol-codigos-resultado').hidden = true;
         pintarChecklistAsignaturas({ limpiar: true });
@@ -1719,6 +2133,8 @@ const RUTAS_ACCION = {
     procesar: { ruta: 'procesar', ok: 'Certificado generado correctamente.' },
     esperar: { ruta: 'esperar-documentos', ok: 'Solicitud en espera de documentos.' },
     realizar: { ruta: 'realizar', ok: 'Solicitud marcada como realizada.' },
+    entregar: { ruta: 'entregar', ok: 'Certificado marcado como entregado al estudiante.' },
+    'deshacer-entrega': { ruta: 'deshacer-entrega', ok: 'Se deshizo la entrega: la solicitud vuelve a Realizado.' },
     error: { ruta: 'error', ok: 'Solicitud marcada con error.' }
 };
 
@@ -1734,6 +2150,10 @@ async function ejecutarAccionSolicitud(accion, id) {
         return;
     }
     if (accion === 'error' && !window.confirm('¿Marcar la solicitud #' + id + ' con error? No se puede deshacer.')) {
+        return;
+    }
+    if (accion === 'entregar' && !window.confirm('¿Confirmas que el certificado de la solicitud #' + id +
+        ' ya se le entregó al estudiante?')) {
         return;
     }
     try {
@@ -1775,7 +2195,19 @@ async function verDetalleSolicitud(id) {
     panel.hidden = false;
     document.getElementById('detalle-solicitud-titulo').textContent = 'Solicitud #' + solicitud.id;
     document.getElementById('detalle-solicitud-tipo').textContent = nombreTipoCertificado(solicitud.idTipoCertificado);
-    document.getElementById('detalle-solicitud-estudiante').textContent = formatearIdEstudiante(solicitud.idEstudiante);
+    document.getElementById('detalle-solicitud-estudiante').textContent =
+        (solicitud.nombreEstudiante ? solicitud.nombreEstudiante + ' · ' : 'Sin nombre · ') +
+        'ID ' + formatearIdEstudiante(solicitud.idEstudiante);
+    const completo = solicitud.tipoContenido === 'COMPLETO';
+    document.getElementById('detalle-solicitud-contenido').textContent = completo
+        ? 'Completo (todo el contenido de cada asignatura)'
+        : 'Resumido (un párrafo por asignatura)';
+    document.getElementById('detalle-solicitud-alcance').textContent = textoAlcance(solicitud);
+    document.getElementById('detalle-solicitud-entrega').textContent = solicitud.estado === 'ENTREGADO'
+        ? 'Entregado el ' + formatearFecha(solicitud.fechaEntrega)
+        : (solicitud.estado === 'REALIZADO' ? 'Pendiente de entregar al estudiante' : '—');
+    document.getElementById('detalle-solicitud-descripcion').textContent = 'Contenidos programáticos ' +
+        (completo ? 'completos' : 'resumidos') + ' de las asignaturas de la solicitud.';
     document.getElementById('detalle-solicitud-numero').textContent = '#' + solicitud.id + ' · ' + formatearFecha(solicitud.fechaSolicitud);
     document.getElementById('detalle-solicitud-encargado').textContent = nombreUsuario(solicitud.idUsuarioEncargado);
 
@@ -1785,8 +2217,18 @@ async function verDetalleSolicitud(id) {
     estadoBadge.textContent = info.texto;
 
     /* Solo se pueden agregar asignaturas mientras la solicitud no este cerrada */
-    const editable = solicitud.estado !== 'REALIZADO' && solicitud.estado !== 'ERROR';
+    const editable = solicitud.estado !== 'REALIZADO' && solicitud.estado !== 'ENTREGADO' &&
+        solicitud.estado !== 'ERROR';
     document.getElementById('detalle-solicitud-agregar').hidden = !editable;
+
+    /* Nombre y tipo de contenido: se pueden corregir antes de generar el PDF */
+    const datosEditables = solicitud.estado === 'PENDIENTE' || solicitud.estado === 'ESPERANDO_DOCUMENTOS';
+    const formDatos = document.getElementById('form-detalle-solicitud');
+    formDatos.hidden = !datosEditables;
+    if (datosEditables) {
+        document.getElementById('detalle-nombre').value = solicitud.nombreEstudiante || '';
+        document.getElementById('detalle-tipo-contenido').value = solicitud.tipoContenido || 'RESUMIDO';
+    }
 
     const tbody = document.getElementById('detalle-solicitud-asignaturas');
     const aviso = document.getElementById('detalle-solicitud-aviso');
@@ -1831,7 +2273,8 @@ async function verDetalleSolicitud(id) {
                       : '');
             return '<tr><td><span class="code-chip">' + escaparTexto(a.codigoMateria) + '</span></td>' +
                 '<td><span class="code-chip course">' + escaparTexto(a.codigoCurso || '—') + '</span></td>' +
-                '<td>' + escaparTexto(a.nombre) + '</td>' +
+                '<td>' + escaparTexto(a.nombre) +
+                (a.semestre ? '<small class="cell-help">Semestre ' + escaparTexto(a.semestre) + '</small>' : '') + '</td>' +
                 '<td>' + (a.creditos !== null && a.creditos !== undefined
                     ? escaparTexto(formatearNumero(a.creditos)) + ' créd.' : '—') +
                 '<small class="cell-help">' + escaparTexto(textoHoras(a)) + '</small></td>' +
@@ -1887,6 +2330,47 @@ async function elegirVersion(select) {
         mostrarMensaje(e.message, 'error');
     }
     verDetalleSolicitud(idSolicitud);
+}
+
+function textoAlcance(s) {
+    if (s.alcance === 'SEMESTRES') {
+        const lista = (s.semestres || []).join(', ');
+        return 'Semestre' + ((s.semestres || []).length === 1 ? ' ' : 's ') + lista + ' · ' + nombrePrograma(s.idPrograma);
+    }
+    if (s.alcance === 'PROGRAMA') {
+        return 'Programa completo · ' + nombrePrograma(s.idPrograma);
+    }
+    return 'Asignaturas';
+}
+
+/** "Resumido · Semestres 1, 2 · ISIS - Ing. de Sistemas" */
+function textoContenidoAlcance(s) {
+    return (TIPOS_CONTENIDO[s.tipoContenido] || 'Resumido') + ' · ' + textoAlcance(s);
+}
+
+/** Guarda nombre del estudiante y tipo de contenido (antes de generar el PDF). */
+async function guardarDatosSolicitud(evento) {
+    evento.preventDefault();
+    const id = estado.solicitudSeleccionada;
+    const nombre = document.getElementById('detalle-nombre').value.trim().replace(/\s+/g, ' ');
+    if (!id) {
+        return;
+    }
+    if (!/^[\p{L}][\p{L} .'-]{1,149}$/u.test(nombre)) {
+        mostrarMensaje('Escriba el nombre del estudiante (solo letras, espacios, punto, guion y apóstrofe).', 'error');
+        return;
+    }
+    try {
+        await apiJson('/solicitudes-certificados/' + idSeguro(id) + '/datos', 'PATCH', {
+            nombreEstudiante: nombre,
+            tipoContenido: document.getElementById('detalle-tipo-contenido').value
+        });
+        mostrarMensaje('Datos de la solicitud #' + id + ' actualizados.', 'success');
+        await cargarSolicitudes();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
 }
 
 async function agregarAsignaturaASolicitud() {
@@ -2146,6 +2630,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             cambiarEstadoUsuario(Number(estadoUsuario.dataset.usuarioEstado), estadoUsuario.dataset.activar === 'true');
             return;
         }
+        const quitarPlan = e.target.closest('[data-quitar-plan]');
+        if (quitarPlan) {
+            quitarDelPlan(Number(quitarPlan.dataset.programa), Number(quitarPlan.dataset.quitarPlan));
+            return;
+        }
         const accion = e.target.closest('[data-accion]');
         if (accion) {
             ejecutarAccionSolicitud(accion.dataset.accion, Number(accion.dataset.id));
@@ -2179,6 +2668,8 @@ document.addEventListener('DOMContentLoaded', async function () {
             mostrarNombreArchivo();
             actualizarVistaPreviaFormato();
             document.getElementById('carga-periodo').value = periodoActual();
+            filtrarSelectAsignaturas('carga-asignatura', 'carga-buscar-asignatura');
+            pintarExistentesCarga();
         });
     });
     document.getElementById('btn-reintentar-carga').addEventListener('click', function () { guardarDocumento(); });
@@ -2186,12 +2677,22 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('carga-formato-codigo').addEventListener('input', actualizarVistaPreviaFormato);
     document.getElementById('carga-formato-version').addEventListener('input', actualizarVistaPreviaFormato);
     document.getElementById('buscar-documentos').addEventListener('input', pintarDocumentos);
+    /* Buscar la asignatura por codigo de materia / curso / nombre */
+    document.getElementById('carga-buscar-asignatura').addEventListener('input', function () {
+        filtrarSelectAsignaturas('carga-asignatura', 'carga-buscar-asignatura');
+        pintarExistentesCarga();
+    });
+    document.getElementById('carga-asignatura').addEventListener('change', pintarExistentesCarga);
     document.getElementById('filtro-formato').addEventListener('change', pintarDocumentos);
     document.getElementById('carga-periodo').value = periodoActual();
     configurarZonaArchivo();
 
     /* Corregir una carga */
     document.getElementById('form-editar').addEventListener('submit', guardarDatosCurso);
+    document.getElementById('form-identificacion').addEventListener('submit', guardarIdentificacion);
+    document.getElementById('ident-buscar-asignatura').addEventListener('input', function () {
+        filtrarSelectAsignaturas('ident-asignatura', 'ident-buscar-asignatura');
+    });
     document.getElementById('form-reemplazar').addEventListener('submit', reemplazarArchivo);
     document.getElementById('btn-cerrar-editar').addEventListener('click', cerrarEditor);
 
@@ -2200,6 +2701,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('asig-materia').addEventListener('input', actualizarVistaPreviaAsignatura);
     document.getElementById('asig-curso').addEventListener('input', actualizarVistaPreviaAsignatura);
     document.getElementById('form-programa').addEventListener('submit', registrarPrograma);
+    document.getElementById('plan-programa').addEventListener('change', cargarPlanPrograma);
+    document.getElementById('form-plan').addEventListener('submit', agregarAlPlan);
+    document.getElementById('plan-buscar-asignatura').addEventListener('input', function () {
+        filtrarSelectAsignaturas('plan-asignatura', 'plan-buscar-asignatura');
+    });
     document.getElementById('buscar-cursos').addEventListener('input', pintarCursos);
     document.getElementById('filtro-cursos').addEventListener('change', pintarCursos);
     document.getElementById('btn-cerrar-detalle').addEventListener('click', function () {
@@ -2208,6 +2714,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     /* Certificaciones */
     document.getElementById('form-solicitud').addEventListener('submit', crearSolicitud);
+    document.getElementById('sol-alcance').addEventListener('change', cambiarAlcanceSolicitud);
+    document.getElementById('sol-programa').addEventListener('change', cargarPlanSolicitud);
+    document.getElementById('sol-semestres').addEventListener('change', actualizarResumenPlan);
+    document.getElementById('form-detalle-solicitud').addEventListener('submit', guardarDatosSolicitud);
     document.getElementById('sol-buscar-asignatura').addEventListener('input', function () { pintarChecklistAsignaturas(); });
     document.getElementById('sol-asignaturas').addEventListener('change', actualizarContadorAsignaturas);
     document.getElementById('btn-marcar-codigos').addEventListener('click', marcarAsignaturasPorCodigos);
@@ -2226,6 +2736,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     /* Datos iniciales */
     await cargarCatalogos();
+    cambiarAlcanceSolicitud();   /* por si el navegador recordo el alcance al recargar */
     restaurarBorrador();
     await Promise.all([cargarDashboard(), cargarDocumentos(), cargarSolicitudes()]);
 });

@@ -12,6 +12,9 @@ import java.util.List;
  * versionElegidaManual  = true si la auxiliar escogio la version a mano;
  *                         false si la eligio el sistema.
  * versionesDisponibles  = todas las versiones que se pueden escoger.
+ * resumen   = parrafo breve para el certificado RESUMIDO (si no hay, la descripcion).
+ * semestre  = semestre de la asignatura en el programa de la solicitud
+ *             (solo alcance SEMESTRES o PROGRAMA; si no, null).
  */
 public record AsignaturaCertificadoDTO(
         Integer idAsignatura,
@@ -34,6 +37,8 @@ public record AsignaturaCertificadoDTO(
         boolean completo,
         List<String> faltantes,
         boolean versionElegidaManual,
-        List<VersionOpcionDTO> versionesDisponibles
+        List<VersionOpcionDTO> versionesDisponibles,
+        String resumen,
+        Integer semestre
 ) {
 }

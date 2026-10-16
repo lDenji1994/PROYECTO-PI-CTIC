@@ -117,6 +117,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/usuarios/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.POST, "/api/programas/**").hasRole(ADMIN)
                 .requestMatchers(HttpMethod.DELETE, "/api/programas/**").hasRole(ADMIN)
+                // Plan de estudios: consultarlo cualquiera con sesion, cambiarlo solo el administrador
+                .requestMatchers(HttpMethod.PUT, "/api/programas/**").hasRole(ADMIN)
                 .requestMatchers("/api/logs/**").hasRole(ADMIN)
                 // Plantillas del certificado: todos las leen, solo el administrador las cambia
                 .requestMatchers(HttpMethod.GET, PLANTILLAS).authenticated()

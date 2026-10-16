@@ -5,18 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
-@Table(
-        name = "CertificadosCursosAcademicosUPB_DocumentosAcademicosS",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uq_Asignatura_TipoDocumento",
-                        columnNames = {
-                                "n_idAsignatura",
-                                "n_idTipoDocumentoAcademico"
-                        }
-                )
-        }
-)
+/*
+ * Desde la migracion 05 una asignatura puede tener VARIOS documentos del
+ * mismo tipo (por ejemplo dos cartas descriptivas de periodos distintos):
+ * cada archivo que se monta queda como su propio documento, con su tipo y
+ * su formato. Por eso ya no existe la unicidad asignatura + tipo.
+ */
+@Table(name = "CertificadosCursosAcademicosUPB_DocumentosAcademicosS")
 public class DocumentoAcademico {
 
     @Id

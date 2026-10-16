@@ -107,8 +107,9 @@ CREATE TABLE CertificadosCursosAcademicosUPB_DocumentosAcademicosS (
         FOREIGN KEY (n_idTipoDocumentoAcademico) REFERENCES CertificadosCursosAcademicosUPB_TiposDocumentosAcademicosS(n_idTipoDocumentoAcademico)
         ON DELETE RESTRICT,
 
-    CONSTRAINT uq_Asignatura_TipoDocumento
-        UNIQUE (n_idAsignatura, n_idTipoDocumentoAcademico)
+    -- Una asignatura puede tener varios documentos, incluso del mismo tipo
+    -- (migracion 05: ya no existe la unicidad asignatura + tipo).
+    INDEX idx_DocumentosAcademicos_Asignatura (n_idAsignatura)
 );
 
 
@@ -198,6 +199,10 @@ CREATE TABLE CertificadosCursosAcademicosUPB_VersionesDocumentosS (
     -- ========================================================
 
     n_idProgramaDisena INT NULL,
+
+    -- Parrafo breve para el certificado RESUMIDO (migracion 05).
+    -- Si esta vacio se usa la descripcion del curso.
+    t_resumen TEXT NULL,
 
     -- ========================================================
     -- Control de carga
@@ -484,6 +489,30 @@ CREATE TABLE CertificadosCursosAcademicosUPB_ElementosPlantillaS (
     CHECK (c_tipoElemento <> 'CAMPO' OR n_idCampoPlantilla IS NOT NULL)
 );
 
+-- ============================================================
+--       PLAN DE ESTUDIOS: semestre de cada asignatura en cada programa
+--       (migracion 05). Con el se arma una solicitud por semestre(s)
+--       o por programa completo.
+-- ============================================================
+CREATE TABLE CertificadosCursosAcademicosUPB_PlanesEstudioS (
+    n_idPrograma INT NOT NULL,
+    n_idAsignatura INT NOT NULL,
+    n_semestre INT NOT NULL,
+    PRIMARY KEY (n_idPrograma, n_idAsignatura),
+
+    CONSTRAINT fk_Programas_PlanesEstudio
+        FOREIGN KEY (n_idPrograma) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_Asignaturas_PlanesEstudio
+        FOREIGN KEY (n_idAsignatura) REFERENCES CertificadosCursosAcademicosUPB_AsignaturasS(n_idAsignatura)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_PlanesEstudio_semestre
+        CHECK (n_semestre BETWEEN 1 AND 20)
+);
+
+
 -- ========================================================================================================================
 --            4. MÓDULO DE SOLICITUDES Y GENERACIÓN
 -- ========================================================================================================================
@@ -491,11 +520,22 @@ CREATE TABLE CertificadosCursosAcademicosUPB_SolicitudesCertificadosS (
     n_idSolicitudCertificado INT AUTO_INCREMENT PRIMARY KEY,
     n_idEstudiante INT NOT NULL,
     dt_fechaSolicitud DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    c_estado ENUM('PENDIENTE', 'PROCESANDO', 'REALIZADO', 'ERROR', 'ESPERANDO_DOCUMENTOS') NOT NULL DEFAULT 'PENDIENTE',
+    c_estado ENUM('PENDIENTE', 'PROCESANDO', 'REALIZADO', 'ENTREGADO', 'ERROR', 'ESPERANDO_DOCUMENTOS') NOT NULL DEFAULT 'PENDIENTE',
     dt_fechaInicioProcesamiento DATETIME NULL,
     dt_fechaFinalizacion DATETIME NULL,
     n_idTipoCertificado INT NOT NULL,
     n_idUsuarioEncargado INT NOT NULL,
+    -- Agregadas en la migracion 05:
+    t_nombreEstudiante VARCHAR(150) NULL,                 -- nombre del estudiante (ademas del ID)
+    dt_fechaEntrega DATETIME NULL,                        -- cuando se entrego el certificado
+    c_tipoContenido ENUM('RESUMIDO', 'COMPLETO') NOT NULL DEFAULT 'RESUMIDO',
+    c_alcance ENUM('ASIGNATURAS', 'SEMESTRES', 'PROGRAMA') NOT NULL DEFAULT 'ASIGNATURAS',
+    n_idPrograma INT NULL,                                -- programa (alcance SEMESTRES o PROGRAMA)
+    t_semestres VARCHAR(100) NULL,                        -- semestres pedidos, ej. "1,2,5"
+
+    CONSTRAINT fk_Programas_SolicitudesCertificados
+        FOREIGN KEY (n_idPrograma) REFERENCES CertificadosCursosAcademicosUPB_ProgramasS(n_idPrograma)
+        ON DELETE SET NULL,
 
     CONSTRAINT fk_TiposCertificados_SolicitudesCertificados
         FOREIGN KEY (n_idTipoCertificado) REFERENCES CertificadosCursosAcademicosUPB_TiposCertificadosS(n_idTipoCertificado)

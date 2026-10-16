@@ -2443,3 +2443,42 @@ button.stat-card {
     font-size: 12px;
 }
 .version-select:focus { border-color: var(--color-primario); outline: none; }
+
+/* =========================================================
+   MIGRACION 05: entrega, plan de estudios, varios documentos
+   SE PUEDE MODIFICAR: colores y espacios.
+   ========================================================= */
+
+/* Estado ENTREGADO (morado UPB, distinto del verde de "Realizado") */
+.badge.delivered { background: #f1e6f7; color: #6b2c91; }
+
+/* Lo que ya esta cargado para la asignatura escogida (Carga de informacion) */
+.existing-docs {
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 4px 0 14px;
+    background: #fafbfc;
+    font-size: 13px;
+}
+.existing-docs strong { display: block; margin-bottom: 6px; }
+.existing-docs ul { list-style: none; margin: 0; padding: 0; }
+.existing-docs li { padding: 3px 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* Buscador encima de una lista desplegable */
+input[type="search"] + select { margin-top: 6px; }
+
+/* Plan de estudios agrupado por semestre */
+.plan-semestres { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 14px; }
+.plan-semestre { border: 1px solid var(--gris-borde); border-radius: 8px; padding: 10px 12px; }
+.plan-semestre h4 { margin: 0 0 8px; font-size: 14px; }
+.plan-semestre .chip-list { margin-top: 0; }
+
+/* Casillas de semestres en la solicitud */
+.semester-list { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 8px 0; }
+.semester-list label { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+#form-plan { margin-top: 12px; }
+/* 5 tarjetas en Certificaciones (se agrego "Entregadas") */
+@media (min-width: 1001px) {
+    .certification-stats { grid-template-columns: repeat(5, 1fr); }
+}

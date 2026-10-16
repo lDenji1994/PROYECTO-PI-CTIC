@@ -100,6 +100,28 @@ public class SolicitudCertificadoController {
         );
     }
 
+    /** El certificado ya se le entrego al estudiante (REALIZADO -> ENTREGADO). */
+    @PatchMapping("/{id}/entregar")
+    public ResponseEntity<SolicitudCertificadoDTO> marcarEntregada(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.marcarEntregada(id));
+    }
+
+    /** Deshacer una entrega marcada por error (ENTREGADO -> REALIZADO). */
+    @PatchMapping("/{id}/deshacer-entrega")
+    public ResponseEntity<SolicitudCertificadoDTO> deshacerEntrega(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.deshacerEntrega(id));
+    }
+
+    /**
+     * Cambiar el nombre del estudiante y/o el tipo de contenido antes de generar el PDF.
+     * Cuerpo: { "nombreEstudiante": "Ana Pérez", "tipoContenido": "COMPLETO" } (ambos opcionales).
+     */
+    @PatchMapping("/{id}/datos")
+    public ResponseEntity<SolicitudCertificadoDTO> actualizarDatos(@PathVariable Integer id,
+                                                                   @RequestBody SolicitudCertificadoDTO dto) {
+        return ResponseEntity.ok(service.actualizarDatos(id, dto));
+    }
+
     @PatchMapping("/{id}/error")
     public ResponseEntity<SolicitudCertificadoDTO> marcarError(
             @PathVariable Integer id) {

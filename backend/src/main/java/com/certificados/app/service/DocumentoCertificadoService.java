@@ -96,7 +96,9 @@ public class DocumentoCertificadoService {
                                 .filter(d ->
                                         d.getIdTipoDocumentoAcademico()
                                                 .equals(tipo.getId()))
-                                .findFirst()
+                                // Desde la migracion 05 puede haber varios del mismo
+                                // tipo: se toma el cargado mas recientemente.
+                                .max(Comparator.comparing(DocumentoAcademico::getId))
                                 .orElse(null);
 
                 DocumentoCertificadoDTO dto =

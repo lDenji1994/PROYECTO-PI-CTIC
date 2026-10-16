@@ -3,7 +3,10 @@ package com.certificados.app.service;
 import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
+import com.certificados.app.model.AlcanceSolicitud;
 import com.certificados.app.model.CampoPlantilla;
+import com.certificados.app.model.Programa;
+import com.certificados.app.repository.ProgramaRepository;
 import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.model.ElementoPlantilla;
 import com.certificados.app.model.SolicitudCertificado;
@@ -37,6 +40,7 @@ public class CertificadoGeneradorService {
     private final CampoPlantillaRepository campoRepository;
     private final ContenidoCertificadoService contenidoCertificadoService;
     private final CertificadoContenidosPdf contenidosPdf;
+    private final ProgramaRepository programaRepository;
 
     public CertificadoGeneradorService(
             CertificadoGeneradoRepository certificadoRepository,
@@ -45,7 +49,8 @@ public class CertificadoGeneradorService {
             ElementoPlantillaRepository elementoRepository,
             CampoPlantillaRepository campoRepository,
             ContenidoCertificadoService contenidoCertificadoService,
-            CertificadoContenidosPdf contenidosPdf) {
+            CertificadoContenidosPdf contenidosPdf,
+            ProgramaRepository programaRepository) {
 
         this.certificadoRepository = certificadoRepository;
         this.solicitudRepository = solicitudRepository;
@@ -55,6 +60,7 @@ public class CertificadoGeneradorService {
         this.campoRepository = campoRepository;
         this.contenidoCertificadoService = contenidoCertificadoService;
         this.contenidosPdf = contenidosPdf;
+        this.programaRepository = programaRepository;
     }
 
     /**
@@ -163,7 +169,10 @@ public class CertificadoGeneradorService {
             contenidosPdf.agregar(
                     document,
                     finDelEncabezado(elementos),
-                    asignaturas
+                    asignaturas,
+                    solicitud.getTipoContenido(),
+                    textoAlcance(solicitud),
+                    contenidoCertificadoService::detalleCompleto
             );
 
             document.close();
@@ -440,6 +449,28 @@ public class CertificadoGeneradorService {
         return elemento.getContenido();
     }
 
+    /**
+     * Texto para la introduccion del certificado segun el alcance:
+     * "del programa Ingeniería de Sistemas (semestres 1, 2)",
+     * "del programa Ingeniería de Sistemas (programa completo)" o "" (asignaturas).
+     */
+    private String textoAlcance(SolicitudCertificado solicitud) {
+        if (solicitud.getAlcance() == null
+                || solicitud.getAlcance() == AlcanceSolicitud.ASIGNATURAS
+                || solicitud.getIdPrograma() == null) {
+            return "";
+        }
+        String programa = programaRepository.findById(solicitud.getIdPrograma())
+                .map(Programa::getNombre)
+                .orElse("");
+        String detalle = solicitud.getAlcance() == AlcanceSolicitud.SEMESTRES
+                && solicitud.getSemestres() != null
+                ? (solicitud.getSemestres().contains(",") ? "semestres " : "semestre ")
+                        + solicitud.getSemestres().replace(",", ", ")
+                : "programa completo";
+        return "del programa " + programa + " (" + detalle + ")";
+    }
+
     private String resolverCampo(
             CampoPlantilla campo,
             SolicitudCertificado solicitud) {
@@ -453,8 +484,12 @@ public class CertificadoGeneradorService {
         if ("ESTUDIANTE".equalsIgnoreCase(
                 campo.getFuente())) {
 
-            return "Estudiante ID: "
-                    + solicitud.getIdEstudiante();
+            // Nombre + ID con 9 digitos (los ID UPB llevan ceros a la izquierda)
+            String id = String.format("%09d", solicitud.getIdEstudiante());
+            String nombre = solicitud.getNombreEstudiante();
+            return nombre == null || nombre.isBlank()
+                    ? "Estudiante ID: " + id
+                    : CertificadoContenidosPdf.limpiar(nombre) + "  -  ID: " + id;
         }
 
         if ("SOLICITUD".equalsIgnoreCase(

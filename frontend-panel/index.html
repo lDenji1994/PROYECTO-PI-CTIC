@@ -189,7 +189,8 @@
                     <div>
                         <span class="section-label">NUEVO DOCUMENTO</span>
                         <h3>Registrar documento académico</h3>
-                        <p>Si la asignatura ya tiene un documento de ese tipo, se guarda como una versión nueva.</p>
+                        <p>Una asignatura puede tener varios documentos (carta descriptiva, syllabus…), incluso
+                            varios del mismo tipo de distintos periodos. Cada archivo queda guardado por separado.</p>
                     </div>
                     <span class="required-label">* Campo requerido</span>
                 </div>
@@ -199,6 +200,10 @@
 
                         <div class="form-group">
                             <label for="carga-asignatura">Asignatura (materia + curso) *</label>
+                            <!-- Buscar por codigo de materia, de curso o nombre: filtra la lista de abajo -->
+                            <input id="carga-buscar-asignatura" type="search" maxlength="60" autocomplete="off"
+                                   placeholder="Buscar: código de materia, curso o nombre (ej. FION 0001)"
+                                   aria-label="Buscar asignatura por código o nombre">
                             <select id="carga-asignatura" required>
                                 <option value="">Cargando asignaturas…</option>
                             </select>
@@ -249,6 +254,9 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Lo que ya esta cargado para la asignatura escogida (lo pinta app.js) -->
+                    <div id="carga-existentes" class="existing-docs" hidden></div>
 
                     <!-- DATOS DEL CURSO: los escribe (o copia y pega) la auxiliar.
                          app.js construye los campos a partir de CAMPOS_CURSO. -->
@@ -310,8 +318,8 @@
                             <th>Formato</th>
                             <th>Estado del formato</th>
                             <th>Datos del curso</th>
-                            <th>Versiones</th>
-                            <th>Última carga</th>
+                            <th>Periodo</th>
+                            <th>Archivo y fecha de carga</th>
                             <th>Acciones</th>
                         </tr>
                         </thead>
@@ -333,7 +341,51 @@
                     <button class="outline-button" type="button" id="btn-cerrar-editar">Cerrar</button>
                 </div>
 
+                <!-- Identificacion del archivo cargado: asignatura, tipo, formato, periodo, programa -->
+                <div class="subsection">
+                    <span class="section-label">IDENTIFICACIÓN DEL DOCUMENTO</span>
+                    <p class="field-help">Corrige aquí si el archivo quedó en otra asignatura, si no era una carta
+                        descriptiva sino un syllabus (o al revés), o si el formato, el periodo o el programa
+                        estaban mal.</p>
+                    <form id="form-identificacion" novalidate>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="ident-asignatura">Asignatura *</label>
+                                <input id="ident-buscar-asignatura" type="search" maxlength="60" autocomplete="off"
+                                       placeholder="Buscar por código o nombre" aria-label="Buscar asignatura">
+                                <select id="ident-asignatura" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ident-tipo">Tipo de documento *</label>
+                                <select id="ident-tipo" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ident-formato-codigo">Código del formato *</label>
+                                <input id="ident-formato-codigo" type="text" maxlength="50" list="ident-formatos"
+                                       placeholder="Ej. DA-FO-085N" required>
+                                <datalist id="ident-formatos"></datalist>
+                            </div>
+                            <div class="form-group">
+                                <label for="ident-formato-version">Versión del formato *</label>
+                                <input id="ident-formato-version" type="text" maxlength="20" placeholder="Ej. 03" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ident-periodo">Periodo académico</label>
+                                <input id="ident-periodo" type="text" maxlength="7" placeholder="AAAA-N (ej. 2026-2)">
+                            </div>
+                            <div class="form-group">
+                                <label for="ident-programa">Programa que diseña el curso</label>
+                                <select id="ident-programa"></select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Guardar identificación</button>
+                        </div>
+                    </form>
+                </div>
+
                 <form id="form-editar" novalidate>
+                    <span class="section-label">DATOS DEL CURSO</span>
                     <div id="editar-campos-curso"></div>
                     <div class="form-actions">
                         <button class="primary-button" type="submit">Guardar datos del curso</button>
@@ -425,6 +477,51 @@
                 </div>
             </div>
 
+            <!-- PLAN DE ESTUDIOS: semestre de cada asignatura en cada programa (US-09).
+                 Con esto una solicitud puede pedir semestres o el programa completo. -->
+            <div class="content-card" id="tarjeta-plan">
+                <div class="card-header">
+                    <div>
+                        <span class="section-label">PLAN DE ESTUDIOS</span>
+                        <h3>Semestres de cada programa</h3>
+                        <p>Indica en qué semestre va cada asignatura. Así una solicitud de certificado puede pedir
+                            uno o varios semestres, o el programa completo.</p>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="plan-programa">Programa académico</label>
+                        <select id="plan-programa"></select>
+                    </div>
+                </div>
+                <p class="field-help" id="plan-solo-admin" hidden>Solo el administrador puede cambiar el plan de estudios.</p>
+                <form id="form-plan" novalidate data-solo-admin hidden>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="plan-asignatura">Asignatura</label>
+                            <input id="plan-buscar-asignatura" type="search" maxlength="60" autocomplete="off"
+                                   placeholder="Buscar por código o nombre" aria-label="Buscar asignatura">
+                            <select id="plan-asignatura"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="plan-semestre">Semestre *</label>
+                            <input id="plan-semestre" type="number" min="1" max="20" step="1" placeholder="Ej. 1">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="plan-codigos">…o pega varios códigos para ese semestre (opcional)</label>
+                            <textarea id="plan-codigos" rows="2" maxlength="20000"
+                                      placeholder="Ej. FION 0001, ISIS 0101 — separados por coma, espacio o uno por línea"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="primary-button" type="submit">Agregar al plan</button>
+                    </div>
+                </form>
+                <div id="plan-contenido" class="plan-semestres">
+                    <p class="empty-state">Seleccione un programa para ver su plan de estudios.</p>
+                </div>
+            </div>
+
             <div class="search-card">
                 <div class="search-box">
                     <span>🔍</span>
@@ -457,7 +554,7 @@
                     <table>
                         <thead>
                         <tr>
-                            <th>Documento</th>
+                            <th>Tipo de documento</th>
                             <th>Formato</th>
                             <th>Estado</th>
                             <th>Periodo</th>
@@ -487,7 +584,8 @@
             <div class="certification-stats">
                 <div class="mini-stat"><span>Total solicitudes</span><strong id="stat-total">0</strong></div>
                 <div class="mini-stat"><span>Pendientes</span><strong id="stat-pendientes">0</strong></div>
-                <div class="mini-stat"><span>Realizadas</span><strong id="stat-realizadas">0</strong></div>
+                <div class="mini-stat"><span>Realizadas sin entregar</span><strong id="stat-realizadas">0</strong></div>
+                <div class="mini-stat"><span>Entregadas</span><strong id="stat-entregadas">0</strong></div>
                 <div class="mini-stat"><span>Con error</span><strong id="stat-error">0</strong></div>
             </div>
 
@@ -508,6 +606,38 @@
                                    placeholder="Ej. 000269307" required autocomplete="off">
                         </div>
                         <div class="form-group">
+                            <label for="sol-nombre">Nombre del estudiante *</label>
+                            <input id="sol-nombre" type="text" maxlength="150" placeholder="Ej. Ana María Pérez Gómez"
+                                   required autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="sol-tipo-contenido">Contenido del certificado *</label>
+                            <select id="sol-tipo-contenido" required>
+                                <option value="RESUMIDO">Resumido (un párrafo por asignatura)</option>
+                                <option value="COMPLETO">Completo (todo el contenido, varias páginas)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="sol-alcance">¿Qué se certifica? *</label>
+                            <select id="sol-alcance" required>
+                                <option value="ASIGNATURAS">Una o varias asignaturas</option>
+                                <option value="SEMESTRES">Uno o varios semestres de un programa</option>
+                                <option value="PROGRAMA">Un programa académico completo</option>
+                            </select>
+                        </div>
+                        <!-- Solo para semestres / programa completo: salen del plan de estudios -->
+                        <div class="form-group" id="grupo-sol-programa" hidden>
+                            <label for="sol-programa">Programa académico *</label>
+                            <select id="sol-programa"></select>
+                        </div>
+                        <div class="form-group full-width" id="grupo-sol-semestres" hidden>
+                            <label>Semestres *</label>
+                            <div id="sol-semestres" class="semester-list"></div>
+                        </div>
+                        <div class="form-group full-width" id="grupo-sol-plan" hidden>
+                            <div id="sol-plan-resumen" class="paste-result" role="status" aria-live="polite"></div>
+                        </div>
+                        <div class="form-group">
                             <label for="sol-tipo">Tipo de certificado *</label>
                             <select id="sol-tipo" required><option value="">Cargando…</option></select>
                         </div>
@@ -518,7 +648,7 @@
                         <!-- KARDEX MANUAL: la auxiliar copia los codigos del Kardex del estudiante
                              y los pega aqui; app.js marca las asignaturas en la lista de abajo.
                              El texto pegado NO se envia al servidor ni se guarda. -->
-                        <div class="form-group full-width">
+                        <div class="form-group full-width" id="grupo-sol-kardex">
                             <label for="sol-codigos">Pegar códigos del Kárdex (opcional)</label>
                             <textarea id="sol-codigos" rows="3" maxlength="20000"
                                       placeholder="Ej. FION 0001, ISIS 0101, ISIS 0202 — separados por coma, espacio o uno por línea"></textarea>
@@ -531,7 +661,7 @@
                             </div>
                             <div id="sol-codigos-resultado" class="paste-result" role="status" aria-live="polite" hidden></div>
                         </div>
-                        <div class="form-group full-width">
+                        <div class="form-group full-width" id="grupo-sol-asignaturas">
                             <label>Asignaturas a certificar <span id="sol-seleccionadas" class="badge neutral">0 seleccionadas</span></label>
                             <input id="sol-buscar-asignatura" type="search" placeholder="Filtrar asignaturas…"
                                    aria-label="Filtrar asignaturas">
@@ -556,7 +686,8 @@
                             <option value="PENDIENTE">Pendiente</option>
                             <option value="PROCESANDO">Procesando</option>
                             <option value="ESPERANDO_DOCUMENTOS">Esperando documentos</option>
-                            <option value="REALIZADO">Realizado</option>
+                            <option value="REALIZADO">Realizado (sin entregar)</option>
+                            <option value="ENTREGADO">Entregado</option>
                             <option value="ERROR">Error</option>
                         </select>
                         <button class="outline-button" type="button" id="btn-actualizar-solicitudes">Actualizar</button>
@@ -598,8 +729,9 @@
                     <h2>UNIVERSIDAD PONTIFICIA BOLIVARIANA</h2>
                     <span id="detalle-solicitud-tipo">Certificación académica</span>
                     <hr>
-                    <p>Contenidos programáticos resumidos de las asignaturas de la solicitud. El certificado se
-                        genera en <strong>un solo PDF</strong> cuando todas las asignaturas están completas.</p>
+                    <p><span id="detalle-solicitud-descripcion">Contenidos programáticos de las asignaturas de la
+                        solicitud.</span> El certificado se genera en <strong>un solo PDF</strong> cuando todas las
+                        asignaturas están completas.</p>
                     <div id="detalle-solicitud-aviso" class="alert-banner warning" hidden>
                         <strong>Falta información:</strong>
                         <span id="detalle-solicitud-aviso-texto"></span>
@@ -608,7 +740,20 @@
                         <div><strong>Estudiante</strong><span id="detalle-solicitud-estudiante"></span></div>
                         <div><strong>Solicitud</strong><span id="detalle-solicitud-numero"></span></div>
                         <div><strong>Encargado</strong><span id="detalle-solicitud-encargado"></span></div>
+                        <div><strong>Contenido</strong><span id="detalle-solicitud-contenido"></span></div>
+                        <div><strong>Alcance</strong><span id="detalle-solicitud-alcance"></span></div>
+                        <div><strong>Entrega</strong><span id="detalle-solicitud-entrega"></span></div>
                     </div>
+                    <!-- Corregir nombre / tipo de contenido antes de generar el PDF -->
+                    <form id="form-detalle-solicitud" class="inline-form" novalidate hidden>
+                        <input id="detalle-nombre" type="text" maxlength="150" aria-label="Nombre del estudiante"
+                               placeholder="Nombre del estudiante">
+                        <select id="detalle-tipo-contenido" aria-label="Contenido del certificado">
+                            <option value="RESUMIDO">Resumido</option>
+                            <option value="COMPLETO">Completo</option>
+                        </select>
+                        <button class="outline-button" type="submit">Guardar cambios</button>
+                    </form>
                     <div class="table-wrapper">
                         <table>
                             <thead>
