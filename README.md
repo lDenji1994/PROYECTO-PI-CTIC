@@ -16,8 +16,8 @@ Navegador ──► http://localhost:8080  (Spring Boot)
 ```
 PROYECTO-PI-CTIC/
 ├── database/
-│   ├── 01_esquema_BASE_DE_DATOS_PI_TRACK1.sql   ← esquema oficial del equipo (sin cambios)
-│   └── 02_datos_iniciales.sql                   ← usuario admin (sin contraseña), tipos, plantilla PDF mínima, ejemplos
+│   ├── 01_base_certificados.sql   ← crea la base de datos y sus 18 tablas
+│   └── 02_datos_iniciales.sql     ← usuario admin (sin contraseña), tipos y plantilla del PDF
 ├── backend/
 │   ├── build.gradle
 │   └── src/main/
@@ -61,7 +61,7 @@ PROYECTO-PI-CTIC/
 
 **Base nueva** (no existe todavía): en MySQL Workbench (o consola), ejecutar en este orden:
 
-1. `database/01_esquema_BASE_DE_DATOS_PI_TRACK1.sql` (crea la BD y las tablas, ya con los
+1. `database/01_base_certificados.sql` (crea la BD y las tablas, ya con los
    nombres nuevos).
 2. `database/02_datos_iniciales.sql` (se puede correr varias veces sin duplicar).
 
