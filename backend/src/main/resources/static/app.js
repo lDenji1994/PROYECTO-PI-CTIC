@@ -396,8 +396,6 @@ async function cargarSesion() {
 
     /* Lo marcado con data-solo-admin solo se muestra al administrador */
     document.querySelectorAll('[data-solo-admin]').forEach(function (el) { el.hidden = !esAdmin(); });
-    document.getElementById('programas-solo-admin').hidden = esAdmin();
-    document.getElementById('plan-solo-admin').hidden = esAdmin();
     /* El administrador tambien puede filtrar la actividad del modulo de usuarios */
     const filtro = document.getElementById('filtro-actividad');
     if (esAdmin() && !filtro.querySelector('option[value="usuarios"]')) {
@@ -1636,7 +1634,7 @@ async function registrarPrograma(evento) {
 /* ---------------------------------------------------------------------
    PLAN DE ESTUDIOS (US-09): en que semestre de cada programa va cada
    asignatura. Lo usan las solicitudes por semestres o por programa.
-   Consultarlo: cualquier usuario. Cambiarlo: solo el administrador.
+   Lo consultan y lo cambian auxiliares y administrador.
    --------------------------------------------------------------------- */
 
 /** Agrupa filas del plan por semestre: { 1: [filas], 2: [filas] ... } */
@@ -1684,8 +1682,8 @@ function pintarPlanPrograma() {
             grupos[semestre].map(function (f) {
                 return '<li class="chip">' + escaparTexto(f.codigoMateria + ' ' + (f.codigoCurso || '')) + ' · ' +
                     escaparTexto(f.nombre) +
-                    (esAdmin() ? '<button type="button" class="chip-remove" data-quitar-plan="' + idSeguro(f.idAsignatura) +
-                        '" data-programa="' + idSeguro(idPrograma) + '" title="Quitar del plan" aria-label="Quitar del plan">×</button>' : '') +
+                    '<button type="button" class="chip-remove" data-quitar-plan="' + idSeguro(f.idAsignatura) +
+                        '" data-programa="' + idSeguro(idPrograma) + '" title="Quitar del plan" aria-label="Quitar del plan">×</button>' +
                     '</li>';
             }).join('') + '</ul></div>';
     }).join('');

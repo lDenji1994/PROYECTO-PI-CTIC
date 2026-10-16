@@ -39,11 +39,12 @@ import java.nio.charset.StandardCharsets;
  *   la tabla de usuarios, con la contrasena guardada con hash BCrypt.
  *
  * - Roles (tabla RolesS):
- *     ADMINISTRADOR : todo, incluido crear usuarios y registrar programas.
- *     AUXILIAR      : cargar documentos, registrar asignaturas y gestionar
- *                     solicitudes y certificados. No puede crear usuarios,
- *                     registrar programas, ver la bitacora completa ni
- *                     cambiar las plantillas del certificado.
+ *     ADMINISTRADOR : todo, incluido crear usuarios y eliminar programas.
+ *     AUXILIAR      : cargar documentos, registrar asignaturas y programas,
+ *                     armar el plan de estudios y gestionar solicitudes y
+ *                     certificados. No puede crear usuarios, eliminar
+ *                     programas, ver la bitacora completa ni cambiar las
+ *                     plantillas del certificado.
  *
  * SE PUEDE MODIFICAR: las reglas de "authorizeHttpRequests" para dar o
  * quitar permisos a un rol. El ORDEN importa: gana la primera regla que
@@ -115,10 +116,12 @@ public class SecurityConfig {
                 // Solo ADMINISTRADOR
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").authenticated()
                 .requestMatchers("/api/usuarios/**").hasRole(ADMIN)
-                .requestMatchers(HttpMethod.POST, "/api/programas/**").hasRole(ADMIN)
+                // Programas y plan de estudios: los registran auxiliares y administrador
+                // (cualquier usuario con sesion, regla general de abajo). Quitar una
+                // asignatura del plan tambien; ELIMINAR un programa, solo el administrador.
+                // SE PUEDE MODIFICAR: volver a poner hasRole(ADMIN) si se quiere restringir.
+                .requestMatchers(HttpMethod.DELETE, "/api/programas/*/plan/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/programas/**").hasRole(ADMIN)
-                // Plan de estudios: consultarlo cualquiera con sesion, cambiarlo solo el administrador
-                .requestMatchers(HttpMethod.PUT, "/api/programas/**").hasRole(ADMIN)
                 .requestMatchers("/api/logs/**").hasRole(ADMIN)
                 // Plantillas del certificado: todos las leen, solo el administrador las cambia
                 .requestMatchers(HttpMethod.GET, PLANTILLAS).authenticated()
