@@ -1552,15 +1552,77 @@ function verDetalleCurso(idAsignatura) {
             '<button type="button" class="outline-button small" data-editar-version="' + idSeguro(v.id) +
             '">Corregir</button>' + botonEliminarVersion(v.id) + '</div></td>' +
             '</tr>');
+        filas.push('<tr class="fila-datos"><td colspan="7" data-datos-version="' + idSeguro(v.id) + '">' +
+            '<small class="cell-help">Cargando datos del documento…</small></td></tr>');
     });
-    if (filas.length) {
+    if (archivos.length) {
         tbody.innerHTML = filas.join('');
+        archivos.forEach(function (f) {
+            cargarDatosVersion(f.version.id);
+        });
     } else {
         filaVacia(tbody, 7, 'Esta asignatura aún no tiene documentos cargados.');
     }
     const detalle = document.getElementById('detalle-curso');
     detalle.hidden = false;
     detalle.scrollIntoView({ behavior: 'smooth' });
+}
+
+/** Pide los datos del curso de una version y los pinta en su fila de detalle. */
+async function cargarDatosVersion(idVersion) {
+    const celda = document.querySelector('[data-datos-version="' + idSeguro(idVersion) + '"]');
+    if (!celda) {
+        return;
+    }
+    try {
+        const datos = await api('/versiones-documentos/' + idSeguro(idVersion) + '/datos');
+        celda.innerHTML = htmlDatosVersion(datos);
+    } catch (error) {
+        celda.innerHTML = '<small class="cell-help">No se pudieron cargar los datos de este documento.</small>';
+    }
+}
+
+/** Arma la vista de datos del curso: campos escritos y lista de contenidos. */
+function htmlDatosVersion(d) {
+    const campo = function (etiqueta, valor, ancho) {
+        if (valor === null || valor === undefined || String(valor).trim() === '') {
+            return '';
+        }
+        const clase = ancho ? ' class="datos-ancho"' : '';
+        return '<div' + clase + '><dt>' + escaparTexto(etiqueta) + '</dt><dd>' +
+            escaparTexto(String(valor)).replace(/\n/g, '<br>') + '</dd></div>';
+    };
+    const temas = String(d.detalleContenido || '').split(/\r?\n/)
+        .map(function (t) { return t.trim(); }).filter(function (t) { return t !== ''; });
+    const campos = [
+        campo('Descripción', d.descripcion, true),
+        campo('Propósito', d.proposito, true),
+        campo('Requisitos / competencias previas', d.requisitos, true),
+        campo('Justificación', d.justificacion, true),
+        campo('Resumen para certificado resumido', d.resumen, true),
+        campo('Créditos', d.creditos),
+        campo('Horas teóricas', d.horasTeoricas),
+        campo('Horas prácticas', d.horasPracticas),
+        campo('Horas de laboratorio', d.horasLaboratorio),
+        campo('Horas independientes', d.horasIndependientes),
+        campo('Ciclo', d.ciclo),
+        campo('Nivel de formación', d.nivelFormacion),
+        campo('Modo de calificación', d.modoCalificacion),
+        campo('Modalidades', d.modalidades),
+        campo('Clasificación CINE', d.clasificacionCINE),
+        campo('Núcleo básico de conocimiento', d.nucleoBasicoConocimiento),
+        campo('Escuela', d.escuela),
+        campo('Facultad', d.facultad),
+        campo('Bibliografía y observaciones', d.observaciones, true)
+    ].join('');
+    const lista = temas.length
+        ? '<details class="datos-temas"><summary>Contenidos (' + temas.length + ' temas)</summary><ol>' +
+          temas.map(function (t) { return '<li>' + escaparTexto(t) + '</li>'; }).join('') + '</ol></details>'
+        : '';
+    if (!campos && !lista) {
+        return '<small class="cell-help">Este documento no tiene datos del curso registrados.</small>';
+    }
+    return '<div class="datos-version">' + (campos ? '<dl class="datos-grid">' + campos + '</dl>' : '') + lista + '</div>';
 }
 
 function actualizarVistaPreviaAsignatura() {
