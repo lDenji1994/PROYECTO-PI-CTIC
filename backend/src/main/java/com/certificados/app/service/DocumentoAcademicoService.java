@@ -25,17 +25,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Documentos academicos (una carta descriptiva / syllabus por asignatura
- * y tipo de documento) y sus versiones cargadas.
+ * Documentos academicos (carta descriptiva, syllabus...) de cada asignatura
+ * y el archivo cargado de cada uno.
+ *
+ * Desde la migracion 05 una asignatura puede tener todos los documentos que
+ * se necesiten, incluso varios del mismo tipo (p. ej. la carta descriptiva de
+ * 2019 y la de 2026). Cada archivo que se monta queda como SU PROPIO
+ * documento, con su tipo, su formato y su periodo.
  *
  * Flujo del panel "Carga de informacion" -> {@link #cargarDocumento}:
- *   1. Busca el documento de esa asignatura + tipo (o lo crea).
- *   2. Si el codigo/version de formato cambio, lo actualiza.
- *   3. Guarda el PDF como una VERSION nueva (VersionDocumentoService).
+ *   1. Crea el documento (asignatura + tipo + formato).
+ *   2. Guarda el archivo y los datos del curso (VersionDocumentoService).
  *   Todo en una sola transaccion: si algo falla, no queda nada a medias.
  *
+ * Corregir una carga -> {@link #corregirCarga}: cambia asignatura, tipo,
+ * formato, periodo o programa de un archivo ya cargado.
+ *
  * SE PUEDE MODIFICAR: mensajes, validaciones adicionales.
- * NO MODIFICAR: la unicidad asignatura + tipo (la exige la BD).
  */
 @Service
 @Transactional
@@ -94,11 +100,6 @@ public class DocumentoAcademicoService {
         obtenerTipo(documento.getIdTipoDocumentoAcademico());
         validarFormato(documento.getCodigoFormato(), documento.getVersionFormato());
 
-        if (documento.getId() == null && repository.findByIdAsignaturaAndIdTipoDocumentoAcademico(
-                documento.getIdAsignatura(), documento.getIdTipoDocumentoAcademico()).isPresent()) {
-            throw new BusinessException("La asignatura ya tiene un documento de ese tipo");
-        }
-
         documento.setCodigoFormato(FormatoService.normalizarCodigo(documento.getCodigoFormato()));
         documento.setVersionFormato(documento.getVersionFormato().trim());
         DocumentoAcademico guardado = repository.save(documento);
@@ -136,29 +137,15 @@ public class DocumentoAcademicoService {
         String version = versionFormato.trim();
         String etiqueta = asignatura.getCodigo() + " - " + asignatura.getNombre() + " / " + tipo.getNombre();
 
-        DocumentoAcademico documento = repository
-                .findByIdAsignaturaAndIdTipoDocumentoAcademico(idAsignatura, idTipoDocumento)
-                .orElse(null);
-
-        if (documento == null) {
-            documento = new DocumentoAcademico();
-            documento.setIdAsignatura(idAsignatura);
-            documento.setIdTipoDocumentoAcademico(idTipoDocumento);
-            documento.setCodigoFormato(codigo);
-            documento.setVersionFormato(version);
-            documento = repository.save(documento);
-            actividadService.registrar(ActividadService.TABLA_DOCUMENTOS,
-                    ActividadService.CREAR_DOCUMENTO, etiqueta);
-        } else if (!codigo.equals(FormatoService.normalizarCodigo(documento.getCodigoFormato()))
-                || !FormatoService.normalizarVersion(version)
-                        .equals(FormatoService.normalizarVersion(documento.getVersionFormato()))) {
-            String anterior = documento.getCodigoFormato() + " v" + documento.getVersionFormato();
-            documento.setCodigoFormato(codigo);
-            documento.setVersionFormato(version);
-            documento = repository.save(documento);
-            actividadService.registrar(ActividadService.TABLA_DOCUMENTOS, ActividadService.ACTUALIZAR_FORMATO,
-                    etiqueta + ": " + anterior + " -> " + codigo + " v" + version);
-        }
+        // Cada archivo cargado es su propio documento (con su tipo y formato)
+        DocumentoAcademico documento = new DocumentoAcademico();
+        documento.setIdAsignatura(idAsignatura);
+        documento.setIdTipoDocumentoAcademico(idTipoDocumento);
+        documento.setCodigoFormato(codigo);
+        documento.setVersionFormato(version);
+        documento = repository.save(documento);
+        actividadService.registrar(ActividadService.TABLA_DOCUMENTOS,
+                ActividadService.CREAR_DOCUMENTO, etiqueta);
 
         // Guarda el archivo (PDF, Word o Excel) como nueva version junto con los
         // datos del curso escritos a mano. Si algo falla (archivo danado, dato
@@ -171,6 +158,83 @@ public class DocumentoAcademicoService {
         }
 
         return resumen(documento.getId());
+    }
+
+    /* ======================= Corregir una carga ======================= */
+
+    /**
+     * Corrige los datos de identificacion de un archivo ya cargado: la
+     * asignatura, el tipo de documento (p. ej. era un Syllabus y no una
+     * Carta descriptiva), el formato, el periodo y el programa que disena
+     * el curso. Los datos del curso y el archivo se corrigen aparte.
+     *
+     * Si el documento comparte registro con otros archivos (cargas hechas
+     * antes de la migracion 05), este archivo se separa en un documento
+     * propio para no cambiar los demas.
+     */
+    public DocumentoResumenDTO corregirCarga(Integer idVersion, Integer idAsignatura, Integer idTipoDocumento,
+                                             String codigoFormato, String versionFormato,
+                                             String periodo, Integer idPrograma) {
+        VersionDocumento cargada = versionRepository.findById(idVersion)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "El archivo ya no existe (id " + idVersion + "). Actualiza la página."));
+        DocumentoAcademico actual = buscarPorId(cargada.getIdDocumentoAcademico());
+        if (idAsignatura == null || idTipoDocumento == null) {
+            throw new BusinessException("La asignatura y el tipo de documento son obligatorios");
+        }
+
+        Asignatura asignatura = obtenerAsignatura(idAsignatura);
+        TipoDocumentoAcademico tipo = obtenerTipo(idTipoDocumento);
+        validarFormato(codigoFormato, versionFormato);
+        String codigo = FormatoService.normalizarCodigo(codigoFormato);
+        String version = versionFormato.trim();
+        String periodoLimpio = (periodo == null || periodo.isBlank()) ? null : periodo.trim();
+        if (periodoLimpio != null && !periodoLimpio.matches("^\\d{4}-\\d{1,2}$")) {
+            throw new BusinessException("El periodo debe tener el formato AAAA-N (ej. 2026-2)");
+        }
+        if (idPrograma != null && !programaRepository.existsById(idPrograma)) {
+            throw new ResourceNotFoundException("Programa no encontrado con id " + idPrograma);
+        }
+
+        String antes = descripcionCarga(actual, cargada.getPeriodo());
+
+        boolean cambiaDocumento = !idAsignatura.equals(actual.getIdAsignatura())
+                || !idTipoDocumento.equals(actual.getIdTipoDocumentoAcademico())
+                || !codigo.equals(FormatoService.normalizarCodigo(actual.getCodigoFormato()))
+                || !FormatoService.normalizarVersion(version)
+                        .equals(FormatoService.normalizarVersion(actual.getVersionFormato()));
+        DocumentoAcademico destino = actual;
+        if (cambiaDocumento) {
+            if (versionRepository.countByIdDocumentoAcademico(actual.getId()) > 1) {
+                // Lo comparte con otros archivos: este se separa en un documento nuevo
+                destino = new DocumentoAcademico();
+            }
+            destino.setIdAsignatura(idAsignatura);
+            destino.setIdTipoDocumentoAcademico(idTipoDocumento);
+            destino.setCodigoFormato(codigo);
+            destino.setVersionFormato(version);
+            destino = repository.save(destino);
+        }
+
+        cargada.setIdDocumentoAcademico(destino.getId());
+        cargada.setPeriodo(periodoLimpio);
+        cargada.setIdProgramaDisena(idPrograma);
+        versionRepository.save(cargada);
+
+        actividadService.registrar(ActividadService.TABLA_VERSIONES, ActividadService.CORREGIR_CARGA,
+                cargada.getNombreArchivo() + ": " + antes + " -> " + asignatura.getCodigo() + " / "
+                        + tipo.getNombre() + " " + codigo + " v" + version
+                        + (periodoLimpio == null ? "" : " (periodo " + periodoLimpio + ")"));
+        return resumen(destino.getId());
+    }
+
+    private String descripcionCarga(DocumentoAcademico d, String periodo) {
+        String asignatura = asignaturaRepository.findById(d.getIdAsignatura())
+                .map(Asignatura::getCodigo).orElse("#" + d.getIdAsignatura());
+        String tipo = tipoRepository.findById(d.getIdTipoDocumentoAcademico())
+                .map(TipoDocumentoAcademico::getNombre).orElse("");
+        return asignatura + " / " + tipo + " " + d.getCodigoFormato() + " v" + d.getVersionFormato()
+                + (periodo == null ? "" : " (periodo " + periodo + ")");
     }
 
     /* ======================= Resumen para el panel ======================= */

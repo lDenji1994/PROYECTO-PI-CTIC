@@ -24,14 +24,14 @@ public interface VersionDocumentoRepository
     /** Todas las versiones SIN el binario, del periodo mas reciente al mas antiguo. */
     @Query("select new com.certificados.app.dto.VersionResumenDTO("
             + "v.id, v.idDocumentoAcademico, v.periodo, v.nombreArchivo, v.fechaCarga, "
-            + "v.creditos, v.descripcion) "
+            + "v.creditos, v.descripcion, v.idProgramaDisena) "
             + "from VersionDocumento v order by v.periodo desc, v.fechaCarga desc, v.id desc")
     List<VersionResumenDTO> listarResumen();
 
     /** Una version SIN el binario (para no cargar el archivo en memoria). */
     @Query("select new com.certificados.app.dto.VersionResumenDTO("
             + "v.id, v.idDocumentoAcademico, v.periodo, v.nombreArchivo, v.fechaCarga, "
-            + "v.creditos, v.descripcion) "
+            + "v.creditos, v.descripcion, v.idProgramaDisena) "
             + "from VersionDocumento v where v.id = :id")
     Optional<VersionResumenDTO> buscarResumen(@Param("id") Integer id);
 
@@ -49,7 +49,13 @@ public interface VersionDocumentoRepository
     @Query("select new com.certificados.app.dto.VersionDatosDTO("
             + "v.id, v.idDocumentoAcademico, v.periodo, v.fechaCarga, v.creditos, "
             + "v.horasTeoricas, v.horasPracticas, v.horasLaboratorio, v.horasIndependientes, "
-            + "v.descripcion) "
+            + "v.descripcion, v.resumen) "
             + "from VersionDocumento v where v.idDocumentoAcademico in :idsDocumentos")
     List<VersionDatosDTO> listarDatosPorDocumentos(@Param("idsDocumentos") Collection<Integer> idsDocumentos);
+
+    /** Textos largos de una version (sin el binario), para el certificado COMPLETO. */
+    @Query("select new com.certificados.app.dto.VersionTextosDTO("
+            + "v.id, v.proposito, v.justificacion, v.requisitos, v.modalidades) "
+            + "from VersionDocumento v where v.id = :id")
+    Optional<com.certificados.app.dto.VersionTextosDTO> buscarTextos(@Param("id") Integer id);
 }

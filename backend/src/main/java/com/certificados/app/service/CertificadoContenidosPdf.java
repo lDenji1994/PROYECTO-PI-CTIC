@@ -1,6 +1,8 @@
 package com.certificados.app.service;
 
 import com.certificados.app.dto.AsignaturaCertificadoDTO;
+import com.certificados.app.dto.DetalleCompletoDTO;
+import com.certificados.app.model.TipoContenidoCertificado;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
@@ -20,9 +22,23 @@ import java.time.LocalDate;
 import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
- * CUERPO DEL CERTIFICADO DE CONTENIDOS RESUMIDOS (un solo PDF por solicitud).
+ * CUERPO DEL CERTIFICADO DE CONTENIDOS PROGRAMATICOS (un solo PDF por solicitud).
+ *
+ * Dos tipos (lo escoge la auxiliar en la solicitud):
+ *   - RESUMIDO: por asignatura, la franja, los datos (creditos, horas...) y
+ *               UN parrafo breve (el "resumen" de los datos del curso o, si
+ *               no se escribio, la descripcion del curso).
+ *   - COMPLETO: por asignatura, todo lo registrado: descripcion, proposito,
+ *               justificacion, requisitos, objetivos, competencias, contenido
+ *               tema por tema, metodologia, evaluacion y modalidades. Puede
+ *               ocupar varias paginas por asignatura.
+ *
+ * Si la solicitud es por semestres o por programa completo, las asignaturas
+ * salen agrupadas bajo un titulo "Semestre N".
  *
  * El encabezado del certificado (titulo, estudiante, numero de solicitud)
  * lo dibuja CertificadoGeneradorService con los elementos de la plantilla.
@@ -53,6 +69,7 @@ public class CertificadoContenidosPdf {
     /** Magenta de la paleta UPB (mismo --color-primario del panel). SE PUEDE MODIFICAR. */
     private static final Color COLOR_UPB = new Color(194, 25, 142);
 
+    private static final Font TITULO_SEMESTRE = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12.5f, Font.NORMAL, COLOR_UPB);
     private static final Font TITULO_ASIGNATURA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f);
     private static final Font ETIQUETA = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9.5f, Font.NORMAL, COLOR_UPB);
     private static final Font TEXTO = FontFactory.getFont(FontFactory.HELVETICA, 9.5f);
@@ -72,10 +89,20 @@ public class CertificadoContenidosPdf {
      * @param document   documento PDF ya abierto
      * @param inicioY    distancia desde el borde superior de la primera pagina
      *                   donde termina el encabezado de la plantilla (en puntos)
-     * @param asignaturas contenido ya validado (ContenidoCertificadoService)
+     * @param asignaturas contenido ya validado (ContenidoCertificadoService),
+     *                    ordenado por semestre (si aplica) y codigo
+     * @param tipo        RESUMIDO o COMPLETO
+     * @param alcance     texto para la introduccion, ej. "del programa Ingeniería
+     *                    de Sistemas (semestres 1, 2)"; vacio si es por asignaturas
+     * @param detalle     da el detalle COMPLETO de una version (solo se usa en COMPLETO)
      */
     public void agregar(Document document, float inicioY,
-                        List<AsignaturaCertificadoDTO> asignaturas) throws DocumentException {
+                        List<AsignaturaCertificadoDTO> asignaturas,
+                        TipoContenidoCertificado tipo,
+                        String alcance,
+                        Function<Integer, DetalleCompletoDTO> detalle) throws DocumentException {
+
+        boolean completo = tipo == TipoContenidoCertificado.COMPLETO;
 
         // Espacio en blanco para empezar debajo del encabezado de la plantilla
         float alto = inicioY - document.topMargin();
@@ -89,22 +116,148 @@ public class CertificadoContenidosPdf {
             document.add(espacio);
         }
 
-        Paragraph intro = new Paragraph(
-                "A continuación se relacionan los contenidos programáticos resumidos de "
+        Paragraph intro = new Paragraph(limpiar(
+                "A continuación se relacionan los contenidos programáticos "
+                        + (completo ? "completos" : "resumidos") + " de "
                         + (asignaturas.size() == 1 ? "la asignatura registrada" : "las "
-                        + asignaturas.size() + " asignaturas registradas") + " en la solicitud:", TEXTO);
+                        + asignaturas.size() + " asignaturas registradas") + " en la solicitud"
+                        + (alcance == null || alcance.isBlank() ? "" : " " + alcance) + ":"), TEXTO);
         intro.setSpacingAfter(10f);
         document.add(intro);
 
+        Integer semestreActual = null;
         for (AsignaturaCertificadoDTO asignatura : asignaturas) {
-            agregarAsignatura(document, asignatura);
+            // Titulo "Semestre N" cada vez que cambia el semestre (solicitud por semestres/programa)
+            if (asignatura.semestre() != null && !Objects.equals(asignatura.semestre(), semestreActual)) {
+                semestreActual = asignatura.semestre();
+                agregarTituloGrupo(document, "Semestre " + semestreActual);
+            } else if (asignatura.semestre() == null && semestreActual != null) {
+                // Asignaturas agregadas a mano que no estan en el plan del programa
+                semestreActual = null;
+                agregarTituloGrupo(document, "Otras asignaturas");
+            }
+            if (completo) {
+                agregarAsignaturaCompleta(document, asignatura, detalle.apply(asignatura.idVersionDocumento()));
+            } else {
+                agregarAsignaturaResumida(document, asignatura);
+            }
         }
 
         agregarCierre(document);
     }
 
-    private void agregarAsignatura(Document document, AsignaturaCertificadoDTO a) throws DocumentException {
-        // Franja con el codigo (materia + curso) y el nombre
+    private static void agregarTituloGrupo(Document document, String texto) throws DocumentException {
+        Paragraph titulo = new Paragraph(texto, TITULO_SEMESTRE);
+        titulo.setSpacingBefore(14f);
+        titulo.setSpacingAfter(2f);
+        document.add(titulo);
+    }
+
+    /** RESUMIDO: franja + datos + un parrafo breve. */
+    private void agregarAsignaturaResumida(Document document, AsignaturaCertificadoDTO a) throws DocumentException {
+        agregarEncabezadoAsignatura(document, a);
+        String parrafo = a.resumen() != null && !a.resumen().isBlank() ? a.resumen() : a.descripcion();
+        Paragraph texto = new Paragraph(limpiar(parrafo), TEXTO);
+        texto.setAlignment(Element.ALIGN_JUSTIFIED);
+        texto.setSpacingAfter(4f);
+        document.add(texto);
+    }
+
+    /** COMPLETO: franja + datos + todas las secciones que tengan informacion. */
+    private void agregarAsignaturaCompleta(Document document, AsignaturaCertificadoDTO a,
+                                           DetalleCompletoDTO d) throws DocumentException {
+        agregarEncabezadoAsignatura(document, a);
+
+        seccionTexto(document, "Descripción del curso", a.descripcion());
+        seccionTexto(document, "Propósito de formación", d.proposito());
+        seccionTexto(document, "Justificación", d.justificacion());
+        seccionTexto(document, "Requisitos / saberes previos", d.requisitos());
+        seccionLista(document, "Objetivos", d.objetivos());
+
+        if (!d.competencias().isEmpty()) {
+            document.add(etiqueta("Competencias"));
+            for (DetalleCompletoDTO.CompetenciaDetalle c : d.competencias()) {
+                document.add(item(c.descripcion(), 12f));
+                for (String criterio : c.criterios()) {
+                    document.add(item(criterio, 26f));
+                }
+            }
+        }
+
+        // Contenido tema por tema (con semana / unidad / tema si se registraron)
+        document.add(etiqueta("Contenido"));
+        if (d.contenidos().isEmpty()) {
+            for (String tema : a.contenidos()) {
+                document.add(item(tema, 12f));
+            }
+        } else {
+            for (DetalleCompletoDTO.TemaDetalle t : d.contenidos()) {
+                StringBuilder linea = new StringBuilder();
+                if (t.semana() != null) {
+                    linea.append("Semana ").append(t.semana()).append(": ");
+                }
+                if (t.unidad() != null && !t.unidad().isBlank()) {
+                    linea.append(t.unidad().trim()).append(" - ");
+                }
+                if (t.tema() != null && !t.tema().isBlank()) {
+                    linea.append(t.tema().trim()).append(". ");
+                }
+                linea.append(t.descripcion().trim());
+                document.add(item(linea.toString(), 12f));
+            }
+        }
+
+        seccionLista(document, "Metodología", d.metodologias());
+
+        if (!d.evaluaciones().isEmpty()) {
+            document.add(etiqueta("Evaluación"));
+            for (DetalleCompletoDTO.EvaluacionDetalle e : d.evaluaciones()) {
+                String linea = (e.tipo() == null || e.tipo().isBlank() ? "" : e.tipo().trim() + ": ")
+                        + e.descripcion().trim()
+                        + (e.porcentaje() == null ? "" : " (" + numero(e.porcentaje()) + " %)");
+                document.add(item(linea, 12f));
+            }
+        }
+
+        seccionTexto(document, "Modalidades", d.modalidades());
+    }
+
+    private void seccionTexto(Document document, String titulo, String texto) throws DocumentException {
+        if (texto == null || texto.isBlank()) {
+            return;
+        }
+        document.add(etiqueta(titulo));
+        Paragraph p = new Paragraph(limpiar(texto), TEXTO);
+        p.setAlignment(Element.ALIGN_JUSTIFIED);
+        p.setSpacingAfter(4f);
+        document.add(p);
+    }
+
+    private void seccionLista(Document document, String titulo, List<String> lineas) throws DocumentException {
+        if (lineas == null || lineas.isEmpty()) {
+            return;
+        }
+        document.add(etiqueta(titulo));
+        for (String linea : lineas) {
+            document.add(item(linea, 12f));
+        }
+    }
+
+    private static Paragraph etiqueta(String titulo) {
+        Paragraph p = new Paragraph(titulo, ETIQUETA);
+        p.setSpacingBefore(4f);
+        return p;
+    }
+
+    private static Paragraph item(String texto, float sangria) {
+        Paragraph linea = new Paragraph(vineta(limpiar(texto)), TEXTO);
+        linea.setIndentationLeft(sangria);
+        linea.setAlignment(Element.ALIGN_JUSTIFIED);
+        return linea;
+    }
+
+    /** Franja con el codigo (materia + curso) y el nombre, y la linea de datos. */
+    private void agregarEncabezadoAsignatura(Document document, AsignaturaCertificadoDTO a) throws DocumentException {
         PdfPTable franja = new PdfPTable(1);
         franja.setWidthPercentage(100f);
         franja.setSpacingBefore(8f);
@@ -119,19 +272,6 @@ public class CertificadoContenidosPdf {
         datos.setSpacingBefore(4f);
         datos.setSpacingAfter(4f);
         document.add(datos);
-
-        document.add(new Paragraph("Descripción del curso", ETIQUETA));
-        Paragraph descripcion = new Paragraph(limpiar(a.descripcion()), TEXTO);
-        descripcion.setAlignment(Element.ALIGN_JUSTIFIED);
-        descripcion.setSpacingAfter(5f);
-        document.add(descripcion);
-
-        document.add(new Paragraph("Contenido", ETIQUETA));
-        for (String tema : a.contenidos()) {
-            Paragraph linea = new Paragraph(vineta(limpiar(tema)), TEXTO);
-            linea.setIndentationLeft(12f);
-            document.add(linea);
-        }
     }
 
     private void agregarCierre(Document document) throws DocumentException {

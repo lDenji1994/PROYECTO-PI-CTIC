@@ -18,6 +18,8 @@ public record VersionResumenDTO(
         String nombreArchivo,
         LocalDateTime fechaCarga,
         BigDecimal creditos,
-        String descripcion
+        String descripcion,
+        /** Programa que disena el curso (para corregirlo en el panel); puede ser null. */
+        Integer idProgramaDisena
 ) {
 }

@@ -62,6 +62,7 @@ public class ActividadService {
     public static final String TABLA_DETALLE_SOLICITUD = "DetallesSolicitudesCertificadosS";
     public static final String TABLA_CERTIFICADOS = "CertificadosGeneradosS";
     public static final String TABLA_USUARIOS = "UsuariosS";
+    public static final String TABLA_PLANES = "PlanesEstudioS";
 
     /* ---------- Procesos (primera parte de t_nombreProceso) ---------- */
     public static final String CREAR_PROGRAMA = "CREAR_PROGRAMA";
@@ -76,8 +77,14 @@ public class ActividadService {
     public static final String SOLICITUD_ESPERANDO = "SOLICITUD_ESPERANDO_DOCUMENTOS";
     public static final String SOLICITUD_REALIZADA = "SOLICITUD_REALIZADA";
     public static final String SOLICITUD_ERROR = "SOLICITUD_ERROR";
+    public static final String SOLICITUD_ENTREGADA = "SOLICITUD_ENTREGADA";
+    public static final String SOLICITUD_ENTREGA_DESHECHA = "SOLICITUD_ENTREGA_DESHECHA";
+    public static final String ACTUALIZAR_SOLICITUD = "ACTUALIZAR_DATOS_SOLICITUD";
+    public static final String GUARDAR_PLAN_ESTUDIO = "GUARDAR_PLAN_ESTUDIO";
+    public static final String QUITAR_PLAN_ESTUDIO = "QUITAR_PLAN_ESTUDIO";
     public static final String ACTUALIZAR_DATOS_CURSO = "ACTUALIZAR_DATOS_CURSO";
     public static final String REEMPLAZAR_ARCHIVO = "REEMPLAZAR_ARCHIVO_DOCUMENTO";
+    public static final String CORREGIR_CARGA = "CORREGIR_CARGA_DOCUMENTO";
     public static final String ELIMINAR_DOCUMENTO = "ELIMINAR_VERSION_DOCUMENTO";
     public static final String ELIMINAR_ASIGNATURA = "ELIMINAR_ASIGNATURA";
     public static final String ELIMINAR_PROGRAMA = "ELIMINAR_PROGRAMA";
@@ -103,8 +110,14 @@ public class ActividadService {
             Map.entry(SOLICITUD_ESPERANDO, "Solicitud en espera de documentos"),
             Map.entry(SOLICITUD_REALIZADA, "Solicitud marcada como realizada"),
             Map.entry(SOLICITUD_ERROR, "Solicitud marcada con error"),
+            Map.entry(SOLICITUD_ENTREGADA, "Certificado entregado al estudiante"),
+            Map.entry(SOLICITUD_ENTREGA_DESHECHA, "Entrega de certificado deshecha"),
+            Map.entry(ACTUALIZAR_SOLICITUD, "Datos de la solicitud actualizados"),
+            Map.entry(GUARDAR_PLAN_ESTUDIO, "Plan de estudios actualizado"),
+            Map.entry(QUITAR_PLAN_ESTUDIO, "Asignatura quitada del plan de estudios"),
             Map.entry(ACTUALIZAR_DATOS_CURSO, "Datos del curso corregidos"),
             Map.entry(REEMPLAZAR_ARCHIVO, "Archivo de documento reemplazado"),
+            Map.entry(CORREGIR_CARGA, "Carga corregida (asignatura, tipo, formato o periodo)"),
             Map.entry(ELIMINAR_DOCUMENTO, "Documento cargado eliminado"),
             Map.entry(ELIMINAR_ASIGNATURA, "Asignatura eliminada"),
             Map.entry(ELIMINAR_PROGRAMA, "Programa académico eliminado"),
@@ -121,6 +134,9 @@ public class ActividadService {
             Map.entry(CARGAR_DOCUMENTO_ANTIGUO, "warning"),
             Map.entry(SOLICITUD_ESPERANDO, "warning"),
             Map.entry(SOLICITUD_ERROR, "danger"),
+            Map.entry(SOLICITUD_ENTREGADA, "success"),
+            Map.entry(SOLICITUD_ENTREGA_DESHECHA, "warning"),
+            Map.entry(QUITAR_PLAN_ESTUDIO, "warning"),
             Map.entry(DESACTIVAR_USUARIO, "warning"),
             Map.entry(ELIMINAR_DOCUMENTO, "warning"),
             Map.entry(ELIMINAR_ASIGNATURA, "warning"),
@@ -128,13 +144,14 @@ public class ActividadService {
             Map.entry(ELIMINAR_SOLICITUD, "warning"),
             Map.entry(ELIMINAR_USUARIO, "warning"),
             Map.entry(REEMPLAZAR_ARCHIVO, "info"),
+            Map.entry(CORREGIR_CARGA, "info"),
             Map.entry(GENERAR_CERTIFICADO, "info")
     );
 
     /** Que tablas pertenecen a cada modulo del panel (filtro del Dashboard). */
     private static final Map<String, List<String>> MODULOS = Map.of(
             "documentos", List.of(TABLA_DOCUMENTOS, TABLA_VERSIONES),
-            "cursos", List.of(TABLA_ASIGNATURAS, TABLA_PROGRAMAS),
+            "cursos", List.of(TABLA_ASIGNATURAS, TABLA_PROGRAMAS, TABLA_PLANES),
             "certificaciones", List.of(TABLA_SOLICITUDES, TABLA_DETALLE_SOLICITUD, TABLA_CERTIFICADOS),
             "usuarios", List.of(TABLA_USUARIOS)
     );

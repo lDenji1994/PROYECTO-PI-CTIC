@@ -4,17 +4,20 @@ import com.certificados.app.dto.SolicitudCertificadoDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.security.UsuarioDetallesService;
 import com.certificados.app.exception.ResourceNotFoundException;
+import com.certificados.app.model.AlcanceSolicitud;
 import com.certificados.app.model.Asignatura;
 import com.certificados.app.model.DetalleSolicitudCertificado;
 import com.certificados.app.model.EstadoSolicitudCertificado;
 import com.certificados.app.model.Log;
 import com.certificados.app.model.PlantillaCertificado;
 import com.certificados.app.model.SolicitudCertificado;
+import com.certificados.app.model.TipoContenidoCertificado;
 import com.certificados.app.model.VersionPlantilla;
 import com.certificados.app.repository.AsignaturaRepository;
 import com.certificados.app.repository.DetalleSolicitudCertificadoRepository;
 import com.certificados.app.repository.LogRepository;
 import com.certificados.app.repository.PlantillaCertificadoRepository;
+import com.certificados.app.repository.ProgramaRepository;
 import com.certificados.app.repository.SolicitudCertificadoRepository;
 import com.certificados.app.repository.TipoCertificadoRepository;
 import com.certificados.app.repository.UsuarioRepository;
@@ -24,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -40,6 +45,15 @@ public class SolicitudCertificadoService {
     private final LogRepository logRepository;
     private final ActividadService actividadService;
     private final ContenidoCertificadoService contenidoCertificadoService;
+    private final PlanEstudioService planEstudioService;
+    private final ProgramaRepository programaRepository;
+
+    /**
+     * Caracteres permitidos en el nombre del estudiante: letras (con tildes),
+     * espacios, punto, guion y apostrofe. Asi no se guarda codigo (HTML/JS).
+     * SE PUEDE MODIFICAR: el largo maximo debe ser <= 150 (columna t_nombreEstudiante).
+     */
+    private static final String PATRON_NOMBRE = "^[\\p{L}][\\p{L} .'-]{1,149}$";
 
     public SolicitudCertificadoService(
             SolicitudCertificadoRepository repository,
@@ -52,7 +66,9 @@ public class SolicitudCertificadoService {
             CertificadoGeneradorService certificadoGeneradorService,
             LogRepository logRepository,
             ActividadService actividadService,
-            ContenidoCertificadoService contenidoCertificadoService) {
+            ContenidoCertificadoService contenidoCertificadoService,
+            PlanEstudioService planEstudioService,
+            ProgramaRepository programaRepository) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -68,6 +84,8 @@ public class SolicitudCertificadoService {
         this.logRepository = logRepository;
         this.actividadService = actividadService;
         this.contenidoCertificadoService = contenidoCertificadoService;
+        this.planEstudioService = planEstudioService;
+        this.programaRepository = programaRepository;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -146,8 +164,53 @@ public class SolicitudCertificadoService {
             );
         }
 
+        String nombreEstudiante = normalizarNombre(dto.getNombreEstudiante());
+        TipoContenidoCertificado tipoContenido = dto.getTipoContenido() == null
+                ? TipoContenidoCertificado.RESUMIDO
+                : dto.getTipoContenido();
+        AlcanceSolicitud alcance = dto.getAlcance() == null
+                ? AlcanceSolicitud.ASIGNATURAS
+                : dto.getAlcance();
+
+        // Semestres / programa completo: las asignaturas salen del plan de estudios
+        List<Integer> asignaturasDelPlan = List.of();
+        String semestresTexto = null;
+        Integer idPrograma = null;
+        if (alcance != AlcanceSolicitud.ASIGNATURAS) {
+            idPrograma = dto.getIdPrograma();
+            if (idPrograma == null || !programaRepository.existsById(idPrograma)) {
+                throw new BusinessException("Seleccione el programa académico de la solicitud.");
+            }
+            TreeSet<Integer> semestres = null;
+            if (alcance == AlcanceSolicitud.SEMESTRES) {
+                if (dto.getSemestres() == null || dto.getSemestres().isEmpty()) {
+                    throw new BusinessException("Seleccione al menos un semestre.");
+                }
+                semestres = new TreeSet<>();
+                for (Integer semestre : dto.getSemestres()) {
+                    PlanEstudioService.validarSemestre(semestre);
+                    semestres.add(semestre);
+                }
+                semestresTexto = semestres.stream().map(String::valueOf).collect(Collectors.joining(","));
+            }
+            asignaturasDelPlan = planEstudioService.asignaturasDe(idPrograma, semestres);
+            if (asignaturasDelPlan.isEmpty()) {
+                throw new BusinessException(alcance == AlcanceSolicitud.SEMESTRES
+                        ? "El plan de estudios del programa no tiene asignaturas en esos semestres. "
+                          + "Regístralas en «Contenido de cursos» > Plan de estudios."
+                        : "El programa no tiene plan de estudios registrado. "
+                          + "Regístralo en «Contenido de cursos» > Plan de estudios.");
+            }
+        }
+
         SolicitudCertificado solicitud =
                 new SolicitudCertificado();
+
+        solicitud.setNombreEstudiante(nombreEstudiante);
+        solicitud.setTipoContenido(tipoContenido);
+        solicitud.setAlcance(alcance);
+        solicitud.setIdPrograma(idPrograma);
+        solicitud.setSemestres(semestresTexto);
 
         solicitud.setIdEstudiante(
                 dto.getIdEstudiante()
@@ -170,7 +233,13 @@ public class SolicitudCertificadoService {
         );
 
         SolicitudCertificado guardada = repository.save(solicitud);
-        registrar(guardada, ActividadService.CREAR_SOLICITUD, "");
+
+        for (Integer idAsignatura : asignaturasDelPlan) {
+            detalleRepository.save(new DetalleSolicitudCertificado(guardada.getId(), idAsignatura));
+        }
+
+        registrar(guardada, ActividadService.CREAR_SOLICITUD,
+                " (" + textoAlcance(guardada) + ", " + tipoContenido.name().toLowerCase() + ")");
 
         return toDTO(guardada);
     }
@@ -322,6 +391,79 @@ public class SolicitudCertificadoService {
         return toDTO(guardada);
     }
 
+    /**
+     * El certificado ya se le entrego al estudiante: REALIZADO -> ENTREGADO.
+     * Asi se distingue lo que solo se genero de lo que ya se entrego.
+     */
+    public SolicitudCertificadoDTO marcarEntregada(Integer id) {
+        SolicitudCertificado solicitud = obtener(id);
+        validarTransicion(solicitud.getEstado(), EstadoSolicitudCertificado.ENTREGADO);
+        solicitud.setEstado(EstadoSolicitudCertificado.ENTREGADO);
+        solicitud.setFechaEntrega(LocalDateTime.now());
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.SOLICITUD_ENTREGADA, "");
+        return toDTO(guardada);
+    }
+
+    /** Por si se marco como entregada por error: ENTREGADO -> REALIZADO. */
+    public SolicitudCertificadoDTO deshacerEntrega(Integer id) {
+        SolicitudCertificado solicitud = obtener(id);
+        validarTransicion(solicitud.getEstado(), EstadoSolicitudCertificado.REALIZADO);
+        solicitud.setEstado(EstadoSolicitudCertificado.REALIZADO);
+        solicitud.setFechaEntrega(null);
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.SOLICITUD_ENTREGA_DESHECHA, "");
+        return toDTO(guardada);
+    }
+
+    /**
+     * Cambia el nombre del estudiante y/o el tipo de contenido (resumido o
+     * completo) antes de generar el PDF. Los campos que lleguen en null no
+     * se cambian. Solo mientras la solicitud este PENDIENTE o ESPERANDO_DOCUMENTOS.
+     */
+    public SolicitudCertificadoDTO actualizarDatos(Integer id, SolicitudCertificadoDTO dto) {
+        SolicitudCertificado solicitud = obtener(id);
+        if (solicitud.getEstado() != EstadoSolicitudCertificado.PENDIENTE
+                && solicitud.getEstado() != EstadoSolicitudCertificado.ESPERANDO_DOCUMENTOS) {
+            throw new BusinessException("La solicitud #" + id + " ya no se puede modificar (estado "
+                    + solicitud.getEstado() + ").");
+        }
+        if (dto.getNombreEstudiante() != null) {
+            solicitud.setNombreEstudiante(normalizarNombre(dto.getNombreEstudiante()));
+        }
+        if (dto.getTipoContenido() != null) {
+            solicitud.setTipoContenido(dto.getTipoContenido());
+        }
+        SolicitudCertificado guardada = repository.save(solicitud);
+        registrar(guardada, ActividadService.ACTUALIZAR_SOLICITUD,
+                " (" + guardada.getTipoContenido().name().toLowerCase() + ")");
+        return toDTO(guardada);
+    }
+
+    /** Quita espacios de mas y valida el nombre del estudiante (obligatorio). */
+    private static String normalizarNombre(String nombre) {
+        String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
+        if (limpio.isEmpty()) {
+            throw new BusinessException("El nombre del estudiante es obligatorio.");
+        }
+        if (!limpio.matches(PATRON_NOMBRE)) {
+            throw new BusinessException("El nombre del estudiante solo puede tener letras, espacios, "
+                    + "punto, guion y apóstrofe (máximo 150 caracteres).");
+        }
+        return limpio;
+    }
+
+    /** "asignaturas", "semestres 1, 2 de ISIS" o "programa ISIS completo" (para la bitacora). */
+    private String textoAlcance(SolicitudCertificado s) {
+        String programa = s.getIdPrograma() == null ? "" : programaRepository.findById(s.getIdPrograma())
+                .map(p -> p.getCodigo() == null ? p.getNombre() : p.getCodigo()).orElse("");
+        return switch (s.getAlcance()) {
+            case ASIGNATURAS -> "asignaturas";
+            case SEMESTRES -> "semestres " + s.getSemestres().replace(",", ", ") + " de " + programa;
+            case PROGRAMA -> "programa " + programa + " completo";
+        };
+    }
+
     public SolicitudCertificadoDTO marcarError(
             Integer id) {
 
@@ -392,7 +534,9 @@ public class SolicitudCertificadoService {
     /** Bitacora de solicitudes (a nombre del usuario encargado). */
     private void registrar(SolicitudCertificado solicitud, String proceso, String extra) {
         actividadService.registrar(ActividadService.TABLA_SOLICITUDES, proceso,
-                "Solicitud #" + solicitud.getId() + " - estudiante " + solicitud.getIdEstudiante() + extra,
+                "Solicitud #" + solicitud.getId() + " - estudiante " + solicitud.getIdEstudiante()
+                        + (solicitud.getNombreEstudiante() == null ? "" : " " + solicitud.getNombreEstudiante())
+                        + extra,
                 solicitud.getIdUsuarioEncargado());
     }
 
@@ -471,7 +615,15 @@ public class SolicitudCertificadoService {
                     estadoNuevo == EstadoSolicitudCertificado.PROCESANDO
                             || estadoNuevo == EstadoSolicitudCertificado.ERROR;
 
-            case REALIZADO, ERROR ->
+            // El PDF ya esta generado: solo falta entregarlo al estudiante
+            case REALIZADO ->
+                    estadoNuevo == EstadoSolicitudCertificado.ENTREGADO;
+
+            // Deshacer una entrega marcada por error
+            case ENTREGADO ->
+                    estadoNuevo == EstadoSolicitudCertificado.REALIZADO;
+
+            case ERROR ->
                     false;
         };
 
@@ -529,6 +681,16 @@ public class SolicitudCertificadoService {
         dto.setFechaFinalizacion(
                 solicitud.getFechaFinalizacion()
         );
+
+        dto.setNombreEstudiante(solicitud.getNombreEstudiante());
+        dto.setFechaEntrega(solicitud.getFechaEntrega());
+        dto.setTipoContenido(solicitud.getTipoContenido());
+        dto.setAlcance(solicitud.getAlcance());
+        dto.setIdPrograma(solicitud.getIdPrograma());
+        dto.setSemestres(solicitud.getSemestres() == null || solicitud.getSemestres().isBlank()
+                ? List.of()
+                : java.util.Arrays.stream(solicitud.getSemestres().split(","))
+                        .map(String::trim).filter(t -> !t.isEmpty()).map(Integer::valueOf).toList());
 
         return dto;
     }

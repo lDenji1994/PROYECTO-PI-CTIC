@@ -18,6 +18,8 @@ public record VersionDatosDTO(
         BigDecimal horasPracticas,
         BigDecimal horasLaboratorio,
         BigDecimal horasIndependientes,
-        String descripcion
+        String descripcion,
+        /** Parrafo breve para el certificado resumido (puede ser null). */
+        String resumen
 ) {
 }

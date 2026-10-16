@@ -1,5 +1,6 @@
 package com.certificados.app.controller;
 
+import com.certificados.app.dto.CorregirCargaDTO;
 import com.certificados.app.dto.DocumentoCertificadoDTO;
 import com.certificados.app.dto.DatosCursoDTO;
 import com.certificados.app.dto.DocumentoResumenDTO;
@@ -108,9 +109,9 @@ public class DocumentoAcademicoController {
      *
      * multipart/form-data.
      *
-     * Registra (o reutiliza) el documento de la asignatura + tipo
-     * y guarda el archivo (PDF, Word o Excel) como nueva versión,
-     * junto con los datos del curso registrados a mano.
+     * Registra un documento nuevo de la asignatura (una asignatura puede
+     * tener varios, incluso del mismo tipo) y guarda el archivo (PDF, Word
+     * o Excel) junto con los datos del curso registrados a mano.
      */
     @PostMapping(
             value = "/cargar",
@@ -148,5 +149,18 @@ public class DocumentoAcademicoController {
                                 archivo
                         )
                 );
+    }
+
+    /**
+     * PUT /api/documentos-academicos/cargas/{idVersion}
+     *
+     * Corrige asignatura, tipo de documento, formato, periodo y programa de
+     * un archivo ya cargado. Cuerpo JSON: ver CorregirCargaDTO.
+     */
+    @PutMapping("/cargas/{idVersion}")
+    public DocumentoResumenDTO corregirCarga(@PathVariable Integer idVersion,
+                                             @RequestBody CorregirCargaDTO datos) {
+        return service.corregirCarga(idVersion, datos.idAsignatura(), datos.idTipoDocumentoAcademico(),
+                datos.codigoFormato(), datos.versionFormato(), datos.periodo(), datos.idPrograma());
     }
 }

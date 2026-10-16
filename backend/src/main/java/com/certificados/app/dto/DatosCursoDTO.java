@@ -36,6 +36,8 @@ public class DatosCursoDTO {
     private BigDecimal horasIndependientes;
 
     /* ---- opcionales ---- */
+    /** Parrafo breve para el certificado RESUMIDO (si se deja vacio se usa la descripcion). */
+    private String resumen;
     private String escuela;
     private String facultad;
     private String clasificacionCINE;
@@ -79,6 +81,8 @@ public class DatosCursoDTO {
     public void setRequisitos(String requisitos) { this.requisitos = requisitos; }
     public String getJustificacion() { return justificacion; }
     public void setJustificacion(String justificacion) { this.justificacion = justificacion; }
+    public String getResumen() { return resumen; }
+    public void setResumen(String resumen) { this.resumen = resumen; }
     public String getProposito() { return proposito; }
     public void setProposito(String proposito) { this.proposito = proposito; }
     public String getModoCalificacion() { return modoCalificacion; }

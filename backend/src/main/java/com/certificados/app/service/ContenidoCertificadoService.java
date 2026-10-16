@@ -1,6 +1,21 @@
 package com.certificados.app.service;
 
 import com.certificados.app.dto.AsignaturaCertificadoDTO;
+import com.certificados.app.dto.DetalleCompletoDTO;
+import com.certificados.app.dto.VersionTextosDTO;
+import com.certificados.app.model.AlcanceSolicitud;
+import com.certificados.app.model.Competencia;
+import com.certificados.app.model.CriterioCompetencia;
+import com.certificados.app.model.Evaluacion;
+import com.certificados.app.model.Metodologia;
+import com.certificados.app.model.Objetivo;
+import com.certificados.app.model.PlanEstudio;
+import com.certificados.app.repository.CompetenciaRepository;
+import com.certificados.app.repository.CriterioCompetenciaRepository;
+import com.certificados.app.repository.EvaluacionRepository;
+import com.certificados.app.repository.MetodologiaRepository;
+import com.certificados.app.repository.ObjetivoRepository;
+import com.certificados.app.repository.PlanEstudioRepository;
 import com.certificados.app.dto.VersionDatosDTO;
 import com.certificados.app.dto.VersionOpcionDTO;
 import com.certificados.app.dto.VersionResumenDTO;
@@ -70,6 +85,12 @@ public class ContenidoCertificadoService {
     private final ContenidoRepository contenidoRepository;
     private final FormatoService formatoService;
     private final ActividadService actividadService;
+    private final PlanEstudioRepository planRepository;
+    private final ObjetivoRepository objetivoRepository;
+    private final CompetenciaRepository competenciaRepository;
+    private final CriterioCompetenciaRepository criterioRepository;
+    private final MetodologiaRepository metodologiaRepository;
+    private final EvaluacionRepository evaluacionRepository;
 
     public ContenidoCertificadoService(
             SolicitudCertificadoRepository solicitudRepository,
@@ -80,8 +101,20 @@ public class ContenidoCertificadoService {
             VersionDocumentoRepository versionRepository,
             ContenidoRepository contenidoRepository,
             FormatoService formatoService,
-            ActividadService actividadService) {
+            ActividadService actividadService,
+            PlanEstudioRepository planRepository,
+            ObjetivoRepository objetivoRepository,
+            CompetenciaRepository competenciaRepository,
+            CriterioCompetenciaRepository criterioRepository,
+            MetodologiaRepository metodologiaRepository,
+            EvaluacionRepository evaluacionRepository) {
         this.actividadService = actividadService;
+        this.planRepository = planRepository;
+        this.objetivoRepository = objetivoRepository;
+        this.competenciaRepository = competenciaRepository;
+        this.criterioRepository = criterioRepository;
+        this.metodologiaRepository = metodologiaRepository;
+        this.evaluacionRepository = evaluacionRepository;
         this.solicitudRepository = solicitudRepository;
         this.detalleRepository = detalleRepository;
         this.asignaturaRepository = asignaturaRepository;
@@ -92,11 +125,21 @@ public class ContenidoCertificadoService {
         this.formatoService = formatoService;
     }
 
-    /** Contenido del certificado, asignatura por asignatura (ordenadas por codigo). */
+    /**
+     * Contenido del certificado, asignatura por asignatura.
+     * Orden: por codigo; si la solicitud es por semestres o por programa,
+     * primero por semestre (asi el certificado las agrupa por semestre).
+     */
     public List<AsignaturaCertificadoDTO> obtener(Integer idSolicitud) {
-        if (!solicitudRepository.existsById(idSolicitud)) {
-            throw new ResourceNotFoundException("Solicitud no encontrada con id " + idSolicitud);
-        }
+        SolicitudCertificado solicitud = solicitudRepository.findById(idSolicitud)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con id " + idSolicitud));
+
+        // Semestre de cada asignatura en el programa de la solicitud (si tiene)
+        Map<Integer, Integer> semestres = solicitud.getIdPrograma() == null
+                ? Map.of()
+                : planRepository.findByIdProgramaOrderBySemestreAscIdAsignaturaAsc(solicitud.getIdPrograma()).stream()
+                        .collect(Collectors.toMap(PlanEstudio::getIdAsignatura, PlanEstudio::getSemestre, (a, b) -> a));
+        boolean porSemestre = solicitud.getAlcance() != null && solicitud.getAlcance() != AlcanceSolicitud.ASIGNATURAS;
 
         Map<Integer, TipoDocumentoAcademico> tipos = tipoRepository.findAll().stream()
                 .collect(Collectors.toMap(TipoDocumentoAcademico::getId, Function.identity()));
@@ -105,9 +148,12 @@ public class ContenidoCertificadoService {
         for (DetalleSolicitudCertificado detalle : detalleRepository.findByIdSolicitudCertificado(idSolicitud)) {
             asignaturaRepository.findById(detalle.getIdAsignatura())
                     .ifPresent(asignatura -> resultado.add(
-                            armar(asignatura, tipos, detalle.getIdVersionDocumento())));
+                            armar(asignatura, tipos, detalle.getIdVersionDocumento(),
+                                    porSemestre ? semestres.get(asignatura.getId()) : null)));
         }
-        resultado.sort(Comparator.comparing(AsignaturaCertificadoDTO::codigo, String.CASE_INSENSITIVE_ORDER));
+        resultado.sort(Comparator
+                .comparing(AsignaturaCertificadoDTO::semestre, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(AsignaturaCertificadoDTO::codigo, String.CASE_INSENSITIVE_ORDER));
         return resultado;
     }
 
@@ -183,7 +229,7 @@ public class ContenidoCertificadoService {
     }
 
     private AsignaturaCertificadoDTO armar(Asignatura asignatura, Map<Integer, TipoDocumentoAcademico> tipos,
-                                           Integer idVersionElegida) {
+                                           Integer idVersionElegida, Integer semestre) {
         String[] codigos = AsignaturaService.separar(asignatura.getCodigo());
 
         Map<Integer, DocumentoAcademico> documentos = documentoRepository
@@ -209,7 +255,7 @@ public class ContenidoCertificadoService {
             return new AsignaturaCertificadoDTO(asignatura.getId(), codigos[0], codigos[1],
                     asignatura.getCodigo(), asignatura.getNombre(), null, null, null, false, null,
                     null, null, null, null, null, null, List.of(), false,
-                    List.of("sin documento cargado"), false, opciones);
+                    List.of("sin documento cargado"), false, opciones, null, semestre);
         }
 
         DocumentoAcademico documento = documentos.get(elegida.idDocumentoAcademico());
@@ -231,7 +277,68 @@ public class ContenidoCertificadoService {
                 elegida.creditos(), elegida.horasTeoricas(), elegida.horasPracticas(),
                 elegida.horasLaboratorio(), elegida.horasIndependientes(),
                 elegida.descripcion(), contenidos, faltantes.isEmpty(), faltantes,
-                manual != null, opciones);
+                manual != null, opciones, elegida.resumen(), semestre);
+    }
+
+    /**
+     * Todo lo registrado de una version para el certificado COMPLETO:
+     * proposito, justificacion, requisitos, objetivos, competencias (con
+     * criterios), contenido tema por tema, metodologia y evaluacion.
+     * Lo que no este registrado llega vacio y el PDF no lo muestra.
+     */
+    // noRollbackFor RuntimeException: se llama durante la generacion del PDF;
+    // si fallara una lectura, la solicitud debe poder quedar en ERROR.
+    @Transactional(readOnly = true, noRollbackFor = RuntimeException.class)
+    public DetalleCompletoDTO detalleCompleto(Integer idVersion) {
+        VersionTextosDTO textos = versionRepository.buscarTextos(idVersion)
+                .orElse(new VersionTextosDTO(idVersion, null, null, null, null));
+
+        List<String> objetivos = objetivoRepository.findByIdVersionDocumento(idVersion).stream()
+                .sorted(Comparator.comparing(Objetivo::getId))
+                .map(Objetivo::getDescripcion)
+                .filter(ContenidoCertificadoService::tieneTexto)
+                .toList();
+
+        List<DetalleCompletoDTO.CompetenciaDetalle> competencias = competenciaRepository
+                .findByIdVersionDocumento(idVersion).stream()
+                .sorted(Comparator.comparing(Competencia::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Competencia::getId))
+                .filter(c -> tieneTexto(c.getDescripcion()))
+                .map(c -> new DetalleCompletoDTO.CompetenciaDetalle(c.getDescripcion(),
+                        criterioRepository.findByIdCompetencia(c.getId()).stream()
+                                .sorted(Comparator.comparing(CriterioCompetencia::getId))
+                                .map(CriterioCompetencia::getDescripcion)
+                                .filter(ContenidoCertificadoService::tieneTexto)
+                                .toList()))
+                .toList();
+
+        List<DetalleCompletoDTO.TemaDetalle> contenidos = contenidoRepository
+                .findByIdVersionDocumentoOrderByOrdenAscIdAsc(idVersion).stream()
+                .filter(c -> tieneTexto(c.getDescripcion()))
+                .map(c -> new DetalleCompletoDTO.TemaDetalle(c.getSemana(), c.getUnidad(), c.getTema(), c.getDescripcion()))
+                .toList();
+
+        List<String> metodologias = metodologiaRepository.findByIdVersionDocumento(idVersion).stream()
+                .sorted(Comparator.comparing(Metodologia::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Metodologia::getId))
+                .map(Metodologia::getDescripcion)
+                .filter(ContenidoCertificadoService::tieneTexto)
+                .toList();
+
+        List<DetalleCompletoDTO.EvaluacionDetalle> evaluaciones = evaluacionRepository
+                .findByIdVersionDocumento(idVersion).stream()
+                .sorted(Comparator.comparing(Evaluacion::getOrden, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Evaluacion::getId))
+                .filter(e -> tieneTexto(e.getDescripcion()))
+                .map(e -> new DetalleCompletoDTO.EvaluacionDetalle(e.getTipo(), e.getDescripcion(), e.getPorcentaje()))
+                .toList();
+
+        return new DetalleCompletoDTO(textos.proposito(), textos.justificacion(), textos.requisitos(),
+                textos.modalidades(), objetivos, competencias, contenidos, metodologias, evaluaciones);
+    }
+
+    private static boolean tieneTexto(String texto) {
+        return texto != null && !texto.isBlank();
     }
 
     /** Versiones que se pueden escoger, de la mas reciente a la mas antigua. */

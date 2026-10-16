@@ -69,6 +69,13 @@ public class VersionDocumento {
     @Column(name = "t_descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
+    /**
+     * Parrafo breve para el certificado RESUMIDO (migracion 05).
+     * Opcional: si esta vacio el certificado usa la descripcion.
+     */
+    @Column(name = "t_resumen", columnDefinition = "TEXT")
+    private String resumen;
+
     @Column(name = "t_proposito", columnDefinition = "TEXT")
     private String proposito;
 
@@ -317,5 +324,13 @@ public class VersionDocumento {
 
     public void setFechaCarga(LocalDateTime fechaCarga) {
         this.fechaCarga = fechaCarga;
+    }
+
+    public String getResumen() {
+        return resumen;
+    }
+
+    public void setResumen(String resumen) {
+        this.resumen = resumen;
     }
 }

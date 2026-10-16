@@ -55,6 +55,34 @@ public class SolicitudCertificado {
     @Column(name = "n_idUsuarioEncargado", nullable = false)
     private Integer idUsuarioEncargado;
 
+    /* ---------------- Agregados en la migracion 05 ---------------- */
+
+    /** Nombre del estudiante (ademas del ID). Sale en el certificado. */
+    @Column(name = "t_nombreEstudiante", length = 150)
+    private String nombreEstudiante;
+
+    /** Fecha en que el certificado se le entrego al estudiante (estado ENTREGADO). */
+    @Column(name = "dt_fechaEntrega")
+    private LocalDateTime fechaEntrega;
+
+    /** RESUMIDO o COMPLETO: que tan detallado sale cada asignatura. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "c_tipoContenido", nullable = false, length = 20)
+    private TipoContenidoCertificado tipoContenido = TipoContenidoCertificado.RESUMIDO;
+
+    /** ASIGNATURAS, SEMESTRES o PROGRAMA. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "c_alcance", nullable = false, length = 20)
+    private AlcanceSolicitud alcance = AlcanceSolicitud.ASIGNATURAS;
+
+    /** Programa de la solicitud (solo alcance SEMESTRES o PROGRAMA). */
+    @Column(name = "n_idPrograma")
+    private Integer idPrograma;
+
+    /** Semestres pedidos separados por coma, ej. "1,2,5" (solo alcance SEMESTRES). */
+    @Column(name = "t_semestres", length = 100)
+    private String semestres;
+
     @PrePersist
     protected void prePersist() {
         if (fechaSolicitud == null) {
@@ -63,6 +91,12 @@ public class SolicitudCertificado {
 
         if (estado == null) {
             estado = EstadoSolicitudCertificado.PENDIENTE;
+        }
+        if (tipoContenido == null) {
+            tipoContenido = TipoContenidoCertificado.RESUMIDO;
+        }
+        if (alcance == null) {
+            alcance = AlcanceSolicitud.ASIGNATURAS;
         }
     }
 
@@ -131,5 +165,53 @@ public class SolicitudCertificado {
 
     public void setIdUsuarioEncargado(Integer idUsuarioEncargado) {
         this.idUsuarioEncargado = idUsuarioEncargado;
+    }
+
+    public String getNombreEstudiante() {
+        return nombreEstudiante;
+    }
+
+    public void setNombreEstudiante(String nombreEstudiante) {
+        this.nombreEstudiante = nombreEstudiante;
+    }
+
+    public LocalDateTime getFechaEntrega() {
+        return fechaEntrega;
+    }
+
+    public void setFechaEntrega(LocalDateTime fechaEntrega) {
+        this.fechaEntrega = fechaEntrega;
+    }
+
+    public TipoContenidoCertificado getTipoContenido() {
+        return tipoContenido;
+    }
+
+    public void setTipoContenido(TipoContenidoCertificado tipoContenido) {
+        this.tipoContenido = tipoContenido;
+    }
+
+    public AlcanceSolicitud getAlcance() {
+        return alcance;
+    }
+
+    public void setAlcance(AlcanceSolicitud alcance) {
+        this.alcance = alcance;
+    }
+
+    public Integer getIdPrograma() {
+        return idPrograma;
+    }
+
+    public void setIdPrograma(Integer idPrograma) {
+        this.idPrograma = idPrograma;
+    }
+
+    public String getSemestres() {
+        return semestres;
+    }
+
+    public void setSemestres(String semestres) {
+        this.semestres = semestres;
     }
 }
