@@ -22,8 +22,13 @@ CALL migracion07_columna('planes_estudio', 'c_estadoPlan',
 
 DROP PROCEDURE IF EXISTS migracion07_columna;
 
+SET @seguro_anterior := @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
+
 DELETE FROM elementos_plantilla
 WHERE c_tipoElemento = 'TEXTO'
   AND t_contenido = 'UNIVERSIDAD PONTIFICIA BOLIVARIANA';
+
+SET SQL_SAFE_UPDATES = @seguro_anterior;
 
 SELECT 'Migracion 07 lista' AS resultado;
