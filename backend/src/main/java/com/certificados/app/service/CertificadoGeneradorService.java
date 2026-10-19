@@ -11,7 +11,6 @@ import com.certificados.app.repository.PlanRepository;
 import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.model.ElementoPlantilla;
 import com.certificados.app.model.SolicitudCertificado;
-import com.certificados.app.model.TipoContenidoCertificado;
 import com.certificados.app.model.VersionPlantilla;
 import com.certificados.app.repository.CampoPlantillaRepository;
 import com.certificados.app.repository.CertificadoGeneradoRepository;
@@ -44,6 +43,7 @@ public class CertificadoGeneradorService {
     private final CertificadoContenidosPdf contenidosPdf;
     private final ProgramaRepository programaRepository;
     private final MembreteCertificadoPdf membrete;
+    private final MembreteService membreteService;
     private final PlanRepository planRepository;
 
     public CertificadoGeneradorService(
@@ -56,6 +56,7 @@ public class CertificadoGeneradorService {
             CertificadoContenidosPdf contenidosPdf,
             ProgramaRepository programaRepository,
             MembreteCertificadoPdf membrete,
+            MembreteService membreteService,
             PlanRepository planRepository) {
 
         this.certificadoRepository = certificadoRepository;
@@ -68,6 +69,7 @@ public class CertificadoGeneradorService {
         this.contenidosPdf = contenidosPdf;
         this.programaRepository = programaRepository;
         this.membrete = membrete;
+        this.membreteService = membreteService;
         this.planRepository = planRepository;
     }
 
@@ -83,20 +85,6 @@ public class CertificadoGeneradorService {
         }
         float inicioLibre = MembreteCertificadoPdf.FIN_MEMBRETE + 18;
         return minimo < inicioLibre ? inicioLibre - minimo : 0;
-    }
-
-    /** "RESUMEN CONTENIDOS PROGRAMÁTICOS" o "CONTENIDOS PROGRAMÁTICOS" (completo). */
-    private static String tituloMembrete(SolicitudCertificado solicitud) {
-        return solicitud.getTipoContenido() == TipoContenidoCertificado.COMPLETO
-                ? "CONTENIDOS PROGRAMÁTICOS"
-                : "RESUMEN CONTENIDOS PROGRAMÁTICOS";
-    }
-
-    /** "Ana María Pérez, ID. 000123456" (como en el certificado institucional). */
-    private static String estudianteMembrete(SolicitudCertificado solicitud) {
-        String id = "ID. " + String.format("%09d", solicitud.getIdEstudiante());
-        String nombre = solicitud.getNombreEstudiante();
-        return nombre == null || nombre.isBlank() ? id : nombre.trim() + ", " + id;
     }
 
     /**
@@ -191,8 +179,7 @@ public class CertificadoGeneradorService {
             // Membrete (logo + datos) arriba y pie + "Pagina N de M" abajo,
             // en cada pagina. Debe registrarse antes de abrir el documento.
             writer.setPageEvent(membrete.crearEvento(
-                    tituloMembrete(solicitud),
-                    estudianteMembrete(solicitud)));
+                    membreteService.textos(solicitud, asignaturas)));
 
             document.open();
 

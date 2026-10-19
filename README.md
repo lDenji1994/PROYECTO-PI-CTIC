@@ -78,6 +78,8 @@ falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no 
 - `database/07_migracion_planes_estudio.sql` — planes de estudio con nombre y estado (vigente,
   antiguo o desactualizado): un programa puede tener varios planes y cada solicitud por semestres
   usa uno. También quita de la plantilla el título duplicado (el certificado ya trae el membrete).
+- `database/08_migracion_membrete_programa.sql` — escuela y facultad de cada programa, que salen
+  en el membrete de sus certificados (se editan en el panel: Programas > ✎).
 
 Tablas de la base (19):
 

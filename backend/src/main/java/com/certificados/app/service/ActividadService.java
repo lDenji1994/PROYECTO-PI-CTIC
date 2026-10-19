@@ -66,6 +66,7 @@ public class ActividadService {
 
     /* ---------- Procesos (primera parte de t_nombreProceso) ---------- */
     public static final String CREAR_PROGRAMA = "CREAR_PROGRAMA";
+    public static final String ACTUALIZAR_PROGRAMA = "ACTUALIZAR_PROGRAMA";
     public static final String CREAR_ASIGNATURA = "CREAR_ASIGNATURA";
     public static final String CREAR_DOCUMENTO = "CREAR_DOCUMENTO_ACADEMICO";
     public static final String ACTUALIZAR_FORMATO = "ACTUALIZAR_FORMATO_DOCUMENTO";
@@ -103,6 +104,7 @@ public class ActividadService {
 
     private static final Map<String, String> TITULOS = Map.ofEntries(
             Map.entry(CREAR_PROGRAMA, "Programa académico registrado"),
+            Map.entry(ACTUALIZAR_PROGRAMA, "Programa académico actualizado (nombre o membrete)"),
             Map.entry(CREAR_ASIGNATURA, "Asignatura registrada"),
             Map.entry(CREAR_DOCUMENTO, "Documento académico registrado"),
             Map.entry(ACTUALIZAR_FORMATO, "Formato de documento actualizado"),

@@ -37,7 +37,9 @@ CREATE TABLE documentos (
 CREATE TABLE programas (
     n_idPrograma INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NULL,
-    t_nombre VARCHAR(200) NOT NULL
+    t_nombre VARCHAR(200) NOT NULL,
+    t_escuela VARCHAR(150) NULL,
+    t_facultad VARCHAR(150) NULL
 );
 
 CREATE TABLE versiones_documento (

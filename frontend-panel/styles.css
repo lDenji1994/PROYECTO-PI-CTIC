@@ -2607,3 +2607,7 @@ input[type="search"] + select { margin-top: 6px; }
     .certificate-logo-img { max-width: 60%; }
     .certificate-pie { flex-direction: column; }
 }
+
+/* Editar programa: nombre y escuela / facultad del membrete */
+.programa-editor { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--gris-borde); }
+.programa-editor h4 { margin: 0 0 10px; font-size: 15px; }

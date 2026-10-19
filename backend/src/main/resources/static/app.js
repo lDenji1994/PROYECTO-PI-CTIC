@@ -137,6 +137,7 @@ const estado = {
     documentos: [],
     solicitudes: [],
     solicitudSeleccionada: null,
+    programaEditado: null,       // programa abierto en "Editar programa"
     versionEnEdicion: null,
     usuarioContrasena: null,
     planes: [],                  // planes de estudio del programa elegido en "Contenido de cursos"
@@ -1660,6 +1661,8 @@ function pintarProgramas() {
     const lista = document.getElementById('lista-programas');
     lista.innerHTML = estado.programas.map(function (p) {
         return '<li class="chip">' + escaparTexto(p.codigo ? p.codigo + ' · ' : '') + escaparTexto(p.nombre) +
+            '<button type="button" class="chip-edit" data-editar-programa="' + idSeguro(p.id) +
+                '" title="Editar nombre, escuela y facultad" aria-label="Editar programa">✎</button>' +
             (esAdmin() ? '<button type="button" class="chip-remove" data-eliminar-programa="' + idSeguro(p.id) +
                 '" title="Eliminar programa" aria-label="Eliminar programa">×</button>' : '') + '</li>';
     }).join('');
@@ -1679,6 +1682,59 @@ async function registrarPrograma(evento) {
         await apiJson('/programas', 'POST', datos);
         mostrarMensaje('Programa registrado.', 'success');
         document.getElementById('form-programa').reset();
+        await cargarCatalogos();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
+/** Abre el formulario para cambiar nombre, escuela y facultad del programa. */
+function abrirEditorPrograma(idPrograma) {
+    const programa = estado.programas.find(function (p) { return p.id === idPrograma; });
+    if (!programa) {
+        return;
+    }
+    const config = estado.configuracion || {};
+    estado.programaEditado = programa.id;
+    document.getElementById('editar-programa-titulo').textContent = 'Editar programa ' + (programa.codigo || '');
+    document.getElementById('edit-prog-nombre').value = programa.nombre || '';
+    document.getElementById('edit-prog-escuela').value = programa.escuela || '';
+    document.getElementById('edit-prog-facultad').value = programa.facultad || '';
+    document.getElementById('edit-prog-escuela').placeholder = config.membreteEscuela || '';
+    document.getElementById('edit-prog-facultad').placeholder = config.membreteFacultad || '';
+    const form = document.getElementById('form-editar-programa');
+    form.hidden = false;
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('edit-prog-nombre').focus();
+}
+
+function cerrarEditorPrograma() {
+    estado.programaEditado = null;
+    document.getElementById('form-editar-programa').hidden = true;
+}
+
+async function guardarPrograma(evento) {
+    evento.preventDefault();
+    const programa = estado.programas.find(function (p) { return p.id === estado.programaEditado; });
+    if (!programa) {
+        return;
+    }
+    const limpiar = function (id) { return document.getElementById(id).value.trim().replace(/\s+/g, ' '); };
+    const datos = {
+        codigo: programa.codigo,
+        nombre: limpiar('edit-prog-nombre'),
+        escuela: limpiar('edit-prog-escuela'),
+        facultad: limpiar('edit-prog-facultad')
+    };
+    if (!datos.nombre) {
+        mostrarMensaje('El nombre del programa es obligatorio.', 'error');
+        return;
+    }
+    try {
+        await apiJson('/programas/' + idSeguro(programa.id), 'PUT', datos);
+        mostrarMensaje('Programa ' + (programa.codigo || '') + ' actualizado.', 'success');
+        cerrarEditorPrograma();
         await cargarCatalogos();
         cargarActividad();
     } catch (e) {
@@ -2640,11 +2696,20 @@ async function guardarDatosSolicitud(evento) {
     }
 }
 
-/** Membrete y pie de la vista previa (mismos textos que el PDF). */
-function pintarMembrete(solicitud) {
+/** Membrete y pie de la vista previa (mismos textos que el PDF, segun el programa). */
+async function pintarMembrete(solicitud) {
     const config = estado.configuracion || {};
     document.getElementById('membrete-escuela').textContent = config.membreteEscuela || '';
     document.getElementById('membrete-facultad').textContent = config.membreteFacultad || '';
+    try {
+        const textos = await api('/solicitudes-certificados/' + idSeguro(solicitud.id) + '/membrete');
+        if (textos && estado.solicitudSeleccionada === solicitud.id) {
+            document.getElementById('membrete-escuela').textContent = textos.escuela || '';
+            document.getElementById('membrete-facultad').textContent = textos.facultad || '';
+        }
+    } catch (e) {
+        /* Si falla, quedan los textos generales */
+    }
     document.getElementById('membrete-titulo').textContent = solicitud.tipoContenido === 'COMPLETO'
         ? 'CONTENIDOS PROGRAMÁTICOS' : 'RESUMEN CONTENIDOS PROGRAMÁTICOS';
     document.getElementById('membrete-estudiante').textContent =
@@ -2902,6 +2967,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             eliminarAsignatura(Number(eliminarAsig.dataset.eliminarAsignatura));
             return;
         }
+        const editarProg = e.target.closest('[data-editar-programa]');
+        if (editarProg) {
+            abrirEditorPrograma(Number(editarProg.dataset.editarPrograma));
+            return;
+        }
         const eliminarProg = e.target.closest('[data-eliminar-programa]');
         if (eliminarProg) {
             eliminarPrograma(Number(eliminarProg.dataset.eliminarPrograma));
@@ -3019,6 +3089,8 @@ document.addEventListener('DOMContentLoaded', async function () {
         cargarPlanesPrograma();
     });
     document.getElementById('form-nuevo-plan').addEventListener('submit', crearPlan);
+    document.getElementById('form-editar-programa').addEventListener('submit', guardarPrograma);
+    document.getElementById('btn-cancelar-programa').addEventListener('click', cerrarEditorPrograma);
     document.getElementById('btn-guardar-plan').addEventListener('click', guardarPlan);
     document.getElementById('btn-eliminar-plan').addEventListener('click', eliminarPlan);
     document.getElementById('plan-filtro-estado').addEventListener('change', pintarListaPlanes);

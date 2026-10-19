@@ -34,7 +34,9 @@ import java.io.InputStream;
  * importar cuantas ocupe el contenido. El total de paginas ("de 3") se
  * escribe al cerrar el documento.
  *
- * SE PUEDE MODIFICAR en application.properties (lineas comentadas con #;
+ * La escuela y la facultad se registran en cada programa (panel > Programas >
+ * Editar). Si el programa no las tiene, se usan los valores generales; estos
+ * SE PUEDEN MODIFICAR en application.properties (lineas comentadas con #;
  * si no se ponen, se usan los textos de este archivo):
  *   app.certificados.membrete.escuela   (segunda linea del membrete)
  *   app.certificados.membrete.facultad  (cuarta linea del membrete)
@@ -107,12 +109,11 @@ public class MembreteCertificadoPdf {
 
     /**
      * Evento para UN documento (guarda el contador de paginas).
-     *
-     * @param titulo     tercera linea, ej. "RESUMEN CONTENIDOS PROGRAMÁTICOS"
-     * @param estudiante linea del estudiante, ej. "Ana Pérez, ID. 000123456"
+     * Los textos (escuela y facultad del programa, titulo, estudiante) los
+     * arma MembreteService.
      */
-    public PdfPageEventHelper crearEvento(String titulo, String estudiante) {
-        return new Evento(titulo, estudiante, logo());
+    public PdfPageEventHelper crearEvento(MembreteService.Textos textos) {
+        return new Evento(textos, logo());
     }
 
     private byte[] logo() {
@@ -130,17 +131,15 @@ public class MembreteCertificadoPdf {
 
     private final class Evento extends PdfPageEventHelper {
 
-        private final String titulo;
-        private final String estudiante;
+        private final MembreteService.Textos textos;
         private final byte[] bytesLogo;
         private BaseFont normal;
         private BaseFont negrita;
         private BaseFont cursiva;
         private PdfTemplate totalPaginas;
 
-        private Evento(String titulo, String estudiante, byte[] bytesLogo) {
-            this.titulo = titulo;
-            this.estudiante = estudiante;
+        private Evento(MembreteService.Textos textos, byte[] bytesLogo) {
+            this.textos = textos;
             this.bytesLogo = bytesLogo;
         }
 
@@ -192,9 +191,9 @@ public class MembreteCertificadoPdf {
             float anchoTexto = derecha - (MARGEN_LATERAL + ANCHO_LOGO + 15f);
             String[] lineas = {
                     "UNIVERSIDAD PONTIFICIA BOLIVARIANA",
-                    escuela,
-                    titulo,
-                    facultad
+                    textos.escuela(),
+                    textos.titulo(),
+                    textos.facultad()
             };
             float y = altoPagina - MARGEN_SUPERIOR - 9f;
             canvas.saveState();
@@ -204,8 +203,8 @@ public class MembreteCertificadoPdf {
                 y -= 12f;
             }
             // Estudiante en cursiva, debajo del logo
-            if (estudiante != null && !estudiante.isBlank()) {
-                escribirDerecha(canvas, cursiva, estudiante, LETRA_MEMBRETE, derecha,
+            if (textos.estudiante() != null && !textos.estudiante().isBlank()) {
+                escribirDerecha(canvas, cursiva, textos.estudiante(), LETRA_MEMBRETE, derecha,
                         altoPagina - FIN_MEMBRETE + 10f, anchoPagina - 2 * MARGEN_LATERAL);
             }
             canvas.restoreState();
@@ -231,7 +230,7 @@ public class MembreteCertificadoPdf {
             canvas.setColorFill(GRIS);
             canvas.beginText();
             // Pie a la izquierda (se reduce la letra si no cabe antes de la paginacion)
-            String pie = CertificadoContenidosPdf.limpiar(piePagina);
+            String pie = CertificadoContenidosPdf.limpiar(textos.piePagina());
             float maximo = inicioNumero - izquierda - 12f;
             float tamano = ajustar(normal, pie, LETRA_PIE, maximo);
             canvas.setFontAndSize(normal, tamano);

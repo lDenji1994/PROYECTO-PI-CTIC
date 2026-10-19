@@ -4,6 +4,7 @@ import com.certificados.app.dto.AsignaturaCertificadoDTO;
 import com.certificados.app.dto.ElegirVersionDTO;
 import com.certificados.app.dto.AsignaturaDTO;
 import com.certificados.app.service.ContenidoCertificadoService;
+import com.certificados.app.service.MembreteService;
 import com.certificados.app.service.AsignaturaService;
 
 import com.certificados.app.dto.SolicitudCertificadoDTO;
@@ -22,12 +23,15 @@ public class SolicitudCertificadoController {
 
     private final SolicitudCertificadoService service;
     private final ContenidoCertificadoService contenidoCertificadoService;
+    private final MembreteService membreteService;
 
     public SolicitudCertificadoController(
             SolicitudCertificadoService service,
-            ContenidoCertificadoService contenidoCertificadoService) {
+            ContenidoCertificadoService contenidoCertificadoService,
+            MembreteService membreteService) {
         this.service = service;
         this.contenidoCertificadoService = contenidoCertificadoService;
+        this.membreteService = membreteService;
     }
 
     @GetMapping
@@ -156,6 +160,16 @@ public class SolicitudCertificadoController {
 
         service.quitarAsignatura(id, idAsignatura);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /api/solicitudes-certificados/{id}/membrete
+     * Escuela, facultad, titulo, estudiante y pie de pagina que llevara el
+     * PDF (la vista previa muestra lo mismo).
+     */
+    @GetMapping("/{id}/membrete")
+    public MembreteService.Textos membrete(@PathVariable Integer id) {
+        return membreteService.textos(id);
     }
 
     /** Asignaturas de la solicitud, con codigo de materia y de curso separados. */

@@ -466,6 +466,31 @@
                         </div>
                     </form>
                     <ul id="lista-programas" class="chip-list"></ul>
+
+                    <!-- Editar programa: nombre y escuela / facultad del membrete del certificado -->
+                    <form id="form-editar-programa" class="programa-editor" novalidate hidden>
+                        <h4 id="editar-programa-titulo">Editar programa</h4>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="edit-prog-nombre">Nombre del programa *</label>
+                                <input id="edit-prog-nombre" type="text" maxlength="150" autocomplete="off">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="edit-prog-escuela">Escuela (sale en el membrete del certificado)</label>
+                                <input id="edit-prog-escuela" type="text" maxlength="150" autocomplete="off">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="edit-prog-facultad">Facultad (sale en el membrete del certificado)</label>
+                                <input id="edit-prog-facultad" type="text" maxlength="150" autocomplete="off">
+                            </div>
+                        </div>
+                        <small class="field-help">Si dejas la escuela o la facultad vacías, el certificado usa el valor
+                            general que aparece en gris.</small>
+                        <div class="form-actions inline-form">
+                            <button class="secondary-button" type="button" id="btn-cancelar-programa">Cancelar</button>
+                            <button class="primary-button" type="submit">Guardar programa</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 

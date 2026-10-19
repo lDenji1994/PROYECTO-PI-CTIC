@@ -69,6 +69,8 @@ public class ProgramaService {
 
         programa.setCodigo(dto.getCodigo());
         programa.setNombre(dto.getNombre());
+        programa.setEscuela(textoMembrete(dto.getEscuela(), "La escuela"));
+        programa.setFacultad(textoMembrete(dto.getFacultad(), "La facultad"));
 
         Programa guardado = programaRepository.save(programa);
 
@@ -78,6 +80,38 @@ public class ProgramaService {
                 (guardado.getCodigo() != null ? guardado.getCodigo() + " - " : "") + guardado.getNombre());
 
         return toDTO(guardado);
+    }
+
+    /**
+     * Cambia el nombre del programa y la escuela / facultad que salen en el
+     * membrete de sus certificados. El codigo no se cambia.
+     */
+    public ProgramaDTO actualizar(Integer id, ProgramaDTO dto) {
+        Programa programa = obtenerEntidad(id);
+        String nombre = dto.getNombre() == null ? "" : dto.getNombre().trim().replaceAll("\\s+", " ");
+        if (nombre.isEmpty()) {
+            throw new BusinessException("El nombre del programa es obligatorio.");
+        }
+        programa.setNombre(nombre);
+        programa.setEscuela(textoMembrete(dto.getEscuela(), "La escuela"));
+        programa.setFacultad(textoMembrete(dto.getFacultad(), "La facultad"));
+        Programa guardado = programaRepository.save(programa);
+        actividadService.registrar(ActividadService.TABLA_PROGRAMAS,
+                ActividadService.ACTUALIZAR_PROGRAMA,
+                (guardado.getCodigo() != null ? guardado.getCodigo() + " - " : "") + guardado.getNombre());
+        return toDTO(guardado);
+    }
+
+    /** Texto opcional del membrete: vacio = null (se usa el valor general). */
+    private static String textoMembrete(String texto, String campo) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        String limpio = texto.trim().replaceAll("\\s+", " ");
+        if (limpio.length() > 150) {
+            throw new BusinessException(campo + " admite máximo 150 caracteres.");
+        }
+        return limpio;
     }
 
     /**
@@ -102,6 +136,8 @@ public class ProgramaService {
         dto.setId(programa.getId());
         dto.setCodigo(programa.getCodigo());
         dto.setNombre(programa.getNombre());
+        dto.setEscuela(programa.getEscuela());
+        dto.setFacultad(programa.getFacultad());
 
         return dto;
     }
