@@ -512,32 +512,17 @@
                     </div>
                 </div>
 
-                <div id="plan-gestion" hidden>
-                    <form id="form-nuevo-plan" class="inline-form plan-nuevo" novalidate>
-                        <input id="plan-nuevo-nombre" type="text" maxlength="100" autocomplete="off"
-                               placeholder="Nombre del nuevo plan, ej. Plan de estudios 2026" aria-label="Nombre del nuevo plan">
-                        <select id="plan-nuevo-estado" aria-label="Estado del nuevo plan">
-                            <option value="VIGENTE">Vigente</option>
-                            <option value="ANTIGUO">Antiguo</option>
-                            <option value="DESACTUALIZADO">Desactualizado</option>
-                        </select>
-                        <button class="outline-button" type="submit">Crear plan</button>
-                    </form>
-
-                    <div class="plan-filtros">
-                        <select id="plan-filtro-estado" aria-label="Filtrar planes por estado">
-                            <option value="TODOS">Todos los estados</option>
-                            <option value="VIGENTE">Solo vigentes</option>
-                            <option value="ANTIGUO">Solo antiguos</option>
-                            <option value="DESACTUALIZADO">Solo desactualizados</option>
-                        </select>
-                        <select id="plan-orden" aria-label="Ordenar planes">
-                            <option value="ESTADO">Ordenar por estado (vigentes primero)</option>
-                            <option value="NOMBRE">Ordenar por nombre (A-Z)</option>
-                            <option value="NOMBRE_DESC">Ordenar por nombre (Z-A)</option>
-                        </select>
+                <!-- Buscar / filtrar y elegir el plan del programa (o crear uno nuevo) -->
+                <div class="form-grid" id="plan-seleccion" hidden>
+                    <div class="form-group">
+                        <label for="plan-buscar">Buscar o filtrar planes</label>
+                        <input id="plan-buscar" type="search" maxlength="100" autocomplete="off"
+                               placeholder="Nombre o estado, ej. 2026 o vigente">
                     </div>
-                    <div id="plan-lista" class="plan-lista"></div>
+                    <div class="form-group">
+                        <label for="plan-elegido">Plan de estudios</label>
+                        <select id="plan-elegido"></select>
+                    </div>
                 </div>
 
                 <!-- Plan elegido: nombre y estado editables + sus asignaturas por semestre -->
@@ -545,7 +530,8 @@
                     <div class="plan-encabezado">
                         <div class="form-group">
                             <label for="plan-titulo">Nombre del plan *</label>
-                            <input id="plan-titulo" type="text" maxlength="100" autocomplete="off">
+                            <input id="plan-titulo" type="text" maxlength="100" autocomplete="off"
+                                   placeholder="Ej. Plan de estudios 2026">
                         </div>
                         <div class="form-group">
                             <label for="plan-estado-editar">Estado *</label>
@@ -561,6 +547,7 @@
                         </div>
                     </div>
 
+                    <div id="plan-asignaturas">
                     <form id="form-plan" novalidate>
                         <div class="form-grid">
                             <div class="form-group">
@@ -584,6 +571,7 @@
                         </div>
                     </form>
                     <div id="plan-contenido" class="plan-semestres"></div>
+                    </div>
                 </div>
             </div>
 
