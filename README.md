@@ -75,12 +75,17 @@ falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no 
   estudios y varios documentos por asignatura.
 - `database/06_migracion_nombres_tablas.sql` — nombres de tablas fáciles de leer
   (`asignaturas`, `solicitudes`, `bitacora`…) y quita 7 tablas que no se usaban.
+- `database/07_migracion_planes_estudio.sql` — planes de estudio con nombre y estado (vigente,
+  antiguo o desactualizado): un programa puede tener varios planes y cada solicitud por semestres
+  usa uno. También quita de la plantilla el título duplicado (el certificado ya trae el membrete).
+- `database/08_migracion_membrete_programa.sql` — escuela y facultad del membrete del certificado:
+  por programa (Programas > ✎) y por solicitud (vista previa > Escuela / Facultad del membrete).
 
-Tablas de la base (18):
+Tablas de la base (19):
 
 | Módulo | Tablas |
 |---|---|
-| Académico | `asignaturas`, `programas`, `planes_estudio`, `tipos_documento`, `documentos`, `versiones_documento` (archivo + datos del curso), `contenidos` (temas) |
+| Académico | `asignaturas`, `programas`, `planes`, `planes_estudio`, `tipos_documento`, `documentos`, `versiones_documento` (archivo + datos del curso), `contenidos` (temas) |
 | Usuarios | `roles`, `usuarios` |
 | Plantilla del certificado | `tipos_certificado`, `plantillas`, `versiones_plantilla`, `campos_plantilla`, `elementos_plantilla` |
 | Solicitudes | `solicitudes`, `solicitud_asignaturas`, `certificados_generados` |

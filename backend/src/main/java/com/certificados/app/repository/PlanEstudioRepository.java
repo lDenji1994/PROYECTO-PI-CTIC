@@ -12,9 +12,11 @@ import java.util.Optional;
 @Repository
 public interface PlanEstudioRepository extends JpaRepository<PlanEstudio, PlanEstudioId> {
 
-    List<PlanEstudio> findByIdProgramaOrderBySemestreAscIdAsignaturaAsc(Integer idPrograma);
+    List<PlanEstudio> findByIdPlanOrderBySemestreAscIdAsignaturaAsc(Integer idPlan);
 
-    List<PlanEstudio> findByIdProgramaAndSemestreIn(Integer idPrograma, Collection<Integer> semestres);
+    List<PlanEstudio> findByIdPlanAndSemestreIn(Integer idPlan, Collection<Integer> semestres);
 
-    Optional<PlanEstudio> findByIdProgramaAndIdAsignatura(Integer idPrograma, Integer idAsignatura);
+    Optional<PlanEstudio> findByIdPlanAndIdAsignatura(Integer idPlan, Integer idAsignatura);
+
+    long countByIdPlan(Integer idPlan);
 }

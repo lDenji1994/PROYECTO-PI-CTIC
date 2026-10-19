@@ -29,6 +29,14 @@ public class Programa {
     @Column(name = "t_nombre", length = 150, nullable = false)
     private String nombre;
 
+    /** Escuela que sale en el membrete del certificado (migracion 08; opcional). */
+    @Column(name = "t_escuela", length = 150)
+    private String escuela;
+
+    /** Facultad que sale en el membrete del certificado (migracion 08; opcional). */
+    @Column(name = "t_facultad", length = 150)
+    private String facultad;
+
     public Programa() {
     }
 
@@ -52,6 +60,22 @@ public class Programa {
 
     public void setCodigo(String codigo) {
         this.codigo = codigo;
+    }
+
+    public String getEscuela() {
+        return escuela;
+    }
+
+    public void setEscuela(String escuela) {
+        this.escuela = escuela;
+    }
+
+    public String getFacultad() {
+        return facultad;
+    }
+
+    public void setFacultad(String facultad) {
+        this.facultad = facultad;
     }
 
     public String getNombre() {

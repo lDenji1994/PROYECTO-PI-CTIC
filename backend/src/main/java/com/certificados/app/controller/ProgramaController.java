@@ -30,6 +30,13 @@ public class ProgramaController {
         return ResponseEntity.ok(programaService.buscarPorId(id));
     }
 
+    /** Nombre, escuela y facultad (membrete del certificado). El codigo no cambia. */
+    @PutMapping("/{id}")
+    public ResponseEntity<ProgramaDTO> actualizar(@PathVariable Integer id,
+                                                  @Valid @RequestBody ProgramaDTO dto) {
+        return ResponseEntity.ok(programaService.actualizar(id, dto));
+    }
+
     @PostMapping
     public ResponseEntity<?> crear(@Valid @RequestBody ProgramaDTO dto) {
         ProgramaDTO creado = programaService.crear(dto);

@@ -7,6 +7,7 @@ import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.AlcanceSolicitud;
 import com.certificados.app.model.Asignatura;
 import com.certificados.app.model.DetalleSolicitudCertificado;
+import com.certificados.app.model.DetalleSolicitudCertificadoId;
 import com.certificados.app.model.EstadoSolicitudCertificado;
 import com.certificados.app.model.Log;
 import com.certificados.app.model.PlantillaCertificado;
@@ -14,6 +15,7 @@ import com.certificados.app.model.SolicitudCertificado;
 import com.certificados.app.model.TipoContenidoCertificado;
 import com.certificados.app.model.VersionPlantilla;
 import com.certificados.app.repository.AsignaturaRepository;
+import com.certificados.app.repository.CertificadoGeneradoRepository;
 import com.certificados.app.repository.DetalleSolicitudCertificadoRepository;
 import com.certificados.app.repository.LogRepository;
 import com.certificados.app.repository.PlantillaCertificadoRepository;
@@ -47,6 +49,7 @@ public class SolicitudCertificadoService {
     private final ContenidoCertificadoService contenidoCertificadoService;
     private final PlanEstudioService planEstudioService;
     private final ProgramaRepository programaRepository;
+    private final CertificadoGeneradoRepository certificadoRepository;
 
     /**
      * Caracteres permitidos en el nombre del estudiante: letras (con tildes),
@@ -68,7 +71,8 @@ public class SolicitudCertificadoService {
             ActividadService actividadService,
             ContenidoCertificadoService contenidoCertificadoService,
             PlanEstudioService planEstudioService,
-            ProgramaRepository programaRepository) {
+            ProgramaRepository programaRepository,
+            CertificadoGeneradoRepository certificadoRepository) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -86,6 +90,7 @@ public class SolicitudCertificadoService {
         this.contenidoCertificadoService = contenidoCertificadoService;
         this.planEstudioService = planEstudioService;
         this.programaRepository = programaRepository;
+        this.certificadoRepository = certificadoRepository;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -176,6 +181,7 @@ public class SolicitudCertificadoService {
         List<Integer> asignaturasDelPlan = List.of();
         String semestresTexto = null;
         Integer idPrograma = null;
+        Integer idPlan = null;
         if (alcance != AlcanceSolicitud.ASIGNATURAS) {
             idPrograma = dto.getIdPrograma();
             if (idPrograma == null || !programaRepository.existsById(idPrograma)) {
@@ -193,13 +199,14 @@ public class SolicitudCertificadoService {
                 }
                 semestresTexto = semestres.stream().map(String::valueOf).collect(Collectors.joining(","));
             }
-            asignaturasDelPlan = planEstudioService.asignaturasDe(idPrograma, semestres);
+            idPlan = planEstudioService.planDeSolicitud(idPrograma, dto.getIdPlan()).getId();
+            asignaturasDelPlan = planEstudioService.asignaturasDe(idPlan, semestres);
             if (asignaturasDelPlan.isEmpty()) {
                 throw new BusinessException(alcance == AlcanceSolicitud.SEMESTRES
-                        ? "El plan de estudios del programa no tiene asignaturas en esos semestres. "
-                          + "Regístralas en «Contenido de cursos» > Plan de estudios."
-                        : "El programa no tiene plan de estudios registrado. "
-                          + "Regístralo en «Contenido de cursos» > Plan de estudios.");
+                        ? "El plan de estudios elegido no tiene asignaturas en esos semestres. "
+                          + "Regístralas en «Contenido de cursos» > Planes de estudio."
+                        : "El plan de estudios elegido no tiene asignaturas. "
+                          + "Regístralas en «Contenido de cursos» > Planes de estudio.");
             }
         }
 
@@ -210,6 +217,7 @@ public class SolicitudCertificadoService {
         solicitud.setTipoContenido(tipoContenido);
         solicitud.setAlcance(alcance);
         solicitud.setIdPrograma(idPrograma);
+        solicitud.setIdPlan(idPlan);
         solicitud.setSemestres(semestresTexto);
 
         solicitud.setIdEstudiante(
@@ -440,6 +448,44 @@ public class SolicitudCertificadoService {
         return toDTO(guardada);
     }
 
+    /**
+     * Escuela y facultad del membrete de esta solicitud (vacio = las del
+     * programa). Si el certificado ya se genero (REALIZADO) se vuelve a
+     * generar con los textos nuevos. Una solicitud ENTREGADA no se cambia.
+     */
+    public SolicitudCertificadoDTO actualizarMembrete(Integer id, String escuela, String facultad) {
+        SolicitudCertificado solicitud = obtener(id);
+        if (solicitud.getEstado() == EstadoSolicitudCertificado.ENTREGADO) {
+            throw new BusinessException("La solicitud #" + id + " ya fue entregada; su certificado no se cambia. "
+                    + "Usa «Deshacer entrega» si necesitas corregirlo.");
+        }
+        solicitud.setEscuela(textoMembrete(escuela, "La escuela"));
+        solicitud.setFacultad(textoMembrete(facultad, "La facultad"));
+        SolicitudCertificado guardada = repository.save(solicitud);
+
+        certificadoRepository.findByIdSolicitudCertificado(id).ifPresent(certificado -> {
+            Integer idVersion = certificado.getIdVersionPlantilla();
+            certificadoRepository.delete(certificado);
+            certificadoRepository.flush();
+            certificadoGeneradorService.generar(id, idVersion);
+        });
+
+        registrar(guardada, ActividadService.ACTUALIZAR_SOLICITUD, " (membrete: "
+                + (guardada.getEscuela() == null ? "escuela del programa" : guardada.getEscuela()) + ")");
+        return toDTO(guardada);
+    }
+
+    private static String textoMembrete(String texto, String campo) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        String limpio = texto.trim().replaceAll("\\s+", " ");
+        if (limpio.length() > 150) {
+            throw new BusinessException(campo + " admite máximo 150 caracteres.");
+        }
+        return limpio;
+    }
+
     /** Quita espacios de mas y valida el nombre del estudiante (obligatorio). */
     private static String normalizarNombre(String nombre) {
         String limpio = nombre == null ? "" : nombre.trim().replaceAll("\\s+", " ");
@@ -457,6 +503,10 @@ public class SolicitudCertificadoService {
     private String textoAlcance(SolicitudCertificado s) {
         String programa = s.getIdPrograma() == null ? "" : programaRepository.findById(s.getIdPrograma())
                 .map(p -> p.getCodigo() == null ? p.getNombre() : p.getCodigo()).orElse("");
+        String plan = planEstudioService.nombrePlan(s.getIdPlan());
+        if (plan != null) {
+            programa = programa + " (" + plan + ")";
+        }
         return switch (s.getAlcance()) {
             case ASIGNATURAS -> "asignaturas";
             case SEMESTRES -> "semestres " + s.getSemestres().replace(",", ", ") + " de " + programa;
@@ -527,6 +577,41 @@ public class SolicitudCertificadoService {
                 .map(a -> a.getCodigo() + " - " + a.getNombre()).orElse("#" + idAsignatura);
         actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD,
                 ActividadService.AGREGAR_ASIGNATURA_SOLICITUD,
+                "Solicitud #" + idSolicitud + ": " + asignatura,
+                solicitud.getIdUsuarioEncargado());
+    }
+
+    /**
+     * Quita de la solicitud una asignatura agregada por error (vista previa).
+     * Solo mientras la solicitud no tenga certificado (no REALIZADO, ENTREGADO
+     * ni ERROR) y siempre que le quede al menos una asignatura. La asignatura
+     * NO se borra del sistema.
+     */
+    public void quitarAsignatura(Integer idSolicitud, Integer idAsignatura) {
+        SolicitudCertificado solicitud = obtener(idSolicitud);
+        EstadoSolicitudCertificado estado = solicitud.getEstado();
+        if (estado == EstadoSolicitudCertificado.REALIZADO
+                || estado == EstadoSolicitudCertificado.ENTREGADO
+                || estado == EstadoSolicitudCertificado.ERROR) {
+            throw new BusinessException(
+                    "La solicitud ya está cerrada (" + estado + "); no se le pueden quitar asignaturas.");
+        }
+
+        DetalleSolicitudCertificado detalle = detalleRepository
+                .findById(new DetalleSolicitudCertificadoId(idSolicitud, idAsignatura))
+                .orElseThrow(() -> new ResourceNotFoundException("Esa asignatura no está en la solicitud."));
+
+        if (detalleRepository.findByIdSolicitudCertificado(idSolicitud).size() <= 1) {
+            throw new BusinessException("La solicitud debe tener al menos una asignatura. "
+                    + "Si toda la solicitud está mal, elimínala y crea una nueva.");
+        }
+
+        detalleRepository.delete(detalle);
+
+        String asignatura = asignaturaRepository.findById(idAsignatura)
+                .map(a -> a.getCodigo() + " - " + a.getNombre()).orElse("#" + idAsignatura);
+        actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD,
+                ActividadService.QUITAR_ASIGNATURA_SOLICITUD,
                 "Solicitud #" + idSolicitud + ": " + asignatura,
                 solicitud.getIdUsuarioEncargado());
     }
@@ -687,6 +772,8 @@ public class SolicitudCertificadoService {
         dto.setTipoContenido(solicitud.getTipoContenido());
         dto.setAlcance(solicitud.getAlcance());
         dto.setIdPrograma(solicitud.getIdPrograma());
+        dto.setIdPlan(solicitud.getIdPlan());
+        dto.setNombrePlan(planEstudioService.nombrePlan(solicitud.getIdPlan()));
         dto.setSemestres(solicitud.getSemestres() == null || solicitud.getSemestres().isBlank()
                 ? List.of()
                 : java.util.Arrays.stream(solicitud.getSemestres().split(","))

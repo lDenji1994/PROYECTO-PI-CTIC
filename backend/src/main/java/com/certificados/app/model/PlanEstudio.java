@@ -3,13 +3,13 @@ package com.certificados.app.model;
 import jakarta.persistence.*;
 
 /**
- * PLAN DE ESTUDIOS: en que semestre de un programa va una asignatura.
- * Tabla PlanesEstudioS (migracion 05).
+ * ASIGNATURA DENTRO DE UN PLAN DE ESTUDIOS: en que semestre va.
+ * Tabla planes_estudio (migraciones 05 y 07).
  *
- * Con esto una solicitud puede pedir uno o varios semestres de un programa,
- * o el programa completo, sin marcar las asignaturas una por una.
- * Una asignatura puede estar en varios programas (con semestres distintos),
- * pero solo una vez en cada programa.
+ * Con esto una solicitud puede pedir uno o varios semestres de un plan,
+ * o el plan completo, sin marcar las asignaturas una por una.
+ * Una asignatura puede estar en varios planes (con semestres distintos),
+ * pero solo una vez en cada plan.
  *
  * NO MODIFICAR los nombres de columnas (deben coincidir con la base de datos).
  */
@@ -19,8 +19,8 @@ import jakarta.persistence.*;
 public class PlanEstudio {
 
     @Id
-    @Column(name = "n_idPrograma", nullable = false)
-    private Integer idPrograma;
+    @Column(name = "n_idPlan", nullable = false)
+    private Integer idPlan;
 
     @Id
     @Column(name = "n_idAsignatura", nullable = false)
@@ -32,18 +32,18 @@ public class PlanEstudio {
     public PlanEstudio() {
     }
 
-    public PlanEstudio(Integer idPrograma, Integer idAsignatura, Integer semestre) {
-        this.idPrograma = idPrograma;
+    public PlanEstudio(Integer idPlan, Integer idAsignatura, Integer semestre) {
+        this.idPlan = idPlan;
         this.idAsignatura = idAsignatura;
         this.semestre = semestre;
     }
 
-    public Integer getIdPrograma() {
-        return idPrograma;
+    public Integer getIdPlan() {
+        return idPlan;
     }
 
-    public void setIdPrograma(Integer idPrograma) {
-        this.idPrograma = idPrograma;
+    public void setIdPlan(Integer idPlan) {
+        this.idPlan = idPlan;
     }
 
     public Integer getIdAsignatura() {

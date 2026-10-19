@@ -109,10 +109,10 @@ public class ContenidoCertificadoService {
         SolicitudCertificado solicitud = solicitudRepository.findById(idSolicitud)
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada con id " + idSolicitud));
 
-        // Semestre de cada asignatura en el programa de la solicitud (si tiene)
-        Map<Integer, Integer> semestres = solicitud.getIdPrograma() == null
+        // Semestre de cada asignatura en el plan de estudios de la solicitud (si tiene)
+        Map<Integer, Integer> semestres = solicitud.getIdPlan() == null
                 ? Map.of()
-                : planRepository.findByIdProgramaOrderBySemestreAscIdAsignaturaAsc(solicitud.getIdPrograma()).stream()
+                : planRepository.findByIdPlanOrderBySemestreAscIdAsignaturaAsc(solicitud.getIdPlan()).stream()
                         .collect(Collectors.toMap(PlanEstudio::getIdAsignatura, PlanEstudio::getSemestre, (a, b) -> a));
         boolean porSemestre = solicitud.getAlcance() != null && solicitud.getAlcance() != AlcanceSolicitud.ASIGNATURAS;
 

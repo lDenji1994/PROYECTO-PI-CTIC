@@ -37,7 +37,9 @@ CREATE TABLE documentos (
 CREATE TABLE programas (
     n_idPrograma INT AUTO_INCREMENT PRIMARY KEY,
     c_codigo VARCHAR(50) UNIQUE NULL,
-    t_nombre VARCHAR(200) NOT NULL
+    t_nombre VARCHAR(200) NOT NULL,
+    t_escuela VARCHAR(150) NULL,
+    t_facultad VARCHAR(150) NULL
 );
 
 CREATE TABLE versiones_documento (
@@ -216,14 +218,28 @@ CREATE TABLE elementos_plantilla (
     CHECK (c_tipoElemento <> 'CAMPO' OR n_idCampoPlantilla IS NOT NULL)
 );
 
-CREATE TABLE planes_estudio (
+CREATE TABLE planes (
+    n_idPlan INT AUTO_INCREMENT PRIMARY KEY,
     n_idPrograma INT NOT NULL,
+    t_nombre VARCHAR(100) NOT NULL,
+    c_estado ENUM('VIGENTE', 'ANTIGUO', 'DESACTUALIZADO') NOT NULL DEFAULT 'VIGENTE',
+
+    CONSTRAINT uq_Planes_programa_nombre
+        UNIQUE (n_idPrograma, t_nombre),
+
+    CONSTRAINT fk_Programas_Planes
+        FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE planes_estudio (
+    n_idPlan INT NOT NULL,
     n_idAsignatura INT NOT NULL,
     n_semestre INT NOT NULL,
-    PRIMARY KEY (n_idPrograma, n_idAsignatura),
+    PRIMARY KEY (n_idPlan, n_idAsignatura),
 
-    CONSTRAINT fk_Programas_PlanesEstudio
-        FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
+    CONSTRAINT fk_Planes_PlanesEstudio
+        FOREIGN KEY (n_idPlan) REFERENCES planes(n_idPlan)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_Asignaturas_PlanesEstudio
@@ -248,10 +264,17 @@ CREATE TABLE solicitudes (
     c_tipoContenido ENUM('RESUMIDO', 'COMPLETO') NOT NULL DEFAULT 'RESUMIDO',
     c_alcance ENUM('ASIGNATURAS', 'SEMESTRES', 'PROGRAMA') NOT NULL DEFAULT 'ASIGNATURAS',
     n_idPrograma INT NULL,
+    n_idPlan INT NULL,
     t_semestres VARCHAR(100) NULL,
+    t_escuela VARCHAR(150) NULL,
+    t_facultad VARCHAR(150) NULL,
 
     CONSTRAINT fk_Programas_SolicitudesCertificados
         FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)
+        ON DELETE SET NULL,
+
+    CONSTRAINT fk_Planes_Solicitudes
+        FOREIGN KEY (n_idPlan) REFERENCES planes(n_idPlan)
         ON DELETE SET NULL,
 
     CONSTRAINT fk_TiposCertificados_SolicitudesCertificados

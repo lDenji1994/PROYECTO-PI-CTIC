@@ -116,11 +116,12 @@ public class SecurityConfig {
                 // Solo ADMINISTRADOR
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").authenticated()
                 .requestMatchers("/api/usuarios/**").hasRole(ADMIN)
-                // Programas y plan de estudios: los registran auxiliares y administrador
-                // (cualquier usuario con sesion, regla general de abajo). Quitar una
-                // asignatura del plan tambien; ELIMINAR un programa, solo el administrador.
-                // SE PUEDE MODIFICAR: volver a poner hasRole(ADMIN) si se quiere restringir.
-                .requestMatchers(HttpMethod.DELETE, "/api/programas/*/plan/**").authenticated()
+                // Programas y planes de estudio (/api/planes/**): los registran auxiliares
+                // y administrador (cualquier usuario con sesion, regla general de abajo),
+                // incluso quitar asignaturas o eliminar un plan; ELIMINAR un programa,
+                // solo el administrador.
+                // SE PUEDE MODIFICAR: agregar .requestMatchers(HttpMethod.DELETE,
+                // "/api/planes/**").hasRole(ADMIN) si se quiere restringir.
                 .requestMatchers(HttpMethod.DELETE, "/api/programas/**").hasRole(ADMIN)
                 .requestMatchers("/api/logs/**").hasRole(ADMIN)
                 // Plantillas del certificado: todos las leen, solo el administrador las cambia

@@ -22,6 +22,29 @@ public class ProgramaDTO {
     @Size(max = 150, message = "El nombre no puede exceder 150 caracteres")
     private String nombre;
 
+    /** Escuela y facultad del membrete del certificado (opcionales). */
+    @Size(max = 150, message = "La escuela no puede exceder 150 caracteres")
+    private String escuela;
+
+    @Size(max = 150, message = "La facultad no puede exceder 150 caracteres")
+    private String facultad;
+
+    public String getEscuela() {
+        return escuela;
+    }
+
+    public void setEscuela(String escuela) {
+        this.escuela = escuela;
+    }
+
+    public String getFacultad() {
+        return facultad;
+    }
+
+    public void setFacultad(String facultad) {
+        this.facultad = facultad;
+    }
+
     public Integer getId() {
         return id;
     }

@@ -137,9 +137,13 @@ const estado = {
     documentos: [],
     solicitudes: [],
     solicitudSeleccionada: null,
+    programaEditado: null,       // programa abierto en "Editar programa"
     versionEnEdicion: null,
     usuarioContrasena: null,
-    planPrograma: [],            // plan de estudios del programa elegido en "Contenido de cursos"
+    planes: [],                  // todos los planes de estudio (lista con buscador)
+    planElegido: null,           // plan con las asignaturas abiertas
+    planEditando: null,          // plan cargado en el formulario para editar nombre / estado
+    planPrograma: [],            // asignaturas por semestre del plan abierto
     planSolicitud: []            // plan de estudios del programa elegido en la solicitud
 };
 
@@ -443,7 +447,7 @@ function mostrarVista(vista) {
     /* Cada vez que se entra a una vista se recargan sus datos reales */
     if (vista === 'dashboard') { cargarDashboard(); }
     if (vista === 'carga') { cargarDocumentos(); }
-    if (vista === 'cursos') { cargarDocumentos(); }
+    if (vista === 'cursos') { cargarDocumentos(); cargarPlanes(); }
     if (vista === 'certificaciones') { cargarSolicitudes(); }
     if (vista === 'usuarios') { cargarUsuarios(); }
 }
@@ -1658,6 +1662,8 @@ function pintarProgramas() {
     const lista = document.getElementById('lista-programas');
     lista.innerHTML = estado.programas.map(function (p) {
         return '<li class="chip">' + escaparTexto(p.codigo ? p.codigo + ' · ' : '') + escaparTexto(p.nombre) +
+            '<button type="button" class="chip-edit" data-editar-programa="' + idSeguro(p.id) +
+                '" title="Editar nombre, escuela y facultad" aria-label="Editar programa">✎</button>' +
             (esAdmin() ? '<button type="button" class="chip-remove" data-eliminar-programa="' + idSeguro(p.id) +
                 '" title="Eliminar programa" aria-label="Eliminar programa">×</button>' : '') + '</li>';
     }).join('');
@@ -1684,6 +1690,59 @@ async function registrarPrograma(evento) {
     }
 }
 
+/** Abre el formulario para cambiar nombre, escuela y facultad del programa. */
+function abrirEditorPrograma(idPrograma) {
+    const programa = estado.programas.find(function (p) { return p.id === idPrograma; });
+    if (!programa) {
+        return;
+    }
+    const config = estado.configuracion || {};
+    estado.programaEditado = programa.id;
+    document.getElementById('editar-programa-titulo').textContent = 'Editar programa ' + (programa.codigo || '');
+    document.getElementById('edit-prog-nombre').value = programa.nombre || '';
+    document.getElementById('edit-prog-escuela').value = programa.escuela || '';
+    document.getElementById('edit-prog-facultad').value = programa.facultad || '';
+    document.getElementById('edit-prog-escuela').placeholder = config.membreteEscuela || '';
+    document.getElementById('edit-prog-facultad').placeholder = config.membreteFacultad || '';
+    const form = document.getElementById('form-editar-programa');
+    form.hidden = false;
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('edit-prog-nombre').focus();
+}
+
+function cerrarEditorPrograma() {
+    estado.programaEditado = null;
+    document.getElementById('form-editar-programa').hidden = true;
+}
+
+async function guardarPrograma(evento) {
+    evento.preventDefault();
+    const programa = estado.programas.find(function (p) { return p.id === estado.programaEditado; });
+    if (!programa) {
+        return;
+    }
+    const limpiar = function (id) { return document.getElementById(id).value.trim().replace(/\s+/g, ' '); };
+    const datos = {
+        codigo: programa.codigo,
+        nombre: limpiar('edit-prog-nombre'),
+        escuela: limpiar('edit-prog-escuela'),
+        facultad: limpiar('edit-prog-facultad')
+    };
+    if (!datos.nombre) {
+        mostrarMensaje('El nombre del programa es obligatorio.', 'error');
+        return;
+    }
+    try {
+        await apiJson('/programas/' + idSeguro(programa.id), 'PUT', datos);
+        mostrarMensaje('Programa ' + (programa.codigo || '') + ' actualizado.', 'success');
+        cerrarEditorPrograma();
+        await cargarCatalogos();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+}
+
 /* ---------------------------------------------------------------------
    PLAN DE ESTUDIOS (US-09): en que semestre de cada programa va cada
    asignatura. Lo usan las solicitudes por semestres o por programa.
@@ -1699,22 +1758,129 @@ function agruparPorSemestre(filas) {
     return grupos;
 }
 
+const ESTADOS_PLAN = {
+    VIGENTE: { texto: 'Vigente', clase: 'success', orden: 0 },
+    ANTIGUO: { texto: 'Antiguo', clase: 'neutral', orden: 1 },
+    DESACTUALIZADO: { texto: 'Desactualizado', clase: 'warning', orden: 2 }
+};
+
+function badgeEstadoPlan(estadoPlan) {
+    const info = ESTADOS_PLAN[estadoPlan] || ESTADOS_PLAN.VIGENTE;
+    return '<span class="badge ' + info.clase + '">' + escaparTexto(info.texto) + '</span>';
+}
+
+/** Mismas reglas que PlanEstudioService.nombrePlan */
+function nombrePlanValido(nombre) {
+    return /^[\p{L}\p{N} .,:\-/()]{1,100}$/u.test(nombre);
+}
+
+/** Todos los planes de estudio (lista con buscador). */
+async function cargarPlanes() {
+    try {
+        estado.planes = await api('/planes') || [];
+    } catch (e) {
+        estado.planes = [];
+        mostrarMensaje(e.message, 'error');
+    }
+    pintarTablaPlanes();
+}
+
+function normalizarBusqueda(texto) {
+    return String(texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+/** Tabla de planes filtrada por nombre (vigentes primero). */
+function pintarTablaPlanes() {
+    const tbody = document.getElementById('tabla-planes');
+    const texto = normalizarBusqueda(document.getElementById('plan-buscar').value);
+    const lista = estado.planes.filter(function (p) {
+        return !texto || normalizarBusqueda(p.nombre).indexOf(texto) >= 0;
+    });
+    if (!estado.planes.length) {
+        filaVacia(tbody, 4, 'Aún no hay planes de estudio. Crea el primero con el formulario de arriba.');
+        return;
+    }
+    if (!lista.length) {
+        filaVacia(tbody, 4, 'Ningún plan se llama «' + document.getElementById('plan-buscar').value.trim() + '».');
+        return;
+    }
+    tbody.innerHTML = lista.map(function (p) {
+        return '<tr' + (p.id === estado.planElegido ? ' class="fila-activa"' : '') + '>' +
+            '<td><strong>' + escaparTexto(p.nombre) + '</strong></td>' +
+            '<td>' + escaparTexto(p.programa || '') + '</td>' +
+            '<td>' + badgeEstadoPlan(p.estado) + '</td>' +
+            '<td class="acciones-plan">' +
+            '<button type="button" class="outline-button small" data-editar-plan-datos="' + idSeguro(p.id) + '">Editar</button>' +
+            '<button type="button" class="outline-button small" data-asignaturas-plan="' + idSeguro(p.id) + '">Asignaturas (' +
+                escaparTexto(p.asignaturas) + ')</button>' +
+            '<button type="button" class="danger-button small" data-eliminar-plan="' + idSeguro(p.id) + '">Eliminar</button>' +
+            '</td></tr>';
+    }).join('');
+}
+
+/** Lleva un plan al formulario de arriba para cambiarle el nombre o el estado. */
+function editarDatosPlan(idPlan) {
+    const plan = estado.planes.find(function (p) { return p.id === idPlan; });
+    if (!plan) {
+        return;
+    }
+    estado.planEditando = plan.id;
+    document.getElementById('plan-form-titulo').textContent = 'Editar plan de estudios';
+    document.getElementById('plan-programa').value = String(plan.idPrograma);
+    document.getElementById('plan-programa').disabled = true;
+    document.getElementById('plan-titulo').value = plan.nombre;
+    document.getElementById('plan-estado-editar').value = plan.estado;
+    document.getElementById('btn-guardar-plan').textContent = 'Guardar cambios';
+    document.getElementById('btn-cancelar-plan').hidden = false;
+    document.getElementById('tarjeta-plan').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('plan-titulo').focus();
+}
+
+function limpiarFormularioPlan() {
+    estado.planEditando = null;
+    document.getElementById('form-plan-datos').reset();
+    document.getElementById('plan-programa').disabled = false;
+    document.getElementById('plan-form-titulo').textContent = 'Crear plan de estudios';
+    document.getElementById('btn-guardar-plan').textContent = 'Guardar plan';
+    document.getElementById('btn-cancelar-plan').hidden = true;
+}
+
+/** Abre las asignaturas por semestre del plan. */
+async function abrirAsignaturasPlan(idPlan) {
+    const plan = estado.planes.find(function (p) { return p.id === idPlan; });
+    if (!plan) {
+        return;
+    }
+    estado.planElegido = plan.id;
+    document.getElementById('plan-asignaturas-titulo').textContent = plan.nombre + ' · ' + (plan.programa || '');
+    document.getElementById('plan-asignaturas').hidden = false;
+    pintarTablaPlanes();
+    await cargarPlanPrograma();
+    document.getElementById('plan-asignaturas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cerrarAsignaturasPlan() {
+    estado.planElegido = null;
+    estado.planPrograma = [];
+    document.getElementById('plan-asignaturas').hidden = true;
+    pintarTablaPlanes();
+}
+
 async function cargarPlanPrograma() {
-    const idPrograma = document.getElementById('plan-programa').value;
+    const idPlan = estado.planElegido;
     const contenedor = document.getElementById('plan-contenido');
-    if (!idPrograma) {
+    if (!idPlan) {
         estado.planPrograma = [];
-        contenedor.innerHTML = '<p class="empty-state">Seleccione un programa para ver su plan de estudios.</p>';
+        contenedor.innerHTML = '';
         return;
     }
     let filas = [];
     try {
-        filas = await api('/programas/' + idSeguro(idPrograma) + '/plan') || [];
+        filas = await api('/planes/' + idSeguro(idPlan) + '/asignaturas') || [];
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
-    /* Si mientras tanto se escogio otro programa, esta respuesta ya no sirve */
-    if (document.getElementById('plan-programa').value !== idPrograma) {
+    if (estado.planElegido !== idPlan) {
         return;
     }
     estado.planPrograma = filas;
@@ -1723,9 +1889,9 @@ async function cargarPlanPrograma() {
 
 function pintarPlanPrograma() {
     const contenedor = document.getElementById('plan-contenido');
-    const idPrograma = Number(document.getElementById('plan-programa').value);
+    const idPlan = estado.planElegido;
     if (!estado.planPrograma.length) {
-        contenedor.innerHTML = '<p class="empty-state">Este programa aún no tiene asignaturas en su plan de estudios.</p>';
+        contenedor.innerHTML = '<p class="empty-state">Este plan aún no tiene asignaturas. Agrégalas con el formulario de arriba.</p>';
         return;
     }
     const grupos = agruparPorSemestre(estado.planPrograma);
@@ -1735,22 +1901,91 @@ function pintarPlanPrograma() {
             grupos[semestre].map(function (f) {
                 return '<li class="chip">' + escaparTexto(f.codigoMateria + ' ' + (f.codigoCurso || '')) + ' · ' +
                     escaparTexto(f.nombre) +
+                    '<button type="button" class="chip-edit" data-editar-plan="' + idSeguro(f.idAsignatura) +
+                        '" title="Cambiar semestre" aria-label="Cambiar semestre">✎</button>' +
                     '<button type="button" class="chip-remove" data-quitar-plan="' + idSeguro(f.idAsignatura) +
-                        '" data-programa="' + idSeguro(idPrograma) + '" title="Quitar del plan" aria-label="Quitar del plan">×</button>' +
+                        '" data-plan="' + idSeguro(idPlan) + '" title="Quitar del plan" aria-label="Quitar del plan">×</button>' +
                     '</li>';
             }).join('') + '</ul></div>';
     }).join('');
 }
 
-async function agregarAlPlan(evento) {
+/** Crea el plan o guarda los cambios de nombre / estado. */
+async function guardarPlan(evento) {
     evento.preventDefault();
     const idPrograma = document.getElementById('plan-programa').value;
+    const idPlan = estado.planEditando;
+    const nombre = document.getElementById('plan-titulo').value.trim().replace(/\s+/g, ' ');
+    const estadoPlan = document.getElementById('plan-estado-editar').value;
+    if (!idPlan && !idPrograma) {
+        mostrarMensaje('Seleccione el programa académico.', 'error');
+        return;
+    }
+    if (!nombrePlanValido(nombre)) {
+        mostrarMensaje('Escribe el nombre del plan (hasta 100 caracteres: letras, números, espacios y . , : - / ( )).', 'error');
+        return;
+    }
+    try {
+        if (idPlan) {
+            await apiJson('/planes/' + idSeguro(idPlan), 'PUT', { nombre: nombre, estado: estadoPlan });
+            mostrarMensaje('Plan «' + nombre + '» guardado (' + ESTADOS_PLAN[estadoPlan].texto.toLowerCase() + ').', 'success');
+        } else {
+            await apiJson('/programas/' + idSeguro(idPrograma) + '/planes', 'POST', { nombre: nombre, estado: estadoPlan });
+            mostrarMensaje('Plan «' + nombre + '» creado.', 'success');
+        }
+        limpiarFormularioPlan();
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    cargarPlanes();
+}
+
+async function eliminarPlan(idPlan) {
+    const plan = estado.planes.find(function (p) { return p.id === idPlan; });
+    if (!plan || !window.confirm('¿Eliminar el plan «' + plan.nombre + '»? Las asignaturas no se borran del sistema.')) {
+        return;
+    }
+    try {
+        await api('/planes/' + idSeguro(plan.id), { method: 'DELETE' });
+        mostrarMensaje('Plan «' + plan.nombre + '» eliminado.', 'success');
+        if (estado.planElegido === plan.id) {
+            cerrarAsignaturasPlan();
+        }
+        if (estado.planEditando === plan.id) {
+            limpiarFormularioPlan();
+        }
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    cargarPlanes();
+}
+
+/** Lleva una asignatura del plan al formulario para cambiarle el semestre. */
+function editarEnPlan(idAsignatura) {
+    const fila = estado.planPrograma.find(function (f) { return f.idAsignatura === idAsignatura; });
+    if (!fila) {
+        return;
+    }
+    document.getElementById('plan-buscar-asignatura').value = '';
+    filtrarSelectAsignaturas('plan-asignatura', 'plan-buscar-asignatura');
+    document.getElementById('plan-asignatura').value = String(idSeguro(fila.idAsignatura));
+    document.getElementById('plan-semestre').value = fila.semestre;
+    document.getElementById('plan-codigos').value = '';
+    document.getElementById('form-plan').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    mostrarMensaje('Editando ' + fila.codigo + ': cambia el semestre y pulsa «Guardar en el plan».', 'warning');
+}
+
+async function agregarAlPlan(evento) {
+    evento.preventDefault();
+    const idPlan = estado.planElegido;
     const semestre = Number(document.getElementById('plan-semestre').value);
     const idAsignatura = document.getElementById('plan-asignatura').value;
     const textoCodigos = document.getElementById('plan-codigos').value;
 
-    if (!idPrograma) {
-        mostrarMensaje('Seleccione el programa académico.', 'error');
+    if (!idPlan) {
+        mostrarMensaje('Elige o crea un plan de estudios.', 'error');
         return;
     }
     if (!Number.isInteger(semestre) || semestre < 1 || semestre > 20) {
@@ -1773,7 +2008,7 @@ async function agregarAlPlan(evento) {
     let agregadas = 0;
     try {
         for (const id of ids) {
-            await apiJson('/programas/' + idSeguro(idPrograma) + '/plan/' + idSeguro(id), 'PUT', { semestre: semestre });
+            await apiJson('/planes/' + idSeguro(idPlan) + '/asignaturas/' + idSeguro(id), 'PUT', { semestre: semestre });
             agregadas++;
         }
         mostrarMensaje(agregadas + ' asignatura(s) en el semestre ' + semestre + '.' +
@@ -1787,20 +2022,22 @@ async function agregarAlPlan(evento) {
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
+    cargarPlanes();
     cargarPlanPrograma();
 }
 
-async function quitarDelPlan(idPrograma, idAsignatura) {
+async function quitarDelPlan(idPlan, idAsignatura) {
     if (!window.confirm('¿Quitar la asignatura del plan de estudios? La asignatura no se borra.')) {
         return;
     }
     try {
-        await api('/programas/' + idSeguro(idPrograma) + '/plan/' + idSeguro(idAsignatura), { method: 'DELETE' });
+        await api('/planes/' + idSeguro(idPlan) + '/asignaturas/' + idSeguro(idAsignatura), { method: 'DELETE' });
         mostrarMensaje('Asignatura quitada del plan de estudios.', 'success');
         cargarActividad();
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
+    cargarPlanes();
     cargarPlanPrograma();
 }
 
@@ -1954,27 +2191,53 @@ function cambiarAlcanceSolicitud() {
     const alcance = alcanceElegido();
     const porPlan = alcance !== 'ASIGNATURAS';
     document.getElementById('grupo-sol-programa').hidden = !porPlan;
+    document.getElementById('grupo-sol-plan-version').hidden = !porPlan;
     document.getElementById('grupo-sol-semestres').hidden = alcance !== 'SEMESTRES';
     document.getElementById('grupo-sol-plan').hidden = !porPlan;
     document.getElementById('grupo-sol-kardex').hidden = porPlan;
     document.getElementById('grupo-sol-asignaturas').hidden = porPlan;
     if (porPlan) {
-        cargarPlanSolicitud();
+        cargarPlanesSolicitud();
     }
 }
 
-async function cargarPlanSolicitud() {
+/** Planes del programa elegido en la solicitud (primero el vigente). */
+async function cargarPlanesSolicitud() {
     const idPrograma = document.getElementById('sol-programa').value;
-    let filas = [];
+    const select = document.getElementById('sol-plan');
+    let planes = [];
     if (idPrograma) {
         try {
-            filas = await api('/programas/' + idSeguro(idPrograma) + '/plan') || [];
+            planes = await api('/programas/' + idSeguro(idPrograma) + '/planes') || [];
         } catch (e) {
             mostrarMensaje(e.message, 'error');
         }
     }
-    /* Si mientras tanto se escogio otro programa, esta respuesta ya no sirve */
     if (document.getElementById('sol-programa').value !== idPrograma) {
+        return;
+    }
+    llenarSelect(select, planes, function (p) { return p.id; }, function (p) {
+        return p.nombre + ' · ' + (ESTADOS_PLAN[p.estado] || ESTADOS_PLAN.VIGENTE).texto;
+    }, planes.length ? 'Seleccione el plan de estudios' : (idPrograma ? 'El programa no tiene planes' : 'Seleccione un programa'));
+    const vigente = planes.find(function (p) { return p.estado === 'VIGENTE'; });
+    if (vigente) {
+        select.value = String(vigente.id);
+    }
+    cargarPlanSolicitud();
+}
+
+async function cargarPlanSolicitud() {
+    const idPlan = document.getElementById('sol-plan').value;
+    let filas = [];
+    if (idPlan) {
+        try {
+            filas = await api('/planes/' + idSeguro(idPlan) + '/asignaturas') || [];
+        } catch (e) {
+            mostrarMensaje(e.message, 'error');
+        }
+    }
+    /* Si mientras tanto se escogio otro plan, esta respuesta ya no sirve */
+    if (document.getElementById('sol-plan').value !== idPlan) {
         return;
     }
     estado.planSolicitud = filas;
@@ -1984,9 +2247,9 @@ async function cargarPlanSolicitud() {
     document.getElementById('sol-semestres').innerHTML = semestres.length ? semestres.map(function (n) {
         return '<label><input type="checkbox" value="' + idSeguro(n) + '"> Semestre ' + escaparTexto(n) +
             ' <small class="cell-help">(' + grupos[n].length + ')</small></label>';
-    }).join('') : '<p class="empty-state">' + (idPrograma
-        ? 'Este programa no tiene plan de estudios. Regístralo en «Contenido de cursos».'
-        : 'Seleccione un programa.') + '</p>';
+    }).join('') : '<p class="empty-state">' + (idPlan
+        ? 'Este plan no tiene asignaturas. Regístralas en «Contenido de cursos» > Planes de estudio.'
+        : 'Seleccione el programa y el plan de estudios.') + '</p>';
     actualizarResumenPlan();
 }
 
@@ -2116,6 +2379,7 @@ async function crearSolicitud(evento) {
     const tipoContenido = document.getElementById('sol-tipo-contenido').value;
     const alcance = alcanceElegido();
     const idPrograma = document.getElementById('sol-programa').value;
+    const idPlan = document.getElementById('sol-plan').value;
     const semestres = semestresElegidos();
     const idTipo = document.getElementById('sol-tipo').value;
     /* El administrador elige el encargado; la auxiliar es siempre ella misma */
@@ -2144,6 +2408,10 @@ async function crearSolicitud(evento) {
         mostrarMensaje('Seleccione el programa académico.', 'error');
         return;
     }
+    if (alcance !== 'ASIGNATURAS' && !idPlan) {
+        mostrarMensaje('Seleccione el plan de estudios.', 'error');
+        return;
+    }
     if (alcance === 'SEMESTRES' && !semestres.length) {
         mostrarMensaje('Marque al menos un semestre.', 'error');
         return;
@@ -2157,6 +2425,7 @@ async function crearSolicitud(evento) {
             tipoContenido: tipoContenido,
             alcance: alcance,
             idPrograma: alcance === 'ASIGNATURAS' ? null : idSeguro(idPrograma),
+            idPlan: alcance === 'ASIGNATURAS' ? null : idSeguro(idPlan),
             semestres: alcance === 'SEMESTRES' ? semestres : null
         });
         /* Por semestres / programa las asignaturas ya las agrego el backend desde el plan */
@@ -2261,6 +2530,7 @@ async function verDetalleSolicitud(id) {
         (completo ? 'completos' : 'resumidos') + ' de las asignaturas de la solicitud.';
     document.getElementById('detalle-solicitud-numero').textContent = '#' + solicitud.id + ' · ' + formatearFecha(solicitud.fechaSolicitud);
     document.getElementById('detalle-solicitud-encargado').textContent = nombreUsuario(solicitud.idUsuarioEncargado);
+    pintarMembrete(solicitud);
 
     const estadoBadge = document.getElementById('detalle-solicitud-estado');
     const info = ESTADOS_SOLICITUD[solicitud.estado] || { texto: solicitud.estado, clase: 'neutral' };
@@ -2306,6 +2576,8 @@ async function verDetalleSolicitud(id) {
             aviso.hidden = false;
         }
 
+        /* Quitar una asignatura agregada por error (siempre debe quedar al menos una) */
+        const sePuedeQuitar = editable && asignaturas.length > 1;
         tbody.innerHTML = asignaturas.map(function (a) {
             const contenido = selectorVersion(solicitud, a, editable) + (a.completo || a.descripcion
                 ? '<strong>' + escaparTexto(a.tipoDocumento || '') + ' ' + escaparTexto(a.formato || '') + '</strong> ' +
@@ -2322,6 +2594,11 @@ async function verDetalleSolicitud(id) {
                       ? ' <button type="button" class="outline-button small" data-editar-version="' +
                         idSeguro(a.idVersionDocumento) + '">Completar</button>'
                       : '');
+            const quitar = sePuedeQuitar
+                ? '<button type="button" class="danger-button small quitar-asignatura" data-quitar-asignatura-solicitud="' +
+                  idSeguro(a.idAsignatura) + '" data-solicitud="' + idSeguro(solicitud.id) + '" data-codigo="' +
+                  escaparTexto((a.codigoMateria || '') + ' ' + (a.codigoCurso || '')) + '">Quitar</button>'
+                : '';
             return '<tr><td><span class="code-chip">' + escaparTexto(a.codigoMateria) + '</span></td>' +
                 '<td><span class="code-chip course">' + escaparTexto(a.codigoCurso || '—') + '</span></td>' +
                 '<td>' + escaparTexto(a.nombre) +
@@ -2329,7 +2606,7 @@ async function verDetalleSolicitud(id) {
                 '<td>' + (a.creditos !== null && a.creditos !== undefined
                     ? escaparTexto(formatearNumero(a.creditos)) + ' créd.' : '—') +
                 '<small class="cell-help">' + escaparTexto(textoHoras(a)) + '</small></td>' +
-                '<td>' + contenido + '</td><td>' + estadoFila + '</td></tr>';
+                '<td>' + contenido + '</td><td>' + estadoFila + quitar + '</td></tr>';
         }).join('');
     } catch (e) {
         filaVacia(tbody, 6, e.message);
@@ -2386,10 +2663,11 @@ async function elegirVersion(select) {
 function textoAlcance(s) {
     if (s.alcance === 'SEMESTRES') {
         const lista = (s.semestres || []).join(', ');
-        return 'Semestre' + ((s.semestres || []).length === 1 ? ' ' : 's ') + lista + ' · ' + nombrePrograma(s.idPrograma);
+        return 'Semestre' + ((s.semestres || []).length === 1 ? ' ' : 's ') + lista + ' · ' + nombrePrograma(s.idPrograma) +
+            (s.nombrePlan ? ' · ' + s.nombrePlan : '');
     }
     if (s.alcance === 'PROGRAMA') {
-        return 'Programa completo · ' + nombrePrograma(s.idPrograma);
+        return 'Programa completo · ' + nombrePrograma(s.idPrograma) + (s.nombrePlan ? ' · ' + s.nombrePlan : '');
     }
     return 'Asignaturas';
 }
@@ -2422,6 +2700,97 @@ async function guardarDatosSolicitud(evento) {
     } catch (e) {
         mostrarMensaje(e.message, 'error');
     }
+}
+
+/** Membrete y pie de la vista previa (mismos textos que el PDF, segun el programa). */
+async function pintarMembrete(solicitud) {
+    const config = estado.configuracion || {};
+    document.getElementById('membrete-escuela').textContent = config.membreteEscuela || '';
+    document.getElementById('membrete-facultad').textContent = config.membreteFacultad || '';
+    /* Escoger escuela y facultad: mientras el certificado no se haya entregado */
+    const form = document.getElementById('form-membrete-solicitud');
+    form.hidden = solicitud.estado === 'ENTREGADO';
+    llenarSugerenciasMembrete();
+    try {
+        const textos = await api('/solicitudes-certificados/' + idSeguro(solicitud.id) + '/membrete');
+        if (textos && estado.solicitudSeleccionada === solicitud.id) {
+            document.getElementById('membrete-escuela').textContent = textos.escuela || '';
+            document.getElementById('membrete-facultad').textContent = textos.facultad || '';
+            document.getElementById('membrete-elegir-escuela').value = textos.escuela || '';
+            document.getElementById('membrete-elegir-facultad').value = textos.facultad || '';
+        }
+    } catch (e) {
+        /* Si falla, quedan los textos generales */
+    }
+    document.getElementById('membrete-titulo').textContent = solicitud.tipoContenido === 'COMPLETO'
+        ? 'CONTENIDOS PROGRAMÁTICOS' : 'RESUMEN CONTENIDOS PROGRAMÁTICOS';
+    document.getElementById('membrete-estudiante').textContent =
+        (solicitud.nombreEstudiante ? solicitud.nombreEstudiante + ', ' : '') +
+        'ID. ' + formatearIdEstudiante(solicitud.idEstudiante);
+    document.getElementById('pie-pagina-texto').textContent = config.piePagina || '';
+}
+
+/** Sugerencias de escuela y facultad: las de los programas y las generales. */
+function llenarSugerenciasMembrete() {
+    const config = estado.configuracion || {};
+    const unicos = function (valores) {
+        return valores.filter(function (v, i) { return v && valores.indexOf(v) === i; });
+    };
+    /* SE PUEDE MODIFICAR: escuelas y facultades que salen como sugerencia */
+    const escuelas = unicos([config.membreteEscuela, 'ESCUELA DE INGENIERÍAS',
+        'ESCUELA DE ECONOMÍA, ADMINISTRACIÓN Y NEGOCIOS']
+        .concat(estado.programas.map(function (p) { return p.escuela; })));
+    const facultades = unicos([config.membreteFacultad, 'FACULTAD DE INGENIERÍA DE SISTEMAS E INFORMÁTICA',
+        'FACULTAD DE ADMINISTRACIÓN DE NEGOCIOS INTERNACIONALES']
+        .concat(estado.programas.map(function (p) { return p.facultad; })));
+    document.getElementById('lista-escuelas').innerHTML = escuelas.map(function (v) {
+        return '<option value="' + escaparTexto(v) + '"></option>';
+    }).join('');
+    document.getElementById('lista-facultades').innerHTML = facultades.map(function (v) {
+        return '<option value="' + escaparTexto(v) + '"></option>';
+    }).join('');
+}
+
+/** Guarda la escuela y la facultad del membrete de la solicitud abierta. */
+async function guardarMembreteSolicitud(evento) {
+    evento.preventDefault();
+    const id = estado.solicitudSeleccionada;
+    if (!id) {
+        return;
+    }
+    const limpiar = function (idCampo) { return document.getElementById(idCampo).value.trim().replace(/\s+/g, ' '); };
+    const boton = evento.target.querySelector('button[type="submit"]');
+    boton.disabled = true;
+    try {
+        const solicitud = await apiJson('/solicitudes-certificados/' + idSeguro(id) + '/membrete', 'PATCH', {
+            escuela: limpiar('membrete-elegir-escuela'),
+            facultad: limpiar('membrete-elegir-facultad')
+        });
+        mostrarMensaje('Membrete de la solicitud #' + id + ' guardado' +
+            (solicitud && solicitud.estado === 'REALIZADO' ? '. El PDF se volvió a generar.' : '.'), 'success');
+        cargarActividad();
+        await cargarSolicitudes();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    boton.disabled = false;
+}
+
+/** Quita de la solicitud una asignatura agregada por error (no la borra del sistema). */
+async function quitarAsignaturaDeSolicitud(idSolicitud, idAsignatura, codigo) {
+    if (!window.confirm('¿Quitar ' + (codigo.trim() || 'la asignatura') + ' de la solicitud #' + idSolicitud +
+        '? La asignatura no se borra del sistema.')) {
+        return;
+    }
+    try {
+        await api('/solicitudes-certificados/' + idSeguro(idSolicitud) + '/asignaturas/' + idSeguro(idAsignatura),
+            { method: 'DELETE' });
+        mostrarMensaje('Asignatura quitada de la solicitud #' + idSolicitud + '.', 'success');
+        cargarActividad();
+    } catch (e) {
+        mostrarMensaje(e.message, 'error');
+    }
+    verDetalleSolicitud(idSolicitud);
 }
 
 async function agregarAsignaturaASolicitud() {
@@ -2656,6 +3025,11 @@ document.addEventListener('DOMContentLoaded', async function () {
             eliminarAsignatura(Number(eliminarAsig.dataset.eliminarAsignatura));
             return;
         }
+        const editarProg = e.target.closest('[data-editar-programa]');
+        if (editarProg) {
+            abrirEditorPrograma(Number(editarProg.dataset.editarPrograma));
+            return;
+        }
         const eliminarProg = e.target.closest('[data-eliminar-programa]');
         if (eliminarProg) {
             eliminarPrograma(Number(eliminarProg.dataset.eliminarPrograma));
@@ -2681,9 +3055,35 @@ document.addEventListener('DOMContentLoaded', async function () {
             cambiarEstadoUsuario(Number(estadoUsuario.dataset.usuarioEstado), estadoUsuario.dataset.activar === 'true');
             return;
         }
+        const datosPlan = e.target.closest('[data-editar-plan-datos]');
+        if (datosPlan) {
+            editarDatosPlan(Number(datosPlan.dataset.editarPlanDatos));
+            return;
+        }
+        const asigPlan = e.target.closest('[data-asignaturas-plan]');
+        if (asigPlan) {
+            abrirAsignaturasPlan(Number(asigPlan.dataset.asignaturasPlan));
+            return;
+        }
+        const borrarPlan = e.target.closest('[data-eliminar-plan]');
+        if (borrarPlan) {
+            eliminarPlan(Number(borrarPlan.dataset.eliminarPlan));
+            return;
+        }
+        const editarPlan = e.target.closest('[data-editar-plan]');
+        if (editarPlan) {
+            editarEnPlan(Number(editarPlan.dataset.editarPlan));
+            return;
+        }
+        const quitarSol = e.target.closest('[data-quitar-asignatura-solicitud]');
+        if (quitarSol) {
+            quitarAsignaturaDeSolicitud(Number(quitarSol.dataset.solicitud),
+                Number(quitarSol.dataset.quitarAsignaturaSolicitud), quitarSol.dataset.codigo || '');
+            return;
+        }
         const quitarPlan = e.target.closest('[data-quitar-plan]');
         if (quitarPlan) {
-            quitarDelPlan(Number(quitarPlan.dataset.programa), Number(quitarPlan.dataset.quitarPlan));
+            quitarDelPlan(Number(quitarPlan.dataset.plan), Number(quitarPlan.dataset.quitarPlan));
             return;
         }
         const accion = e.target.closest('[data-accion]');
@@ -2752,7 +3152,13 @@ document.addEventListener('DOMContentLoaded', async function () {
     document.getElementById('asig-materia').addEventListener('input', actualizarVistaPreviaAsignatura);
     document.getElementById('asig-curso').addEventListener('input', actualizarVistaPreviaAsignatura);
     document.getElementById('form-programa').addEventListener('submit', registrarPrograma);
-    document.getElementById('plan-programa').addEventListener('change', cargarPlanPrograma);
+    document.getElementById('form-plan-datos').addEventListener('submit', guardarPlan);
+    document.getElementById('form-membrete-solicitud').addEventListener('submit', guardarMembreteSolicitud);
+    document.getElementById('btn-cancelar-plan').addEventListener('click', limpiarFormularioPlan);
+    document.getElementById('btn-cerrar-asignaturas-plan').addEventListener('click', cerrarAsignaturasPlan);
+    document.getElementById('plan-buscar').addEventListener('input', pintarTablaPlanes);
+    document.getElementById('form-editar-programa').addEventListener('submit', guardarPrograma);
+    document.getElementById('btn-cancelar-programa').addEventListener('click', cerrarEditorPrograma);
     document.getElementById('form-plan').addEventListener('submit', agregarAlPlan);
     document.getElementById('plan-buscar-asignatura').addEventListener('input', function () {
         filtrarSelectAsignaturas('plan-asignatura', 'plan-buscar-asignatura');
@@ -2766,7 +3172,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     /* Certificaciones */
     document.getElementById('form-solicitud').addEventListener('submit', crearSolicitud);
     document.getElementById('sol-alcance').addEventListener('change', cambiarAlcanceSolicitud);
-    document.getElementById('sol-programa').addEventListener('change', cargarPlanSolicitud);
+    document.getElementById('sol-programa').addEventListener('change', cargarPlanesSolicitud);
+    document.getElementById('sol-plan').addEventListener('change', cargarPlanSolicitud);
     document.getElementById('sol-semestres').addEventListener('change', actualizarResumenPlan);
     document.getElementById('form-detalle-solicitud').addEventListener('submit', guardarDatosSolicitud);
     document.getElementById('sol-buscar-asignatura').addEventListener('input', function () { pintarChecklistAsignaturas(); });
