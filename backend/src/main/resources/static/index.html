@@ -469,16 +469,15 @@
                 </div>
             </div>
 
-            <!-- PLAN DE ESTUDIOS: semestre de cada asignatura en cada programa (US-09).
-                 Con esto una solicitud puede pedir semestres o el programa completo. -->
+            <!-- PLANES DE ESTUDIO: cada programa puede tener varios planes (versiones),
+                 cada uno con nombre, estado y el semestre de cada asignatura (US-09). -->
             <div class="content-card" id="tarjeta-plan">
                 <div class="card-header">
                     <div>
-                        <span class="section-label">PLAN DE ESTUDIOS</span>
-                        <h3>Semestres de cada programa</h3>
-                        <p>Indica en qué semestre va cada asignatura, a qué plan o periodo pertenece y si ese plan
-                            está vigente, es antiguo o está desactualizado. Así una solicitud de certificado puede
-                            pedir uno o varios semestres, o el programa completo.</p>
+                        <span class="section-label">PLANES DE ESTUDIO</span>
+                        <h3>Planes de estudio de cada programa</h3>
+                        <p>Un programa puede tener varios planes (por ejemplo, el vigente y otros antiguos). Ponle
+                            nombre a cada plan, indica su estado y registra en qué semestre va cada asignatura.</p>
                     </div>
                 </div>
                 <div class="form-grid">
@@ -487,44 +486,79 @@
                         <select id="plan-programa"></select>
                     </div>
                 </div>
-                <form id="form-plan" novalidate>
-                    <div class="form-grid">
+
+                <div id="plan-gestion" hidden>
+                    <form id="form-nuevo-plan" class="inline-form plan-nuevo" novalidate>
+                        <input id="plan-nuevo-nombre" type="text" maxlength="100" autocomplete="off"
+                               placeholder="Nombre del nuevo plan, ej. Plan de estudios 2026" aria-label="Nombre del nuevo plan">
+                        <select id="plan-nuevo-estado" aria-label="Estado del nuevo plan">
+                            <option value="VIGENTE">Vigente</option>
+                            <option value="ANTIGUO">Antiguo</option>
+                            <option value="DESACTUALIZADO">Desactualizado</option>
+                        </select>
+                        <button class="outline-button" type="submit">Crear plan</button>
+                    </form>
+
+                    <div class="plan-filtros">
+                        <select id="plan-filtro-estado" aria-label="Filtrar planes por estado">
+                            <option value="TODOS">Todos los estados</option>
+                            <option value="VIGENTE">Solo vigentes</option>
+                            <option value="ANTIGUO">Solo antiguos</option>
+                            <option value="DESACTUALIZADO">Solo desactualizados</option>
+                        </select>
+                        <select id="plan-orden" aria-label="Ordenar planes">
+                            <option value="ESTADO">Ordenar por estado (vigentes primero)</option>
+                            <option value="NOMBRE">Ordenar por nombre (A-Z)</option>
+                            <option value="NOMBRE_DESC">Ordenar por nombre (Z-A)</option>
+                        </select>
+                    </div>
+                    <div id="plan-lista" class="plan-lista"></div>
+                </div>
+
+                <!-- Plan elegido: nombre y estado editables + sus asignaturas por semestre -->
+                <div id="plan-editor" class="plan-editor" hidden>
+                    <div class="plan-encabezado">
                         <div class="form-group">
-                            <label for="plan-asignatura">Asignatura</label>
-                            <input id="plan-buscar-asignatura" type="search" maxlength="60" autocomplete="off"
-                                   placeholder="Buscar por código o nombre" aria-label="Buscar asignatura">
-                            <select id="plan-asignatura"></select>
+                            <label for="plan-titulo">Nombre del plan *</label>
+                            <input id="plan-titulo" type="text" maxlength="100" autocomplete="off">
                         </div>
                         <div class="form-group">
-                            <label for="plan-semestre">Semestre *</label>
-                            <input id="plan-semestre" type="number" min="1" max="20" step="1" placeholder="Ej. 1">
-                        </div>
-                        <div class="form-group">
-                            <label for="plan-nombre">Plan o periodo</label>
-                            <input id="plan-nombre" type="text" maxlength="60" autocomplete="off"
-                                   placeholder="Ej. Plan 2026 o 2020-1">
-                            <small class="field-help">Nombre o periodo del plan al que pertenece la asignatura.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="plan-estado">Estado del plan *</label>
-                            <select id="plan-estado">
+                            <label for="plan-estado-editar">Estado *</label>
+                            <select id="plan-estado-editar">
                                 <option value="VIGENTE">Vigente</option>
                                 <option value="ANTIGUO">Antiguo</option>
                                 <option value="DESACTUALIZADO">Desactualizado</option>
                             </select>
                         </div>
-                        <div class="form-group full-width">
-                            <label for="plan-codigos">…o pega varios códigos para ese semestre (opcional)</label>
-                            <textarea id="plan-codigos" rows="2" maxlength="20000"
-                                      placeholder="Ej. FION 0001, ISIS 0101 — separados por coma, espacio o uno por línea"></textarea>
+                        <div class="inline-form plan-encabezado-acciones">
+                            <button class="primary-button" type="button" id="btn-guardar-plan">Guardar nombre y estado</button>
+                            <button class="danger-button" type="button" id="btn-eliminar-plan">Eliminar plan</button>
                         </div>
                     </div>
-                    <div class="form-actions">
-                        <button class="primary-button" type="submit">Guardar en el plan</button>
-                    </div>
-                </form>
-                <div id="plan-contenido" class="plan-semestres">
-                    <p class="empty-state">Seleccione un programa para ver su plan de estudios.</p>
+
+                    <form id="form-plan" novalidate>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="plan-asignatura">Asignatura</label>
+                                <input id="plan-buscar-asignatura" type="search" maxlength="60" autocomplete="off"
+                                       placeholder="Buscar por código o nombre" aria-label="Buscar asignatura">
+                                <select id="plan-asignatura"></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="plan-semestre">Semestre *</label>
+                                <input id="plan-semestre" type="number" min="1" max="20" step="1" placeholder="Ej. 1">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="plan-codigos">…o pega varios códigos para ese semestre (opcional)</label>
+                                <textarea id="plan-codigos" rows="2" maxlength="20000"
+                                          placeholder="Ej. FION 0001, ISIS 0101 — separados por coma, espacio o uno por línea"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="primary-button" type="submit">Guardar en el plan</button>
+                        </div>
+                    </form>
+                    <div id="plan-contenido" class="plan-semestres"></div>
                 </div>
             </div>
 
@@ -635,6 +669,10 @@
                         <div class="form-group" id="grupo-sol-programa" hidden>
                             <label for="sol-programa">Programa académico *</label>
                             <select id="sol-programa"></select>
+                        </div>
+                        <div class="form-group" id="grupo-sol-plan-version" hidden>
+                            <label for="sol-plan">Plan de estudios *</label>
+                            <select id="sol-plan"></select>
                         </div>
                         <div class="form-group full-width" id="grupo-sol-semestres" hidden>
                             <label>Semestres *</label>

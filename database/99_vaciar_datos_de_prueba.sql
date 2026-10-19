@@ -12,6 +12,7 @@ TRUNCATE TABLE versiones_documento;
 TRUNCATE TABLE documentos;
 
 TRUNCATE TABLE planes_estudio;
+TRUNCATE TABLE planes;
 TRUNCATE TABLE asignaturas;
 TRUNCATE TABLE programas;
 

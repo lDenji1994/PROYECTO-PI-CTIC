@@ -39,6 +39,10 @@ public class SolicitudCertificadoDTO {
     private AlcanceSolicitud alcance;
     /** Programa (alcance SEMESTRES o PROGRAMA). */
     private Integer idPrograma;
+    /** Plan de estudios (alcance SEMESTRES o PROGRAMA); null = el plan vigente del programa. */
+    private Integer idPlan;
+    /** Nombre del plan (solo lectura, para mostrarlo en el panel). */
+    private String nombrePlan;
     /** Semestres pedidos (alcance SEMESTRES), ej. [1, 2, 5]. */
     private List<Integer> semestres;
 
@@ -117,6 +121,10 @@ public class SolicitudCertificadoDTO {
     public void setTipoContenido(TipoContenidoCertificado tipoContenido) { this.tipoContenido = tipoContenido; }
     public AlcanceSolicitud getAlcance() { return alcance; }
     public void setAlcance(AlcanceSolicitud alcance) { this.alcance = alcance; }
+    public Integer getIdPlan() { return idPlan; }
+    public void setIdPlan(Integer idPlan) { this.idPlan = idPlan; }
+    public String getNombrePlan() { return nombrePlan; }
+    public void setNombrePlan(String nombrePlan) { this.nombrePlan = nombrePlan; }
     public Integer getIdPrograma() { return idPrograma; }
     public void setIdPrograma(Integer idPrograma) { this.idPrograma = idPrograma; }
     public List<Integer> getSemestres() { return semestres; }

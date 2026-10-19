@@ -177,6 +177,7 @@ public class SolicitudCertificadoService {
         List<Integer> asignaturasDelPlan = List.of();
         String semestresTexto = null;
         Integer idPrograma = null;
+        Integer idPlan = null;
         if (alcance != AlcanceSolicitud.ASIGNATURAS) {
             idPrograma = dto.getIdPrograma();
             if (idPrograma == null || !programaRepository.existsById(idPrograma)) {
@@ -194,13 +195,14 @@ public class SolicitudCertificadoService {
                 }
                 semestresTexto = semestres.stream().map(String::valueOf).collect(Collectors.joining(","));
             }
-            asignaturasDelPlan = planEstudioService.asignaturasDe(idPrograma, semestres);
+            idPlan = planEstudioService.planDeSolicitud(idPrograma, dto.getIdPlan()).getId();
+            asignaturasDelPlan = planEstudioService.asignaturasDe(idPlan, semestres);
             if (asignaturasDelPlan.isEmpty()) {
                 throw new BusinessException(alcance == AlcanceSolicitud.SEMESTRES
-                        ? "El plan de estudios del programa no tiene asignaturas en esos semestres. "
-                          + "Regístralas en «Contenido de cursos» > Plan de estudios."
-                        : "El programa no tiene plan de estudios registrado. "
-                          + "Regístralo en «Contenido de cursos» > Plan de estudios.");
+                        ? "El plan de estudios elegido no tiene asignaturas en esos semestres. "
+                          + "Regístralas en «Contenido de cursos» > Planes de estudio."
+                        : "El plan de estudios elegido no tiene asignaturas. "
+                          + "Regístralas en «Contenido de cursos» > Planes de estudio.");
             }
         }
 
@@ -211,6 +213,7 @@ public class SolicitudCertificadoService {
         solicitud.setTipoContenido(tipoContenido);
         solicitud.setAlcance(alcance);
         solicitud.setIdPrograma(idPrograma);
+        solicitud.setIdPlan(idPlan);
         solicitud.setSemestres(semestresTexto);
 
         solicitud.setIdEstudiante(
@@ -458,6 +461,10 @@ public class SolicitudCertificadoService {
     private String textoAlcance(SolicitudCertificado s) {
         String programa = s.getIdPrograma() == null ? "" : programaRepository.findById(s.getIdPrograma())
                 .map(p -> p.getCodigo() == null ? p.getNombre() : p.getCodigo()).orElse("");
+        String plan = planEstudioService.nombrePlan(s.getIdPlan());
+        if (plan != null) {
+            programa = programa + " (" + plan + ")";
+        }
         return switch (s.getAlcance()) {
             case ASIGNATURAS -> "asignaturas";
             case SEMESTRES -> "semestres " + s.getSemestres().replace(",", ", ") + " de " + programa;
@@ -723,6 +730,8 @@ public class SolicitudCertificadoService {
         dto.setTipoContenido(solicitud.getTipoContenido());
         dto.setAlcance(solicitud.getAlcance());
         dto.setIdPrograma(solicitud.getIdPrograma());
+        dto.setIdPlan(solicitud.getIdPlan());
+        dto.setNombrePlan(planEstudioService.nombrePlan(solicitud.getIdPlan()));
         dto.setSemestres(solicitud.getSemestres() == null || solicitud.getSemestres().isBlank()
                 ? List.of()
                 : java.util.Arrays.stream(solicitud.getSemestres().split(","))

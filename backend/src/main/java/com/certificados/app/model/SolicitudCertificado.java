@@ -79,6 +79,10 @@ public class SolicitudCertificado {
     @Column(name = "n_idPrograma")
     private Integer idPrograma;
 
+    /** Plan de estudios usado (solo alcance SEMESTRES o PROGRAMA; migracion 07). */
+    @Column(name = "n_idPlan")
+    private Integer idPlan;
+
     /** Semestres pedidos separados por coma, ej. "1,2,5" (solo alcance SEMESTRES). */
     @Column(name = "t_semestres", length = 100)
     private String semestres;
@@ -197,6 +201,14 @@ public class SolicitudCertificado {
 
     public void setAlcance(AlcanceSolicitud alcance) {
         this.alcance = alcance;
+    }
+
+    public Integer getIdPlan() {
+        return idPlan;
+    }
+
+    public void setIdPlan(Integer idPlan) {
+        this.idPlan = idPlan;
     }
 
     public Integer getIdPrograma() {

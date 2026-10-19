@@ -81,6 +81,9 @@ public class ActividadService {
     public static final String SOLICITUD_ENTREGADA = "SOLICITUD_ENTREGADA";
     public static final String SOLICITUD_ENTREGA_DESHECHA = "SOLICITUD_ENTREGA_DESHECHA";
     public static final String ACTUALIZAR_SOLICITUD = "ACTUALIZAR_DATOS_SOLICITUD";
+    public static final String CREAR_PLAN = "CREAR_PLAN_ESTUDIO";
+    public static final String ACTUALIZAR_PLAN = "ACTUALIZAR_PLAN_ESTUDIO";
+    public static final String ELIMINAR_PLAN = "ELIMINAR_PLAN_ESTUDIO";
     public static final String GUARDAR_PLAN_ESTUDIO = "GUARDAR_PLAN_ESTUDIO";
     public static final String QUITAR_PLAN_ESTUDIO = "QUITAR_PLAN_ESTUDIO";
     public static final String ACTUALIZAR_DATOS_CURSO = "ACTUALIZAR_DATOS_CURSO";
@@ -115,7 +118,10 @@ public class ActividadService {
             Map.entry(SOLICITUD_ENTREGADA, "Certificado entregado al estudiante"),
             Map.entry(SOLICITUD_ENTREGA_DESHECHA, "Entrega de certificado deshecha"),
             Map.entry(ACTUALIZAR_SOLICITUD, "Datos de la solicitud actualizados"),
-            Map.entry(GUARDAR_PLAN_ESTUDIO, "Plan de estudios actualizado"),
+            Map.entry(CREAR_PLAN, "Plan de estudios creado"),
+            Map.entry(ACTUALIZAR_PLAN, "Plan de estudios renombrado o cambiado de estado"),
+            Map.entry(ELIMINAR_PLAN, "Plan de estudios eliminado"),
+            Map.entry(GUARDAR_PLAN_ESTUDIO, "Asignatura guardada en un plan de estudios"),
             Map.entry(QUITAR_PLAN_ESTUDIO, "Asignatura quitada del plan de estudios"),
             Map.entry(ACTUALIZAR_DATOS_CURSO, "Datos del curso corregidos"),
             Map.entry(REEMPLAZAR_ARCHIVO, "Archivo de documento reemplazado"),
@@ -139,6 +145,7 @@ public class ActividadService {
             Map.entry(SOLICITUD_ENTREGADA, "success"),
             Map.entry(SOLICITUD_ENTREGA_DESHECHA, "warning"),
             Map.entry(QUITAR_PLAN_ESTUDIO, "warning"),
+            Map.entry(ELIMINAR_PLAN, "warning"),
             Map.entry(QUITAR_ASIGNATURA_SOLICITUD, "warning"),
             Map.entry(DESACTIVAR_USUARIO, "warning"),
             Map.entry(ELIMINAR_DOCUMENTO, "warning"),

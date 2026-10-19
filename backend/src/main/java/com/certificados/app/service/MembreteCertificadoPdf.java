@@ -34,7 +34,8 @@ import java.io.InputStream;
  * importar cuantas ocupe el contenido. El total de paginas ("de 3") se
  * escribe al cerrar el documento.
  *
- * SE PUEDE MODIFICAR en application.properties:
+ * SE PUEDE MODIFICAR en application.properties (lineas comentadas con #;
+ * si no se ponen, se usan los textos de este archivo):
  *   app.certificados.membrete.escuela   (segunda linea del membrete)
  *   app.certificados.membrete.facultad  (cuarta linea del membrete)
  *   app.certificados.pie-pagina         (texto del pie de pagina)
@@ -72,9 +73,23 @@ public class MembreteCertificadoPdf {
             @Value("${app.certificados.membrete.escuela:ESCUELA DE INGENIERÍAS}") String escuela,
             @Value("${app.certificados.membrete.facultad:FACULTAD DE INGENIERÍA DE SISTEMAS E INFORMÁTICA}") String facultad,
             @Value("${app.certificados.pie-pagina:Universidad Pontificia Bolivariana · Seccional Bucaramanga · Km 7 Vía a Piedecuesta, Santander, Colombia}") String piePagina) {
-        this.escuela = escuela;
-        this.facultad = facultad;
-        this.piePagina = piePagina;
+        this.escuela = repararTildes(escuela);
+        this.facultad = repararTildes(facultad);
+        this.piePagina = repararTildes(piePagina);
+    }
+
+    /**
+     * Si el texto llego de application.properties escrito con tildes en UTF-8,
+     * Spring lo lee como ISO-8859-1 y "INGENIERÍA" llega con letras raras (INGENIERÃ...A).
+     * Aqui se detecta y se corrige, para que funcione se escriba como se escriba.
+     */
+    static String repararTildes(String texto) {
+        if (texto == null || (texto.indexOf('Ã') < 0 && texto.indexOf('Â') < 0)) {
+            return texto;
+        }
+        String reparado = new String(texto.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1),
+                java.nio.charset.StandardCharsets.UTF_8);
+        return reparado.indexOf('\uFFFD') >= 0 ? texto : reparado;
     }
 
     /** Textos del membrete y del pie (el panel los muestra en la vista previa). */

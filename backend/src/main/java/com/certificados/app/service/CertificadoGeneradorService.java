@@ -7,6 +7,7 @@ import com.certificados.app.model.AlcanceSolicitud;
 import com.certificados.app.model.CampoPlantilla;
 import com.certificados.app.model.Programa;
 import com.certificados.app.repository.ProgramaRepository;
+import com.certificados.app.repository.PlanRepository;
 import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.model.ElementoPlantilla;
 import com.certificados.app.model.SolicitudCertificado;
@@ -43,6 +44,7 @@ public class CertificadoGeneradorService {
     private final CertificadoContenidosPdf contenidosPdf;
     private final ProgramaRepository programaRepository;
     private final MembreteCertificadoPdf membrete;
+    private final PlanRepository planRepository;
 
     public CertificadoGeneradorService(
             CertificadoGeneradoRepository certificadoRepository,
@@ -53,7 +55,8 @@ public class CertificadoGeneradorService {
             ContenidoCertificadoService contenidoCertificadoService,
             CertificadoContenidosPdf contenidosPdf,
             ProgramaRepository programaRepository,
-            MembreteCertificadoPdf membrete) {
+            MembreteCertificadoPdf membrete,
+            PlanRepository planRepository) {
 
         this.certificadoRepository = certificadoRepository;
         this.solicitudRepository = solicitudRepository;
@@ -65,6 +68,7 @@ public class CertificadoGeneradorService {
         this.contenidosPdf = contenidosPdf;
         this.programaRepository = programaRepository;
         this.membrete = membrete;
+        this.planRepository = planRepository;
     }
 
     /**
@@ -519,7 +523,10 @@ public class CertificadoGeneradorService {
                 ? (solicitud.getSemestres().contains(",") ? "semestres " : "semestre ")
                         + solicitud.getSemestres().replace(",", ", ")
                 : "programa completo";
-        return "del programa " + programa + " (" + detalle + ")";
+        String plan = solicitud.getIdPlan() == null ? "" : planRepository.findById(solicitud.getIdPlan())
+                .map(p -> ", " + p.getNombre())
+                .orElse("");
+        return "del programa " + programa + plan + " (" + detalle + ")";
     }
 
     private String resolverCampo(
