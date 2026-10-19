@@ -39,8 +39,7 @@ VALUES
 INSERT INTO elementos_plantilla
     (c_tipoElemento, t_contenido, n_posicionX, n_posicionY, n_ancho, n_alto, n_tamanoFuente, c_tipoFuente, c_alineacion, n_orden, n_idVersionPlantilla, n_idCampoPlantilla)
 SELECT * FROM (
-    SELECT 'TEXTO' AS tipo, 'UNIVERSIDAD PONTIFICIA BOLIVARIANA' AS contenido, 50.00 AS x, 90.00 AS y, 495.00 AS ancho, NULL AS alto, 16.00 AS fuente, 'Helvetica' AS tf, 'CENTRO' AS al, 1 AS orden, @version AS ver, NULL AS campo
-    UNION ALL SELECT 'TEXTO', 'Certificado de contenidos programáticos', 50, 115, 495, NULL, 12, 'Helvetica', 'CENTRO', 2, @version, NULL
+    SELECT 'TEXTO' AS tipo, 'Certificado de contenidos programáticos' AS contenido, 50.00 AS x, 115.00 AS y, 495.00 AS ancho, NULL AS alto, 12.00 AS fuente, 'Helvetica' AS tf, 'CENTRO' AS al, 2 AS orden, @version AS ver, NULL AS campo
     UNION ALL SELECT 'LINEA', NULL, 50, 130, 495, NULL, NULL, NULL, NULL, 3, @version, NULL
     UNION ALL SELECT 'TEXTO', 'Se certifica la información académica registrada para:', 50, 170, 495, NULL, 11, 'Helvetica', 'IZQUIERDA', 4, @version, NULL
     UNION ALL SELECT 'CAMPO', NULL, 50, 195, 495, NULL, 11, 'Helvetica', 'IZQUIERDA', 5, @version,

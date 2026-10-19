@@ -73,6 +73,7 @@ public class ActividadService {
     public static final String CARGAR_DOCUMENTO_ANTIGUO = "CARGAR_DOCUMENTO_FORMATO_ANTIGUO";
     public static final String CREAR_SOLICITUD = "CREAR_SOLICITUD_CERTIFICADO";
     public static final String AGREGAR_ASIGNATURA_SOLICITUD = "AGREGAR_ASIGNATURA_SOLICITUD";
+    public static final String QUITAR_ASIGNATURA_SOLICITUD = "QUITAR_ASIGNATURA_SOLICITUD";
     public static final String ELEGIR_VERSION_SOLICITUD = "ELEGIR_VERSION_SOLICITUD";
     public static final String SOLICITUD_ESPERANDO = "SOLICITUD_ESPERANDO_DOCUMENTOS";
     public static final String SOLICITUD_REALIZADA = "SOLICITUD_REALIZADA";
@@ -106,6 +107,7 @@ public class ActividadService {
             Map.entry(CARGAR_DOCUMENTO_ANTIGUO, "Documento cargado con formato desactualizado"),
             Map.entry(CREAR_SOLICITUD, "Solicitud de certificado creada"),
             Map.entry(AGREGAR_ASIGNATURA_SOLICITUD, "Asignatura agregada a una solicitud"),
+            Map.entry(QUITAR_ASIGNATURA_SOLICITUD, "Asignatura quitada de una solicitud"),
             Map.entry(ELEGIR_VERSION_SOLICITUD, "Versión del documento elegida para un certificado"),
             Map.entry(SOLICITUD_ESPERANDO, "Solicitud en espera de documentos"),
             Map.entry(SOLICITUD_REALIZADA, "Solicitud marcada como realizada"),
@@ -137,6 +139,7 @@ public class ActividadService {
             Map.entry(SOLICITUD_ENTREGADA, "success"),
             Map.entry(SOLICITUD_ENTREGA_DESHECHA, "warning"),
             Map.entry(QUITAR_PLAN_ESTUDIO, "warning"),
+            Map.entry(QUITAR_ASIGNATURA_SOLICITUD, "warning"),
             Map.entry(DESACTIVAR_USUARIO, "warning"),
             Map.entry(ELIMINAR_DOCUMENTO, "warning"),
             Map.entry(ELIMINAR_ASIGNATURA, "warning"),

@@ -4,6 +4,7 @@ import com.certificados.app.dto.PlanEstudioDTO;
 import com.certificados.app.exception.BusinessException;
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.Asignatura;
+import com.certificados.app.model.EstadoPlanEstudio;
 import com.certificados.app.model.PlanEstudio;
 import com.certificados.app.model.Programa;
 import com.certificados.app.repository.AsignaturaRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,6 +38,9 @@ public class PlanEstudioService {
 
     /** Semestres posibles: 1 .. SEMESTRE_MAXIMO. */
     public static final int SEMESTRE_MAXIMO = 20;
+
+    /** Largo maximo del nombre o periodo del plan (columna t_plan). */
+    public static final int PLAN_MAXIMO = 60;
 
     private final PlanEstudioRepository planRepository;
     private final ProgramaRepository programaRepository;
@@ -84,21 +89,61 @@ public class PlanEstudioService {
                 .collect(Collectors.toMap(PlanEstudio::getIdAsignatura, PlanEstudio::getSemestre, (a, b) -> a));
     }
 
-    /** Agrega la asignatura al plan, o le cambia el semestre si ya estaba. */
-    public PlanEstudioDTO guardar(Integer idPrograma, Integer idAsignatura, Integer semestre) {
+    /**
+     * Agrega la asignatura al plan, o le cambia los datos si ya estaba.
+     *
+     * @param plan   nombre o periodo del plan (ej. "Plan 2026"); null = no cambiarlo,
+     *               texto vacio = borrarlo
+     * @param estado VIGENTE, ANTIGUO o DESACTUALIZADO; null = no cambiarlo
+     *               (VIGENTE si la asignatura es nueva en el plan)
+     */
+    public PlanEstudioDTO guardar(Integer idPrograma, Integer idAsignatura, Integer semestre,
+                                  String plan, String estado) {
         Programa programa = programa(idPrograma);
         Asignatura asignatura = asignaturaRepository.findById(idAsignatura)
                 .orElseThrow(() -> new ResourceNotFoundException("Asignatura no encontrada con id " + idAsignatura));
         validarSemestre(semestre);
+        EstadoPlanEstudio estadoPlan = estado == null ? null : estadoPlan(estado);
 
         PlanEstudio fila = planRepository.findByIdProgramaAndIdAsignatura(idPrograma, idAsignatura)
                 .orElse(new PlanEstudio(idPrograma, idAsignatura, semestre));
         fila.setSemestre(semestre);
+        if (plan != null) {
+            fila.setPlan(nombrePlan(plan));
+        }
+        if (estadoPlan != null) {
+            fila.setEstadoPlan(estadoPlan);
+        }
         planRepository.save(fila);
 
         actividadService.registrar(ActividadService.TABLA_PLANES, ActividadService.GUARDAR_PLAN_ESTUDIO,
-                nombre(programa) + ": " + asignatura.getCodigo() + " en semestre " + semestre);
+                nombre(programa) + ": " + asignatura.getCodigo() + " en semestre " + semestre
+                        + (fila.getPlan() == null ? "" : " (" + fila.getPlan() + ")")
+                        + " - " + fila.getEstadoPlan().name().toLowerCase(Locale.ROOT));
         return aDTO(fila, asignatura);
+    }
+
+    /** "Plan 2026", "2020-1"... (letras, numeros, espacios y . - / ( )), o null si viene vacio. */
+    static String nombrePlan(String plan) {
+        String limpio = plan.trim().replaceAll("\\s+", " ");
+        if (limpio.isEmpty()) {
+            return null;
+        }
+        if (limpio.length() > PLAN_MAXIMO) {
+            throw new BusinessException("El nombre o periodo del plan admite máximo " + PLAN_MAXIMO + " caracteres.");
+        }
+        if (!limpio.matches("[\\p{L}\\p{N} .\\-/()]+")) {
+            throw new BusinessException("El nombre o periodo del plan solo admite letras, números, espacios y . - / ( ).");
+        }
+        return limpio;
+    }
+
+    static EstadoPlanEstudio estadoPlan(String estado) {
+        try {
+            return EstadoPlanEstudio.valueOf(estado.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("El estado del plan debe ser VIGENTE, ANTIGUO o DESACTUALIZADO.");
+        }
     }
 
     /** Quita la asignatura del plan del programa (la asignatura NO se borra). */
@@ -130,6 +175,7 @@ public class PlanEstudioService {
     private static PlanEstudioDTO aDTO(PlanEstudio fila, Asignatura a) {
         String[] codigos = AsignaturaService.separar(a.getCodigo());
         return new PlanEstudioDTO(fila.getIdPrograma(), a.getId(), a.getCodigo(), codigos[0], codigos[1],
-                a.getNombre(), fila.getSemestre());
+                a.getNombre(), fila.getSemestre(), fila.getPlan(),
+                fila.getEstadoPlan() == null ? EstadoPlanEstudio.VIGENTE.name() : fila.getEstadoPlan().name());
     }
 }

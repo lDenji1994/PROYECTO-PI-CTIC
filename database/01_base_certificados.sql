@@ -220,6 +220,8 @@ CREATE TABLE planes_estudio (
     n_idPrograma INT NOT NULL,
     n_idAsignatura INT NOT NULL,
     n_semestre INT NOT NULL,
+    t_plan VARCHAR(60) NULL,
+    c_estadoPlan ENUM('VIGENTE', 'ANTIGUO', 'DESACTUALIZADO') NOT NULL DEFAULT 'VIGENTE',
     PRIMARY KEY (n_idPrograma, n_idAsignatura),
 
     CONSTRAINT fk_Programas_PlanesEstudio

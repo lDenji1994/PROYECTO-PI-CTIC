@@ -1,6 +1,7 @@
 package com.certificados.app.controller;
 
 import com.certificados.app.service.ArchivoDocumentoValidador;
+import com.certificados.app.service.MembreteCertificadoPdf;
 import com.certificados.app.service.UsuarioService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,7 +12,7 @@ import java.util.Map;
 /**
  * GET /api/configuracion -> valores que el panel necesita mostrar y validar
  * (tipos de archivo aceptados, tamano maximo y largo minimo de las
- * contrasenas), para que no esten
+ * contrasenas, y los textos del membrete y pie del certificado), para que no esten
  * escritos tambien en el JavaScript.
  */
 @RestController
@@ -20,10 +21,13 @@ public class ConfiguracionController {
 
     private final ArchivoDocumentoValidador validador;
     private final UsuarioService usuarioService;
+    private final MembreteCertificadoPdf membrete;
 
-    public ConfiguracionController(ArchivoDocumentoValidador validador, UsuarioService usuarioService) {
+    public ConfiguracionController(ArchivoDocumentoValidador validador, UsuarioService usuarioService,
+                                   MembreteCertificadoPdf membrete) {
         this.validador = validador;
         this.usuarioService = usuarioService;
+        this.membrete = membrete;
     }
 
     @GetMapping
@@ -31,7 +35,10 @@ public class ConfiguracionController {
         return Map.of(
                 "extensionesPermitidas", validador.extensionesPermitidas(),
                 "tamanoMaximoMb", ArchivoDocumentoValidador.TAMANO_MAXIMO / (1024 * 1024),
-                "contrasenaMinima", usuarioService.contrasenaMinima()
+                "contrasenaMinima", usuarioService.contrasenaMinima(),
+                "membreteEscuela", membrete.escuela(),
+                "membreteFacultad", membrete.facultad(),
+                "piePagina", membrete.piePagina()
         );
     }
 }

@@ -75,6 +75,9 @@ falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no 
   estudios y varios documentos por asignatura.
 - `database/06_migracion_nombres_tablas.sql` — nombres de tablas fáciles de leer
   (`asignaturas`, `solicitudes`, `bitacora`…) y quita 7 tablas que no se usaban.
+- `database/07_migracion_plan_estudio_estado.sql` — plan o periodo y estado (vigente, antiguo,
+  desactualizado) de cada asignatura en el plan de estudios; quita de la plantilla el título
+  duplicado, porque el certificado ahora lleva el membrete institucional.
 
 Tablas de la base (18):
 

@@ -7,6 +7,7 @@ import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.AlcanceSolicitud;
 import com.certificados.app.model.Asignatura;
 import com.certificados.app.model.DetalleSolicitudCertificado;
+import com.certificados.app.model.DetalleSolicitudCertificadoId;
 import com.certificados.app.model.EstadoSolicitudCertificado;
 import com.certificados.app.model.Log;
 import com.certificados.app.model.PlantillaCertificado;
@@ -527,6 +528,41 @@ public class SolicitudCertificadoService {
                 .map(a -> a.getCodigo() + " - " + a.getNombre()).orElse("#" + idAsignatura);
         actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD,
                 ActividadService.AGREGAR_ASIGNATURA_SOLICITUD,
+                "Solicitud #" + idSolicitud + ": " + asignatura,
+                solicitud.getIdUsuarioEncargado());
+    }
+
+    /**
+     * Quita de la solicitud una asignatura agregada por error (vista previa).
+     * Solo mientras la solicitud no tenga certificado (no REALIZADO, ENTREGADO
+     * ni ERROR) y siempre que le quede al menos una asignatura. La asignatura
+     * NO se borra del sistema.
+     */
+    public void quitarAsignatura(Integer idSolicitud, Integer idAsignatura) {
+        SolicitudCertificado solicitud = obtener(idSolicitud);
+        EstadoSolicitudCertificado estado = solicitud.getEstado();
+        if (estado == EstadoSolicitudCertificado.REALIZADO
+                || estado == EstadoSolicitudCertificado.ENTREGADO
+                || estado == EstadoSolicitudCertificado.ERROR) {
+            throw new BusinessException(
+                    "La solicitud ya está cerrada (" + estado + "); no se le pueden quitar asignaturas.");
+        }
+
+        DetalleSolicitudCertificado detalle = detalleRepository
+                .findById(new DetalleSolicitudCertificadoId(idSolicitud, idAsignatura))
+                .orElseThrow(() -> new ResourceNotFoundException("Esa asignatura no está en la solicitud."));
+
+        if (detalleRepository.findByIdSolicitudCertificado(idSolicitud).size() <= 1) {
+            throw new BusinessException("La solicitud debe tener al menos una asignatura. "
+                    + "Si toda la solicitud está mal, elimínala y crea una nueva.");
+        }
+
+        detalleRepository.delete(detalle);
+
+        String asignatura = asignaturaRepository.findById(idAsignatura)
+                .map(a -> a.getCodigo() + " - " + a.getNombre()).orElse("#" + idAsignatura);
+        actividadService.registrar(ActividadService.TABLA_DETALLE_SOLICITUD,
+                ActividadService.QUITAR_ASIGNATURA_SOLICITUD,
                 "Solicitud #" + idSolicitud + ": " + asignatura,
                 solicitud.getIdUsuarioEncargado());
     }

@@ -10,6 +10,7 @@ import com.certificados.app.repository.ProgramaRepository;
 import com.certificados.app.model.CertificadoGenerado;
 import com.certificados.app.model.ElementoPlantilla;
 import com.certificados.app.model.SolicitudCertificado;
+import com.certificados.app.model.TipoContenidoCertificado;
 import com.certificados.app.model.VersionPlantilla;
 import com.certificados.app.repository.CampoPlantillaRepository;
 import com.certificados.app.repository.CertificadoGeneradoRepository;
@@ -41,6 +42,7 @@ public class CertificadoGeneradorService {
     private final ContenidoCertificadoService contenidoCertificadoService;
     private final CertificadoContenidosPdf contenidosPdf;
     private final ProgramaRepository programaRepository;
+    private final MembreteCertificadoPdf membrete;
 
     public CertificadoGeneradorService(
             CertificadoGeneradoRepository certificadoRepository,
@@ -50,7 +52,8 @@ public class CertificadoGeneradorService {
             CampoPlantillaRepository campoRepository,
             ContenidoCertificadoService contenidoCertificadoService,
             CertificadoContenidosPdf contenidosPdf,
-            ProgramaRepository programaRepository) {
+            ProgramaRepository programaRepository,
+            MembreteCertificadoPdf membrete) {
 
         this.certificadoRepository = certificadoRepository;
         this.solicitudRepository = solicitudRepository;
@@ -61,6 +64,35 @@ public class CertificadoGeneradorService {
         this.contenidoCertificadoService = contenidoCertificadoService;
         this.contenidosPdf = contenidosPdf;
         this.programaRepository = programaRepository;
+        this.membrete = membrete;
+    }
+
+    /**
+     * Cuanto bajar los elementos de la plantilla para que no queden debajo
+     * del membrete: si el elemento mas alto empieza antes de que termine el
+     * membrete, todos se corren hacia abajo la misma distancia.
+     */
+    private float desplazamientoPlantilla(List<ElementoPlantilla> elementos) {
+        float minimo = Float.MAX_VALUE;
+        for (ElementoPlantilla elemento : elementos) {
+            minimo = Math.min(minimo, decimalToFloat(elemento.getPosicionY(), 50));
+        }
+        float inicioLibre = MembreteCertificadoPdf.FIN_MEMBRETE + 18;
+        return minimo < inicioLibre ? inicioLibre - minimo : 0;
+    }
+
+    /** "RESUMEN CONTENIDOS PROGRAMÁTICOS" o "CONTENIDOS PROGRAMÁTICOS" (completo). */
+    private static String tituloMembrete(SolicitudCertificado solicitud) {
+        return solicitud.getTipoContenido() == TipoContenidoCertificado.COMPLETO
+                ? "CONTENIDOS PROGRAMÁTICOS"
+                : "RESUMEN CONTENIDOS PROGRAMÁTICOS";
+    }
+
+    /** "Ana María Pérez, ID. 000123456" (como en el certificado institucional). */
+    private static String estudianteMembrete(SolicitudCertificado solicitud) {
+        String id = "ID. " + String.format("%09d", solicitud.getIdEstudiante());
+        String nombre = solicitud.getNombreEstudiante();
+        return nombre == null || nombre.isBlank() ? id : nombre.trim() + ", " + id;
     }
 
     /**
@@ -139,9 +171,12 @@ public class CertificadoGeneradorService {
                     new Document(PageSize.A4);
 
             // Margenes del cuerpo que fluye debajo del encabezado
-            // (izquierda, derecha, arriba, abajo). El encabezado de la
-            // plantilla usa posiciones fijas y no depende de esto.
-            document.setMargins(50, 50, 50, 60);
+            // (izquierda, derecha, arriba, abajo). Arriba deja libre el
+            // membrete y abajo el pie de pagina, en TODAS las paginas.
+            // El encabezado de la plantilla usa posiciones fijas.
+            document.setMargins(50, 50,
+                    MembreteCertificadoPdf.FIN_MEMBRETE + 14,
+                    MembreteCertificadoPdf.INICIO_PIE + 22);
 
             PdfWriter writer =
                     PdfWriter.getInstance(
@@ -149,7 +184,15 @@ public class CertificadoGeneradorService {
                             outputStream
                     );
 
+            // Membrete (logo + datos) arriba y pie + "Pagina N de M" abajo,
+            // en cada pagina. Debe registrarse antes de abrir el documento.
+            writer.setPageEvent(membrete.crearEvento(
+                    tituloMembrete(solicitud),
+                    estudianteMembrete(solicitud)));
+
             document.open();
+
+            float desplazamiento = desplazamientoPlantilla(elementos);
 
             PdfContentByte canvas =
                     writer.getDirectContent();
@@ -159,7 +202,8 @@ public class CertificadoGeneradorService {
                 renderizarElemento(
                         canvas,
                         elemento,
-                        solicitud
+                        solicitud,
+                        desplazamiento
                 );
             }
 
@@ -168,7 +212,7 @@ public class CertificadoGeneradorService {
             // del encabezado y continuando en las paginas necesarias.
             contenidosPdf.agregar(
                     document,
-                    finDelEncabezado(elementos),
+                    finDelEncabezado(elementos) + desplazamiento,
                     asignaturas,
                     solicitud.getTipoContenido(),
                     textoAlcance(solicitud),
@@ -220,7 +264,8 @@ public class CertificadoGeneradorService {
     private void renderizarElemento(
             PdfContentByte canvas,
             ElementoPlantilla elemento,
-            SolicitudCertificado solicitud) {
+            SolicitudCertificado solicitud,
+            float desplazamiento) {
 
         if (elemento.getTipoElemento() == null) {
             return;
@@ -233,14 +278,16 @@ public class CertificadoGeneradorService {
                 renderizarTexto(
                         canvas,
                         elemento,
-                        solicitud
+                        solicitud,
+                        desplazamiento
                 );
                 break;
 
             case LINEA:
                 renderizarLinea(
                         canvas,
-                        elemento
+                        elemento,
+                        desplazamiento
                 );
                 break;
 
@@ -258,7 +305,8 @@ public class CertificadoGeneradorService {
     private void renderizarTexto(
             PdfContentByte canvas,
             ElementoPlantilla elemento,
-            SolicitudCertificado solicitud) {
+            SolicitudCertificado solicitud,
+            float desplazamiento) {
 
         String contenido =
                 resolverContenido(
@@ -293,7 +341,8 @@ public class CertificadoGeneradorService {
                         - decimalToFloat(
                                 elemento.getPosicionY(),
                                 50
-                        );
+                        )
+                        - desplazamiento;
 
         float tamanoFuente =
                 decimalToFloat(
@@ -366,7 +415,8 @@ public class CertificadoGeneradorService {
 
     private void renderizarLinea(
             PdfContentByte canvas,
-            ElementoPlantilla elemento) {
+            ElementoPlantilla elemento,
+            float desplazamiento) {
 
         float x =
                 decimalToFloat(
@@ -384,7 +434,8 @@ public class CertificadoGeneradorService {
                         - decimalToFloat(
                                 elemento.getPosicionY(),
                                 50
-                        );
+                        )
+                        - desplazamiento;
 
         float ancho =
                 decimalToFloat(

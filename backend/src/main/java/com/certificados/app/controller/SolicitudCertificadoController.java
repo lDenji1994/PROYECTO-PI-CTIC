@@ -144,6 +144,20 @@ public class SolicitudCertificadoController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * DELETE /api/solicitudes-certificados/{id}/asignaturas/{idAsignatura}
+     * Quita de la solicitud una asignatura agregada por error (la asignatura
+     * no se borra del sistema). Solo antes de generar el certificado.
+     */
+    @DeleteMapping("/{id}/asignaturas/{idAsignatura}")
+    public ResponseEntity<Void> quitarAsignatura(
+            @PathVariable Integer id,
+            @PathVariable Integer idAsignatura) {
+
+        service.quitarAsignatura(id, idAsignatura);
+        return ResponseEntity.noContent().build();
+    }
+
     /** Asignaturas de la solicitud, con codigo de materia y de curso separados. */
     @GetMapping("/{id}/asignaturas")
     public ResponseEntity<List<AsignaturaDTO>> listarAsignaturas(

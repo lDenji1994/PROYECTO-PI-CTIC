@@ -12,7 +12,9 @@ import java.util.Map;
  * PLAN DE ESTUDIOS DE UN PROGRAMA.
  *
  *   GET    /api/programas/{id}/plan                    asignaturas con su semestre
- *   PUT    /api/programas/{id}/plan/{idAsignatura}     cuerpo { "semestre": 3 } (agrega o cambia)
+ *   PUT    /api/programas/{id}/plan/{idAsignatura}     cuerpo { "semestre": 3, "plan": "Plan 2026",
+ *                                                       "estado": "VIGENTE" } (agrega o cambia;
+ *                                                       plan y estado son opcionales)
  *   DELETE /api/programas/{id}/plan/{idAsignatura}     la quita del plan
  *
  * Permisos (SecurityConfig): cualquier usuario con sesion (auxiliar o
@@ -36,8 +38,24 @@ public class PlanEstudioController {
     @PutMapping("/{idAsignatura}")
     public PlanEstudioDTO guardar(@PathVariable Integer idPrograma,
                                   @PathVariable Integer idAsignatura,
-                                  @RequestBody Map<String, Integer> cuerpo) {
-        return service.guardar(idPrograma, idAsignatura, cuerpo == null ? null : cuerpo.get("semestre"));
+                                  @RequestBody Map<String, Object> cuerpo) {
+        Map<String, Object> datos = cuerpo == null ? Map.of() : cuerpo;
+        return service.guardar(idPrograma, idAsignatura, entero(datos.get("semestre")),
+                texto(datos.get("plan")), texto(datos.get("estado")));
+    }
+
+    private static Integer entero(Object valor) {
+        if (valor instanceof Number n) {
+            return n.intValue();
+        }
+        if (valor instanceof String s && s.trim().matches("\\d{1,3}")) {
+            return Integer.valueOf(s.trim());
+        }
+        return null;
+    }
+
+    private static String texto(Object valor) {
+        return valor == null ? null : String.valueOf(valor);
     }
 
     @DeleteMapping("/{idAsignatura}")

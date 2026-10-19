@@ -2531,3 +2531,50 @@ input[type="search"] + select { margin-top: 6px; }
 .datos-temas li {
     margin-bottom: 4px;
 }
+
+/* Plan de estudios: etiqueta "Plan 2026 · Vigente" y boton editar en cada asignatura */
+.plan-etiqueta { margin-left: 6px; font-size: 10.5px; padding: 2px 7px; vertical-align: middle; }
+.chip-edit {
+    margin-left: 6px;
+    border: none;
+    background: transparent;
+    color: var(--color-primario);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.chip-edit:hover { color: var(--gris-texto); }
+
+/* Vista previa del certificado: membrete institucional y pie de pagina */
+.certificate-membrete {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    text-align: right;
+    margin-bottom: 18px;
+}
+.certificate-logo-img { width: 150px; max-width: 40%; height: auto; flex-shrink: 0; }
+.certificate-membrete-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.certificate-membrete-texto strong { font-size: 12px; letter-spacing: 0.2px; color: #1f2733; overflow-wrap: anywhere; }
+.certificate-membrete-texto em { margin-top: 10px; font-size: 12px; color: #1f2733; overflow-wrap: anywhere; }
+.certificate-pie {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+    font-size: 11px;
+    color: var(--gris-texto);
+    text-align: left;
+}
+.certificate-pie span:last-child { white-space: nowrap; }
+.quitar-asignatura { display: block; margin-top: 6px; }
+
+@media (max-width: 600px) {
+    .certificate-membrete { flex-direction: column; align-items: flex-end; }
+    .certificate-logo-img { max-width: 60%; }
+    .certificate-pie { flex-direction: column; }
+}
