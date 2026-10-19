@@ -79,6 +79,13 @@ public class SolicitudCertificado {
     @Column(name = "n_idPrograma")
     private Integer idPrograma;
 
+    /** Escuela y facultad elegidas para el membrete (migracion 08; null = las del programa). */
+    @Column(name = "t_escuela", length = 150)
+    private String escuela;
+
+    @Column(name = "t_facultad", length = 150)
+    private String facultad;
+
     /** Plan de estudios usado (solo alcance SEMESTRES o PROGRAMA; migracion 07). */
     @Column(name = "n_idPlan")
     private Integer idPlan;
@@ -201,6 +208,22 @@ public class SolicitudCertificado {
 
     public void setAlcance(AlcanceSolicitud alcance) {
         this.alcance = alcance;
+    }
+
+    public String getEscuela() {
+        return escuela;
+    }
+
+    public void setEscuela(String escuela) {
+        this.escuela = escuela;
+    }
+
+    public String getFacultad() {
+        return facultad;
+    }
+
+    public void setFacultad(String facultad) {
+        this.facultad = facultad;
     }
 
     public Integer getIdPlan() {

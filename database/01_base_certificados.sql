@@ -266,6 +266,8 @@ CREATE TABLE solicitudes (
     n_idPrograma INT NULL,
     n_idPlan INT NULL,
     t_semestres VARCHAR(100) NULL,
+    t_escuela VARCHAR(150) NULL,
+    t_facultad VARCHAR(150) NULL,
 
     CONSTRAINT fk_Programas_SolicitudesCertificados
         FOREIGN KEY (n_idPrograma) REFERENCES programas(n_idPrograma)

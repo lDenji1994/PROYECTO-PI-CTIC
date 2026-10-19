@@ -494,40 +494,22 @@
                 </div>
             </div>
 
-            <!-- PLANES DE ESTUDIO: cada programa puede tener varios planes (versiones),
-                 cada uno con nombre, estado y el semestre de cada asignatura (US-09). -->
+            <!-- PLANES DE ESTUDIO: crear un plan (nombre + estado), buscarlo por nombre y
+                 ver su estado. Las asignaturas por semestre se abren desde la lista. -->
             <div class="content-card" id="tarjeta-plan">
                 <div class="card-header">
                     <div>
                         <span class="section-label">PLANES DE ESTUDIO</span>
-                        <h3>Planes de estudio de cada programa</h3>
-                        <p>Un programa puede tener varios planes (por ejemplo, el vigente y otros antiguos). Ponle
-                            nombre a cada plan, indica su estado y registra en qué semestre va cada asignatura.</p>
+                        <h3 id="plan-form-titulo">Crear plan de estudios</h3>
                     </div>
+                    <span class="required-label">* Requerido</span>
                 </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="plan-programa">Programa académico</label>
-                        <select id="plan-programa"></select>
-                    </div>
-                </div>
-
-                <!-- Buscar / filtrar y elegir el plan del programa (o crear uno nuevo) -->
-                <div class="form-grid" id="plan-seleccion" hidden>
-                    <div class="form-group">
-                        <label for="plan-buscar">Buscar o filtrar planes</label>
-                        <input id="plan-buscar" type="search" maxlength="100" autocomplete="off"
-                               placeholder="Nombre o estado, ej. 2026 o vigente">
-                    </div>
-                    <div class="form-group">
-                        <label for="plan-elegido">Plan de estudios</label>
-                        <select id="plan-elegido"></select>
-                    </div>
-                </div>
-
-                <!-- Plan elegido: nombre y estado editables + sus asignaturas por semestre -->
-                <div id="plan-editor" class="plan-editor" hidden>
-                    <div class="plan-encabezado">
+                <form id="form-plan-datos" novalidate>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="plan-programa">Programa académico *</label>
+                            <select id="plan-programa"></select>
+                        </div>
                         <div class="form-group">
                             <label for="plan-titulo">Nombre del plan *</label>
                             <input id="plan-titulo" type="text" maxlength="100" autocomplete="off"
@@ -541,13 +523,44 @@
                                 <option value="DESACTUALIZADO">Desactualizado</option>
                             </select>
                         </div>
-                        <div class="inline-form plan-encabezado-acciones">
-                            <button class="primary-button" type="button" id="btn-guardar-plan">Guardar nombre y estado</button>
-                            <button class="danger-button" type="button" id="btn-eliminar-plan">Eliminar plan</button>
-                        </div>
                     </div>
+                    <div class="form-actions inline-form">
+                        <button class="secondary-button" type="button" id="btn-cancelar-plan" hidden>Cancelar</button>
+                        <button class="primary-button" type="submit" id="btn-guardar-plan">Guardar plan</button>
+                    </div>
+                </form>
 
-                    <div id="plan-asignaturas">
+                <div class="search-box plan-buscador">
+                    <span>🔍</span>
+                    <input id="plan-buscar" type="search" maxlength="100" autocomplete="off"
+                           placeholder="Buscar plan por nombre" aria-label="Buscar plan por nombre">
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Plan de estudios</th>
+                            <th>Programa</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tabla-planes">
+                        <tr><td colspan="4">Cargando planes…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Asignaturas por semestre del plan (se abre con el boton "Asignaturas") -->
+                <div id="plan-asignaturas" class="plan-editor" hidden>
+                    <div class="card-header">
+                        <div>
+                            <span class="section-label">ASIGNATURAS DEL PLAN</span>
+                            <h3 id="plan-asignaturas-titulo"></h3>
+                            <p>Sirven para las solicitudes de certificado por semestres o por programa completo.</p>
+                        </div>
+                        <button class="outline-button" type="button" id="btn-cerrar-asignaturas-plan">Cerrar</button>
+                    </div>
                     <form id="form-plan" novalidate>
                         <div class="form-grid">
                             <div class="form-group">
@@ -571,7 +584,6 @@
                         </div>
                     </form>
                     <div id="plan-contenido" class="plan-semestres"></div>
-                    </div>
                 </div>
             </div>
 
@@ -784,7 +796,7 @@
                 <div class="certificate-document">
                     <!-- Membrete: igual al que sale en cada pagina del PDF -->
                     <div class="certificate-membrete">
-                        <img src="img/logo-upb.png" alt="Universidad Pontificia Bolivariana, Seccional Bucaramanga"
+                        <img src="logo-upb.png" alt="Universidad Pontificia Bolivariana, Seccional Bucaramanga"
                              class="certificate-logo-img">
                         <div class="certificate-membrete-texto">
                             <strong>UNIVERSIDAD PONTIFICIA BOLIVARIANA</strong>
@@ -795,6 +807,28 @@
                         </div>
                     </div>
                     <span id="detalle-solicitud-tipo">Certificación académica</span>
+                    <!-- Escuela y facultad que salen en el membrete de ESTA solicitud -->
+                    <form id="form-membrete-solicitud" class="membrete-form" novalidate hidden>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label for="membrete-elegir-escuela">Escuela del membrete</label>
+                                <input id="membrete-elegir-escuela" type="text" maxlength="150" list="lista-escuelas"
+                                       autocomplete="off">
+                            </div>
+                            <div class="form-group full-width">
+                                <label for="membrete-elegir-facultad">Facultad del membrete</label>
+                                <input id="membrete-elegir-facultad" type="text" maxlength="150" list="lista-facultades"
+                                       autocomplete="off">
+                            </div>
+                        </div>
+                        <datalist id="lista-escuelas"></datalist>
+                        <datalist id="lista-facultades"></datalist>
+                        <small class="field-help" id="membrete-ayuda">Escoge de la lista o escribe la escuela y la facultad.
+                            Si el certificado ya se generó, se vuelve a generar con los datos nuevos.</small>
+                        <div class="form-actions">
+                            <button class="outline-button" type="submit">Guardar membrete</button>
+                        </div>
+                    </form>
                     <hr>
                     <p><span id="detalle-solicitud-descripcion">Contenidos programáticos de las asignaturas de la
                         solicitud.</span> El certificado se genera en <strong>un solo PDF</strong> cuando todas las

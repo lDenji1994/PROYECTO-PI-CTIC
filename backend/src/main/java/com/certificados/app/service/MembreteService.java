@@ -21,7 +21,8 @@ import java.util.stream.Collectors;
 /**
  * TEXTOS DEL MEMBRETE DE UN CERTIFICADO (los usa el PDF y la vista previa).
  *
- * La escuela y la facultad salen del programa de la solicitud:
+ * La escuela y la facultad: las que se eligieron en la solicitud (vista
+ * previa > Membrete del certificado); si no se eligieron, las del programa:
  *   - Solicitud por semestres / programa completo: el programa elegido.
  *   - Solicitud por asignaturas: el programa que diseña la mayoria de los
  *     documentos usados (campo "Programa que diseña el curso" de la carga).
@@ -64,8 +65,11 @@ public class MembreteService {
     /** Para el PDF (ya tiene las asignaturas calculadas). */
     public Textos textos(SolicitudCertificado solicitud, List<AsignaturaCertificadoDTO> asignaturas) {
         Programa programa = programaDelCertificado(solicitud, asignaturas);
-        String escuela = programa != null && programa.getEscuela() != null ? programa.getEscuela() : membrete.escuela();
-        String facultad = programa != null && programa.getFacultad() != null ? programa.getFacultad() : membrete.facultad();
+        // Prioridad: lo elegido en la solicitud > lo del programa > el valor general
+        String escuela = solicitud.getEscuela() != null ? solicitud.getEscuela()
+                : programa != null && programa.getEscuela() != null ? programa.getEscuela() : membrete.escuela();
+        String facultad = solicitud.getFacultad() != null ? solicitud.getFacultad()
+                : programa != null && programa.getFacultad() != null ? programa.getFacultad() : membrete.facultad();
         String titulo = solicitud.getTipoContenido() == TipoContenidoCertificado.COMPLETO
                 ? "CONTENIDOS PROGRAMÁTICOS"
                 : "RESUMEN CONTENIDOS PROGRAMÁTICOS";

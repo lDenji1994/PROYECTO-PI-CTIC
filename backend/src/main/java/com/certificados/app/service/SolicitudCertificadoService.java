@@ -15,6 +15,7 @@ import com.certificados.app.model.SolicitudCertificado;
 import com.certificados.app.model.TipoContenidoCertificado;
 import com.certificados.app.model.VersionPlantilla;
 import com.certificados.app.repository.AsignaturaRepository;
+import com.certificados.app.repository.CertificadoGeneradoRepository;
 import com.certificados.app.repository.DetalleSolicitudCertificadoRepository;
 import com.certificados.app.repository.LogRepository;
 import com.certificados.app.repository.PlantillaCertificadoRepository;
@@ -48,6 +49,7 @@ public class SolicitudCertificadoService {
     private final ContenidoCertificadoService contenidoCertificadoService;
     private final PlanEstudioService planEstudioService;
     private final ProgramaRepository programaRepository;
+    private final CertificadoGeneradoRepository certificadoRepository;
 
     /**
      * Caracteres permitidos en el nombre del estudiante: letras (con tildes),
@@ -69,7 +71,8 @@ public class SolicitudCertificadoService {
             ActividadService actividadService,
             ContenidoCertificadoService contenidoCertificadoService,
             PlanEstudioService planEstudioService,
-            ProgramaRepository programaRepository) {
+            ProgramaRepository programaRepository,
+            CertificadoGeneradoRepository certificadoRepository) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -87,6 +90,7 @@ public class SolicitudCertificadoService {
         this.contenidoCertificadoService = contenidoCertificadoService;
         this.planEstudioService = planEstudioService;
         this.programaRepository = programaRepository;
+        this.certificadoRepository = certificadoRepository;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -442,6 +446,44 @@ public class SolicitudCertificadoService {
         registrar(guardada, ActividadService.ACTUALIZAR_SOLICITUD,
                 " (" + guardada.getTipoContenido().name().toLowerCase() + ")");
         return toDTO(guardada);
+    }
+
+    /**
+     * Escuela y facultad del membrete de esta solicitud (vacio = las del
+     * programa). Si el certificado ya se genero (REALIZADO) se vuelve a
+     * generar con los textos nuevos. Una solicitud ENTREGADA no se cambia.
+     */
+    public SolicitudCertificadoDTO actualizarMembrete(Integer id, String escuela, String facultad) {
+        SolicitudCertificado solicitud = obtener(id);
+        if (solicitud.getEstado() == EstadoSolicitudCertificado.ENTREGADO) {
+            throw new BusinessException("La solicitud #" + id + " ya fue entregada; su certificado no se cambia. "
+                    + "Usa «Deshacer entrega» si necesitas corregirlo.");
+        }
+        solicitud.setEscuela(textoMembrete(escuela, "La escuela"));
+        solicitud.setFacultad(textoMembrete(facultad, "La facultad"));
+        SolicitudCertificado guardada = repository.save(solicitud);
+
+        certificadoRepository.findByIdSolicitudCertificado(id).ifPresent(certificado -> {
+            Integer idVersion = certificado.getIdVersionPlantilla();
+            certificadoRepository.delete(certificado);
+            certificadoRepository.flush();
+            certificadoGeneradorService.generar(id, idVersion);
+        });
+
+        registrar(guardada, ActividadService.ACTUALIZAR_SOLICITUD, " (membrete: "
+                + (guardada.getEscuela() == null ? "escuela del programa" : guardada.getEscuela()) + ")");
+        return toDTO(guardada);
+    }
+
+    private static String textoMembrete(String texto, String campo) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        String limpio = texto.trim().replaceAll("\\s+", " ");
+        if (limpio.length() > 150) {
+            throw new BusinessException(campo + " admite máximo 150 caracteres.");
+        }
+        return limpio;
     }
 
     /** Quita espacios de mas y valida el nombre del estudiante (obligatorio). */

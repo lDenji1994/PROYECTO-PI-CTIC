@@ -2532,8 +2532,13 @@ input[type="search"] + select { margin-top: 6px; }
     margin-bottom: 4px;
 }
 
-/* Planes de estudio: plan abierto (nombre y estado editables) */
-.plan-editor { margin-top: 6px; }
+/* Planes de estudio: buscador, acciones de la tabla y asignaturas del plan */
+.plan-buscador { margin: 22px 0 12px; }
+.acciones-plan { display: flex; flex-wrap: wrap; gap: 6px; }
+tr.fila-activa td { background: #fbf2f8; }
+/* Vista previa: escoger escuela y facultad del membrete */
+.membrete-form { margin: 6px 0 18px; padding: 14px; border: 1px dashed var(--gris-borde); border-radius: 8px; text-align: left; }
+.plan-editor { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--gris-borde); }
 .plan-encabezado { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px 16px; align-items: end; margin-bottom: 14px; }
 .plan-encabezado #plan-titulo { font-size: 17px; font-weight: 700; }
 .plan-encabezado-acciones { grid-column: 1 / -1; flex-wrap: wrap; }

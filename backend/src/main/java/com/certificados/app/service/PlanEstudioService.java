@@ -69,6 +69,16 @@ public class PlanEstudioService {
 
     /* =========================== PLANES =========================== */
 
+    /** Todos los planes (de todos los programas): primero los vigentes, luego por nombre. */
+    @Transactional(readOnly = true)
+    public List<PlanDTO> listarTodos() {
+        return planRepository.findAll().stream()
+                .sorted(Comparator.comparing((Plan p) -> p.getEstado().ordinal())
+                        .thenComparing(Plan::getNombre, String.CASE_INSENSITIVE_ORDER))
+                .map(this::aDTO)
+                .toList();
+    }
+
     /** Planes del programa: primero los vigentes, luego por nombre. */
     @Transactional(readOnly = true)
     public List<PlanDTO> listarPlanes(Integer idPrograma) {
@@ -270,7 +280,8 @@ public class PlanEstudioService {
     }
 
     private PlanDTO aDTO(Plan p) {
-        return new PlanDTO(p.getId(), p.getIdPrograma(), p.getNombre(), p.getEstado().name(),
+        String programa = programaRepository.findById(p.getIdPrograma()).map(PlanEstudioService::nombre).orElse("");
+        return new PlanDTO(p.getId(), p.getIdPrograma(), programa, p.getNombre(), p.getEstado().name(),
                 filaRepository.countByIdPlan(p.getId()));
     }
 

@@ -172,6 +172,18 @@ public class SolicitudCertificadoController {
         return membreteService.textos(id);
     }
 
+    /**
+     * PATCH /api/solicitudes-certificados/{id}/membrete
+     * Cuerpo: { "escuela": "...", "facultad": "..." } (vacio = las del programa).
+     * Si el certificado ya estaba generado, se vuelve a generar.
+     */
+    @PatchMapping("/{id}/membrete")
+    public SolicitudCertificadoDTO cambiarMembrete(@PathVariable Integer id,
+                                                  @RequestBody java.util.Map<String, String> cuerpo) {
+        java.util.Map<String, String> datos = cuerpo == null ? java.util.Map.of() : cuerpo;
+        return service.actualizarMembrete(id, datos.get("escuela"), datos.get("facultad"));
+    }
+
     /** Asignaturas de la solicitud, con codigo de materia y de curso separados. */
     @GetMapping("/{id}/asignaturas")
     public ResponseEntity<List<AsignaturaDTO>> listarAsignaturas(

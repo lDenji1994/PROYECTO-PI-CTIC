@@ -18,6 +18,8 @@ DELIMITER ;
 
 CALL migracion08_columna('programas', 't_escuela', 'VARCHAR(150) NULL');
 CALL migracion08_columna('programas', 't_facultad', 'VARCHAR(150) NULL');
+CALL migracion08_columna('solicitudes', 't_escuela', 'VARCHAR(150) NULL');
+CALL migracion08_columna('solicitudes', 't_facultad', 'VARCHAR(150) NULL');
 
 DROP PROCEDURE IF EXISTS migracion08_columna;
 

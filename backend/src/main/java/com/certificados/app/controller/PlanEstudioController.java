@@ -13,6 +13,7 @@ import java.util.Map;
 /**
  * PLANES DE ESTUDIO.
  *
+ *   GET    /api/planes                                   todos los planes (lista con buscador)
  *   GET    /api/programas/{id}/planes                    planes del programa
  *   POST   /api/programas/{id}/planes                    { "nombre": "Plan 2026", "estado": "VIGENTE" }
  *   PUT    /api/planes/{idPlan}                          { "nombre": "...", "estado": "ANTIGUO" } (cualquiera de los dos)
@@ -33,6 +34,11 @@ public class PlanEstudioController {
 
     public PlanEstudioController(PlanEstudioService service) {
         this.service = service;
+    }
+
+    @GetMapping("/planes")
+    public List<PlanDTO> listarTodos() {
+        return service.listarTodos();
     }
 
     @GetMapping("/programas/{idPrograma}/planes")
