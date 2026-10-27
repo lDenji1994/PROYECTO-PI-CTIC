@@ -48,7 +48,7 @@ CREATE TABLE versiones_documento (
     c_periodo VARCHAR(20) NULL,
 
     t_nombreArchivo VARCHAR(255) NOT NULL,
-    bi_archivo LONGBLOB NOT NULL,
+    t_rutaArchivo VARCHAR(500) NOT NULL,
 
     t_escuela VARCHAR(150) NULL,
     t_facultad VARCHAR(150) NULL,
@@ -308,7 +308,7 @@ CREATE TABLE solicitud_asignaturas (
 CREATE TABLE certificados_generados (
     n_idCertificadoGenerado INT AUTO_INCREMENT PRIMARY KEY,
     t_nombreArchivo VARCHAR(255) NOT NULL,
-    bi_archivo LONGBLOB NOT NULL,
+    t_rutaArchivo VARCHAR(500) NOT NULL,
     dt_fechaGeneracion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     n_idSolicitudCertificado INT UNIQUE NOT NULL,
     n_idVersionPlantilla INT NOT NULL,

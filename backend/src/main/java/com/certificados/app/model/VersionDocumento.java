@@ -23,9 +23,13 @@ public class VersionDocumento {
     @Column(name = "t_nombreArchivo", nullable = false, length = 255)
     private String nombreArchivo;
 
-    @Lob
-    @Column(name = "bi_archivo", nullable = false, columnDefinition = "LONGBLOB")
-    private byte[] archivo;
+    /**
+     * Ruta del archivo DENTRO de la carpeta de archivos (migracion 09), ej.
+     * "documentos/2026-2/3f2a....pdf". El archivo ya no se guarda en la base:
+     * lo lee y escribe AlmacenamientoArchivosService.
+     */
+    @Column(name = "t_rutaArchivo", nullable = false, length = 500)
+    private String rutaArchivo;
 
     @Column(name = "t_escuela", length = 150)
     private String escuela;
@@ -142,12 +146,12 @@ public class VersionDocumento {
         this.nombreArchivo = nombreArchivo;
     }
 
-    public byte[] getArchivo() {
-        return archivo;
+    public String getRutaArchivo() {
+        return rutaArchivo;
     }
 
-    public void setArchivo(byte[] archivo) {
-        this.archivo = archivo;
+    public void setRutaArchivo(String rutaArchivo) {
+        this.rutaArchivo = rutaArchivo;
     }
 
     public String getEscuela() {

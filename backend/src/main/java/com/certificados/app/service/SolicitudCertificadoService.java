@@ -50,6 +50,7 @@ public class SolicitudCertificadoService {
     private final PlanEstudioService planEstudioService;
     private final ProgramaRepository programaRepository;
     private final CertificadoGeneradoRepository certificadoRepository;
+    private final AlmacenamientoArchivosService almacenamiento;
 
     /**
      * Caracteres permitidos en el nombre del estudiante: letras (con tildes),
@@ -72,7 +73,8 @@ public class SolicitudCertificadoService {
             ContenidoCertificadoService contenidoCertificadoService,
             PlanEstudioService planEstudioService,
             ProgramaRepository programaRepository,
-            CertificadoGeneradoRepository certificadoRepository) {
+            CertificadoGeneradoRepository certificadoRepository,
+            AlmacenamientoArchivosService almacenamiento) {
 
         this.repository = repository;
         this.asignaturaRepository = asignaturaRepository;
@@ -91,6 +93,7 @@ public class SolicitudCertificadoService {
         this.planEstudioService = planEstudioService;
         this.programaRepository = programaRepository;
         this.certificadoRepository = certificadoRepository;
+        this.almacenamiento = almacenamiento;
     }
 
     public List<SolicitudCertificadoDTO> listarTodos() {
@@ -465,7 +468,9 @@ public class SolicitudCertificadoService {
 
         certificadoRepository.findByIdSolicitudCertificado(id).ifPresent(certificado -> {
             Integer idVersion = certificado.getIdVersionPlantilla();
+            String rutaAnterior = certificado.getRutaArchivo();
             certificadoRepository.delete(certificado);
+            almacenamiento.borrarAlConfirmar(rutaAnterior);
             certificadoRepository.flush();
             certificadoGeneradorService.generar(id, idVersion);
         });

@@ -45,6 +45,7 @@ public class CertificadoGeneradorService {
     private final MembreteCertificadoPdf membrete;
     private final MembreteService membreteService;
     private final PlanRepository planRepository;
+    private final AlmacenamientoArchivosService almacenamiento;
 
     public CertificadoGeneradorService(
             CertificadoGeneradoRepository certificadoRepository,
@@ -57,7 +58,8 @@ public class CertificadoGeneradorService {
             ProgramaRepository programaRepository,
             MembreteCertificadoPdf membrete,
             MembreteService membreteService,
-            PlanRepository planRepository) {
+            PlanRepository planRepository,
+            AlmacenamientoArchivosService almacenamiento) {
 
         this.certificadoRepository = certificadoRepository;
         this.solicitudRepository = solicitudRepository;
@@ -71,6 +73,7 @@ public class CertificadoGeneradorService {
         this.membrete = membrete;
         this.membreteService = membreteService;
         this.planRepository = planRepository;
+        this.almacenamiento = almacenamiento;
     }
 
     /**
@@ -224,7 +227,13 @@ public class CertificadoGeneradorService {
                             + ".pdf"
             );
 
-            certificado.setArchivo(archivo);
+            // El PDF va a la carpeta de archivos; la base guarda solo su ruta
+            certificado.setRutaArchivo(
+                    almacenamiento.guardarCertificado(
+                            certificado.getNombreArchivo(),
+                            archivo
+                    )
+            );
 
             certificado.setIdSolicitudCertificado(
                     idSolicitud

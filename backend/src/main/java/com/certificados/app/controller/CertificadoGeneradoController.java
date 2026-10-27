@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.certificados.app.exception.ResourceNotFoundException;
 import com.certificados.app.model.CertificadoGenerado;
+import com.certificados.app.service.AlmacenamientoArchivosService;
 import com.certificados.app.service.CertificadoGeneradorService;
 import com.certificados.app.repository.CertificadoGeneradoRepository;
 import org.springframework.http.ResponseEntity;
@@ -22,13 +23,16 @@ public class CertificadoGeneradoController {
 
     private final CertificadoGeneradorService service;
     private final CertificadoGeneradoRepository repository;
+    private final AlmacenamientoArchivosService almacenamiento;
 
     public CertificadoGeneradoController(
             CertificadoGeneradorService service,
-            CertificadoGeneradoRepository repository) {
+            CertificadoGeneradoRepository repository,
+            AlmacenamientoArchivosService almacenamiento) {
 
         this.service = service;
         this.repository = repository;
+        this.almacenamiento = almacenamiento;
     }
 
     @GetMapping
@@ -96,7 +100,7 @@ public class CertificadoGeneradoController {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un certificado generado para la solicitud " + idSolicitud));
 
-        byte[] archivo = certificado.getArchivo();
+        byte[] archivo = almacenamiento.leer(certificado.getRutaArchivo());
         String nombre = certificado.getNombreArchivo() == null
                 ? "certificado-" + idSolicitud + ".pdf"
                 : certificado.getNombreArchivo();
