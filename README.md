@@ -79,7 +79,7 @@ falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no 
   antiguo o desactualizado): un programa puede tener varios planes y cada solicitud por semestres
   usa uno. También quita de la plantilla el título duplicado (el certificado ya trae el membrete).
 - `database/08_migracion_membrete_programa.sql` — escuela y facultad del membrete del certificado:
-  por programa (Programas > ✎) y por solicitud (vista previa > Escuela / Facultad del membrete).
+  se eligen en cada solicitud (vista previa > Escuela / Facultad del membrete).
 - `database/09_migracion_archivos_en_carpeta.sql` — los documentos cargados y los PDF de los
   certificados dejan de guardarse en MySQL: van a la carpeta `app.almacenamiento.ruta` y la base
   guarda solo la ruta. Al arrancar, el servidor pasa solo los archivos que ya estaban en la base.
