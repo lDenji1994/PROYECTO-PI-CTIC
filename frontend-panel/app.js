@@ -1663,7 +1663,7 @@ function pintarProgramas() {
     lista.innerHTML = estado.programas.map(function (p) {
         return '<li class="chip">' + escaparTexto(p.codigo ? p.codigo + ' · ' : '') + escaparTexto(p.nombre) +
             '<button type="button" class="chip-edit" data-editar-programa="' + idSeguro(p.id) +
-                '" title="Editar nombre, escuela y facultad" aria-label="Editar programa">✎</button>' +
+                '" title="Editar nombre del programa" aria-label="Editar programa">✎</button>' +
             (esAdmin() ? '<button type="button" class="chip-remove" data-eliminar-programa="' + idSeguro(p.id) +
                 '" title="Eliminar programa" aria-label="Eliminar programa">×</button>' : '') + '</li>';
     }).join('');
@@ -1696,14 +1696,9 @@ function abrirEditorPrograma(idPrograma) {
     if (!programa) {
         return;
     }
-    const config = estado.configuracion || {};
     estado.programaEditado = programa.id;
     document.getElementById('editar-programa-titulo').textContent = 'Editar programa ' + (programa.codigo || '');
     document.getElementById('edit-prog-nombre').value = programa.nombre || '';
-    document.getElementById('edit-prog-escuela').value = programa.escuela || '';
-    document.getElementById('edit-prog-facultad').value = programa.facultad || '';
-    document.getElementById('edit-prog-escuela').placeholder = config.membreteEscuela || '';
-    document.getElementById('edit-prog-facultad').placeholder = config.membreteFacultad || '';
     const form = document.getElementById('form-editar-programa');
     form.hidden = false;
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1725,8 +1720,9 @@ async function guardarPrograma(evento) {
     const datos = {
         codigo: programa.codigo,
         nombre: limpiar('edit-prog-nombre'),
-        escuela: limpiar('edit-prog-escuela'),
-        facultad: limpiar('edit-prog-facultad')
+        /* Se conservan los que ya tenia (la escuela y facultad se eligen en cada solicitud) */
+        escuela: programa.escuela || '',
+        facultad: programa.facultad || ''
     };
     if (!datos.nombre) {
         mostrarMensaje('El nombre del programa es obligatorio.', 'error');
