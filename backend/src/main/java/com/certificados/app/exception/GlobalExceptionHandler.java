@@ -52,6 +52,13 @@ public class GlobalExceptionHandler {
         return responder(HttpStatus.NOT_FOUND, "No encontrado", List.of(ex.getMessage()));
     }
 
+    /** No se pudo leer o escribir en la carpeta de archivos (ruta mal configurada, permisos...). */
+    @ExceptionHandler(AlmacenamientoException.class)
+    public ResponseEntity<ApiError> handleAlmacenamiento(AlmacenamientoException ex) {
+        LOG.error("ARCHIVOS: {}", ex.getMessage(), ex.getCause());
+        return responder(HttpStatus.INTERNAL_SERVER_ERROR, "Error con la carpeta de archivos", List.of(ex.getMessage()));
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> handleBusiness(BusinessException ex) {
         return responder(HttpStatus.BAD_REQUEST, "Solicitud invalida", List.of(ex.getMessage()));

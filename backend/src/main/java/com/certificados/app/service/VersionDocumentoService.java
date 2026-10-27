@@ -32,6 +32,7 @@ public class VersionDocumentoService {
     private final ActividadService actividadService;
     private final ContenidoRepository contenidoRepository;
     private final ArchivoDocumentoValidador archivoValidador;
+    private final AlmacenamientoArchivosService almacenamiento;
 
     public VersionDocumentoService(
             VersionDocumentoRepository repository,
@@ -40,7 +41,8 @@ public class VersionDocumentoService {
             FormatoService formatoService,
             ActividadService actividadService,
             ContenidoRepository contenidoRepository,
-            ArchivoDocumentoValidador archivoValidador) {
+            ArchivoDocumentoValidador archivoValidador,
+            AlmacenamientoArchivosService almacenamiento) {
 
         this.repository = repository;
         this.documentoAcademicoRepository = documentoAcademicoRepository;
@@ -49,6 +51,7 @@ public class VersionDocumentoService {
         this.actividadService = actividadService;
         this.contenidoRepository = contenidoRepository;
         this.archivoValidador = archivoValidador;
+        this.almacenamiento = almacenamiento;
     }
 
     public List<VersionDocumentoDTO> listarTodos() {
@@ -127,7 +130,8 @@ public class VersionDocumentoService {
         version.setIdDocumentoAcademico(idDocumentoAcademico);
         version.setPeriodo(periodoLimpio);
         version.setNombreArchivo(nombreArchivo);
-        version.setArchivo(contenido);
+        // El archivo va a la carpeta de archivos; la base guarda solo su ruta
+        version.setRutaArchivo(almacenamiento.guardarDocumento(periodoLimpio, nombreArchivo, contenido));
 
         // Datos del curso escritos a mano por la auxiliar (si se enviaron)
         List<String> temas = datos == null ? List.of() : aplicarDatos(version, datos);
@@ -181,9 +185,12 @@ public class VersionDocumentoService {
         byte[] contenido = archivo.getBytes();
         archivoValidador.validar(nombreArchivo, contenido);
 
+        String rutaAnterior = version.getRutaArchivo();
         version.setNombreArchivo(nombreArchivo);
-        version.setArchivo(contenido);
+        version.setRutaArchivo(almacenamiento.guardarDocumento(version.getPeriodo(), nombreArchivo, contenido));
         repository.save(version);
+        // El archivo viejo se borra solo cuando el cambio queda guardado
+        almacenamiento.borrarAlConfirmar(rutaAnterior);
 
         actividadService.registrar(ActividadService.TABLA_VERSIONES,
                 ActividadService.REEMPLAZAR_ARCHIVO, etiqueta(version) + " -> " + nombreArchivo);
@@ -395,7 +402,7 @@ public class VersionDocumentoService {
     }
 
     public byte[] obtenerArchivo(Integer id) {
-        return obtenerEntidad(id).getArchivo();
+        return almacenamiento.leer(obtenerEntidad(id).getRutaArchivo());
     }
 
     public String obtenerNombreArchivo(Integer id) {

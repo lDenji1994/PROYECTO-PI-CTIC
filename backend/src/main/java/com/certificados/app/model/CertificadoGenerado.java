@@ -22,13 +22,16 @@ public class CertificadoGenerado {
     )
     private String nombreArchivo;
 
-    @Lob
+    /**
+     * Ruta del PDF DENTRO de la carpeta de archivos (migracion 09), ej.
+     * "certificados/2026/8b7d....pdf". El PDF ya no se guarda en la base.
+     */
     @Column(
-            name = "bi_archivo",
+            name = "t_rutaArchivo",
             nullable = false,
-            columnDefinition = "LONGBLOB"
+            length = 500
     )
-    private byte[] archivo;
+    private String rutaArchivo;
 
     @Column(
             name = "dt_fechaGeneracion",
@@ -75,12 +78,12 @@ public class CertificadoGenerado {
         this.nombreArchivo = nombreArchivo;
     }
 
-    public byte[] getArchivo() {
-        return archivo;
+    public String getRutaArchivo() {
+        return rutaArchivo;
     }
 
-    public void setArchivo(byte[] archivo) {
-        this.archivo = archivo;
+    public void setRutaArchivo(String rutaArchivo) {
+        this.rutaArchivo = rutaArchivo;
     }
 
     public LocalDateTime getFechaGeneracion() {

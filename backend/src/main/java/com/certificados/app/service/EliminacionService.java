@@ -70,6 +70,7 @@ public class EliminacionService {
     private final UsuarioRepository usuarioRepository;
     private final LogRepository logRepository;
     private final ActividadService actividadService;
+    private final AlmacenamientoArchivosService almacenamiento;
 
     public EliminacionService(
             VersionDocumentoRepository versionRepository,
@@ -82,7 +83,8 @@ public class EliminacionService {
             CertificadoGeneradoRepository certificadoRepository,
             UsuarioRepository usuarioRepository,
             LogRepository logRepository,
-            ActividadService actividadService) {
+            ActividadService actividadService,
+            AlmacenamientoArchivosService almacenamiento) {
         this.programaRepository = programaRepository;
         this.solicitudRepository = solicitudRepository;
         this.certificadoRepository = certificadoRepository;
@@ -94,6 +96,7 @@ public class EliminacionService {
         this.contenidoRepository = contenidoRepository;
         this.detalleSolicitudRepository = detalleSolicitudRepository;
         this.actividadService = actividadService;
+        this.almacenamiento = almacenamiento;
     }
 
     /** Elimina un documento cargado (una version) con todo lo que depende de el. */
@@ -110,7 +113,9 @@ public class EliminacionService {
         contenidoRepository.flush();
 
         // 2. La version (archivo + datos del curso)
+        String rutaArchivo = versionRepository.rutaArchivo(idVersion);
         versionRepository.eliminarPorId(idVersion);
+        almacenamiento.borrarAlConfirmar(rutaArchivo);
 
         // 3. Si el documento se quedo sin archivos, tambien se quita
         Integer idDocumento = version.idDocumentoAcademico();
@@ -183,6 +188,7 @@ public class EliminacionService {
         // Orden obligatorio: primero lo que depende de la solicitud
         if (certificado != null) {
             certificadoRepository.delete(certificado);
+            almacenamiento.borrarAlConfirmar(certificado.getRutaArchivo());
         }
         detalleSolicitudRepository.deleteByIdSolicitudCertificado(idSolicitud);
         detalleSolicitudRepository.flush();

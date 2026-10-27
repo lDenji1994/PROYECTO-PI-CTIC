@@ -80,6 +80,11 @@ falten, en orden. Todas se pueden correr varias veces; sin ellas el servidor no 
   usa uno. También quita de la plantilla el título duplicado (el certificado ya trae el membrete).
 - `database/08_migracion_membrete_programa.sql` — escuela y facultad del membrete del certificado:
   por programa (Programas > ✎) y por solicitud (vista previa > Escuela / Facultad del membrete).
+- `database/09_migracion_archivos_en_carpeta.sql` — los documentos cargados y los PDF de los
+  certificados dejan de guardarse en MySQL: van a la carpeta `app.almacenamiento.ruta` y la base
+  guarda solo la ruta. Al arrancar, el servidor pasa solo los archivos que ya estaban en la base.
+- `database/10_quitar_archivos_de_la_base.sql` (opcional, DESPUÉS de arrancar una vez) — borra la
+  columna vieja `bi_archivo` y compacta las tablas para recuperar el espacio.
 
 Tablas de la base (19):
 
@@ -115,7 +120,17 @@ app.seguridad.admin-inicial.usuario=admin
 app.seguridad.admin-inicial.contrasena=   ← escribe aquí la tuya (mín. 12, con letras y números)
 ```
 
-Ese archivo está en `.gitignore`: **nunca se sube**. `application.properties` (el que sí se
+Ese archivo está en `.gitignore`: **nunca se sube**.
+
+En el mismo archivo va la **carpeta de archivos** (documentos cargados y PDF de certificados), con
+`/` en lugar de `\`:
+
+```properties
+app.almacenamiento.ruta=C:/Users/TU_USUARIO/Desktop/demo
+```
+
+Puede ser una carpeta compartida de red (`//servidor-ctic/certificados`). Esa carpeta también se
+debe incluir en las copias de seguridad. `application.properties` (el que sí se
 sube) ya **no trae ninguna contraseña por defecto**, ni de MySQL ni del panel.
 
 Alternativa sin archivo: variables de entorno `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`.

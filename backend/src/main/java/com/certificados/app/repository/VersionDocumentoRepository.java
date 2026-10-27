@@ -40,7 +40,11 @@ public interface VersionDocumentoRepository
     /** ¿Algun documento cargado indica este programa como el que diseña el curso? */
     boolean existsByIdProgramaDisena(Integer idProgramaDisena);
 
-    /** Borra la version (con su archivo) directamente, sin leer antes el binario. */
+    /** Ruta del archivo de una version en la carpeta de archivos (para borrarlo). */
+    @Query("select v.rutaArchivo from VersionDocumento v where v.id = :id")
+    String rutaArchivo(@Param("id") Integer id);
+
+    /** Borra la version directamente (el archivo se borra aparte de la carpeta). */
     @Modifying
     @Query("delete from VersionDocumento v where v.id = :id")
     void eliminarPorId(@Param("id") Integer id);
