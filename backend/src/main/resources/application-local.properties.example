@@ -7,7 +7,7 @@
 # =====================================================================
 spring.datasource.url=jdbc:mysql://10.146.36.56:3306/CertificadosCursosAcademicosUPB?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true&characterEncoding=UTF-8
 spring.datasource.username=root
-spring.datasource.password=TU_CONTRASENA_AQUI
+spring.datasource.password=C0n7ras3n@
 
 # Carpeta donde se guardan los documentos cargados y los PDF de los
 # certificados (fuera de la base de datos). Usa / en lugar de \.
